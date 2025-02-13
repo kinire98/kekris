@@ -1,0 +1,29 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout>
+    <div id="board">
+        <canvas height="760" width="380"></canvas>
+    </div>
+</Layout>
+
+<style>
+canvas {
+    background: #000;
+    border: 1px solid #909090;
+}
+#board { 
+    display: flex;
+    align-items: center;    
+    justify-content: center;
+    height: 100%;
+}
+</style>
+
+<script>
+import forbidBack from "../helpers/forbidBack";
+import startDraw from "../board/board";
+forbidBack();
+startDraw(document.querySelector("canvas")! as HTMLCanvasElement);
+</script>
