@@ -1,3 +1,4 @@
+import { listen } from "@tauri-apps/api/event";
 import { getBorderColor, getIPieceColor, getIPieceDarkColor, getJPieceColor, 
     getJPieceDarkColor, getLPieceColor, getLPieceDarkColor, getOPieceColor,
      getOPieceDarkColor, getSPieceColor, getSPieceDarkColor, getTPieceColor,
@@ -16,7 +17,6 @@ const spacing = 38;
 const pieceWidth = 38;
 const pieceHeight = 38;
 
-const board = `EEEEEEEEEIEEEEEEEEEIEEEEEEEEEIEEEEEEEEEIEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEIEEOOEEEEEIZZOOSSEEEIEZZSSEEEEITJJJLLLEETTTEJLEEEERRRRRRRRRGRRRRRRRRRGRRRRRRRRRGRRRRRRRRRG`;
 
 const boardSize = columnNumber * rowNumber;
 // E -> Empty
@@ -29,10 +29,16 @@ const boardSize = columnNumber * rowNumber;
 // J -> blue
 // S -> green
 // Z -> red
-let mainCanvas;
+let mainCanvas: HTMLCanvasElement;
 export default function startDraw(canvas: HTMLCanvasElement) {
     const ctx: CanvasRenderingContext2D = canvas.getContext("2d")!;
     mainCanvas = canvas;
+    drawLines(ctx);
+}
+
+export function drawBoard(board: string) {
+    const ctx: CanvasRenderingContext2D = mainCanvas.getContext("2d")!;
+    clearCanvas(ctx);
     drawLines(ctx);
     for(let i = 0; i < boardSize; i++) {
         const piece: string = board[i]!;
@@ -72,20 +78,20 @@ export default function startDraw(canvas: HTMLCanvasElement) {
     }
 }
 
+
 function drawLines(ctx: CanvasRenderingContext2D)  {
     ctx.lineWidth = 1;
     ctx.strokeStyle = getBorderColor();
-    console.log(ctx.strokeStyle)
     for(let i = 1; i < columnNumber; i++) {
         ctx.beginPath();
-        ctx.moveTo(spacing * i, 0);
-        ctx.lineTo(spacing * i, canvasHeight);
+        ctx.moveTo(spacing * i, 1);
+        ctx.lineTo(spacing * i, canvasHeight - 1);
         ctx.stroke();
     }
     for(let i = 1; i < rowNumber; i++) {
         ctx.beginPath();
-        ctx.moveTo(0, spacing * i);
-        ctx.lineTo(canvasWidth, spacing * i);
+        ctx.moveTo(1, spacing * i);
+        ctx.lineTo(canvasWidth - 1, spacing * i);
         ctx.stroke();
     }
 }
@@ -158,3 +164,16 @@ function ghostPiece(ctx: CanvasRenderingContext2D, x: number, y: number) {
 }
 
 function lineCleared(ctx: CanvasRenderingContext2D, x: number, y: number) {}
+
+function clearCanvas(ctx: CanvasRenderingContext2D) {
+  ctx.save();
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+
+  ctx.restore();
+}
+
+
+
+//await listen('new-board-state', (e) => drawBoard(e.payload as string))

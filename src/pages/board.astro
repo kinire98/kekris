@@ -24,6 +24,44 @@ canvas {
 <script>
 import forbidBack from "../helpers/forbidBack";
 import startDraw from "../board/board";
-forbidBack();
-startDraw(document.querySelector("canvas")! as HTMLCanvasElement);
+import manageInput from "../controls/keyboard";
+import { getRepeatInterval, getStartRepeatInterval } from "../controls/interval";
+document.addEventListener('DOMContentLoaded', () => {
+    forbidBack();
+    startDraw(document.querySelector("canvas")! as HTMLCanvasElement);
+    const customRepeatInterval = getRepeatInterval(); // Customize this value (in milliseconds)
+    const customStartRepeatInteval = getStartRepeatInterval();
+    const keyIntervals: Record<string, NodeJS.Timeout> = {}; // Tracks active intervals for keys
+    const keySet = new Set<string>();
+
+      // Handle keydown event
+    document.addEventListener('keydown', (event: KeyboardEvent) => {
+      if (keyIntervals[event.key]) return;
+
+      // Trigger the action immediately
+      manageInput(event.key);
+
+      // Set up a custom interval for repeated actions
+
+    keySet.add(event.key);
+      setTimeout(() => {
+        if(keySet.has(event.key)) {
+            keyIntervals[event.key] = setInterval(() => {
+                manageInput(event.key);
+            }, customRepeatInterval);
+        }
+      }, customStartRepeatInteval)
+    });
+
+    // Handle keyup event
+    document.addEventListener('keyup', (event: KeyboardEvent) => {
+        if(keySet.has(event.key))
+            keySet.delete(event.key);
+      if (keyIntervals[event.key]) {
+        clearInterval(keyIntervals[event.key]);
+        delete keyIntervals[event.key];
+      }
+    });
+});
+
 </script>
