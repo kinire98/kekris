@@ -1,6 +1,4 @@
-use tauri::Runtime;
-
 #[tauri::command]
-pub async fn targeting_strategy_even<R: Runtime>(app: tauri::AppHandle<R>, window: tauri::Window<R>) -> String {
+pub async fn targeting_strategy_even() -> String {
     "".to_string()
 }

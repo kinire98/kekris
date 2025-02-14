@@ -1,6 +1,4 @@
-use tauri::Runtime;
-
 #[tauri::command]
-pub async fn start_game<R: Runtime>(app: tauri::AppHandle<R>, window: tauri::Window<R>) -> String {
+pub async fn start_game() -> String {
   "".to_string()
 }

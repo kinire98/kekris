@@ -1,6 +1,4 @@
-use tauri::Runtime;
-
 #[tauri::command]
-pub async fn right_move<R: Runtime>(app: tauri::AppHandle<R>, window: tauri::Window<R>) -> String {
+pub async fn right_move() -> String {
     "".to_string()
 }

@@ -1,6 +1,4 @@
-use tauri::Runtime;
-
 #[tauri::command]
-pub async fn hard_drop<R: Runtime>(app: tauri::AppHandle<R>, window: tauri::Window<R>) -> String {
+pub async fn hard_drop() -> String {
     "".to_string()
 }

@@ -1,6 +1,5 @@
-use tauri::Runtime;
 
 #[tauri::command]
-pub async fn targeting_strategy_random<R: Runtime>(app: tauri::AppHandle<R>, window: tauri::Window<R>) -> String {
+pub async fn targeting_strategy_random() -> String {
     "".to_string()
 }

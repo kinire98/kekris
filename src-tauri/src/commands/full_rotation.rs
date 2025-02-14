@@ -1,6 +1,4 @@
-use tauri::Runtime;
-
 #[tauri::command]
-pub async fn full_rotation<R: Runtime>(app: tauri::AppHandle<R>, window: tauri::Window<R>) -> String {
+pub async fn full_rotation() -> String {
     "".to_string()
 }

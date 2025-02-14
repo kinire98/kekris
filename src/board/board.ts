@@ -7,6 +7,10 @@ import { getBorderColor, getIPieceColor, getIPieceDarkColor, getJPieceColor,
       trashBorderColor,
       getGhostColor} from "./colors";
 
+type BoardState = {
+  board: string;
+}
+
 const canvasHeight = 760;
 const canvasWidth = 380;
 
@@ -34,6 +38,7 @@ export default function startDraw(canvas: HTMLCanvasElement) {
     const ctx: CanvasRenderingContext2D = canvas.getContext("2d")!;
     mainCanvas = canvas;
     drawLines(ctx);
+    startBoardChangeEventListener();
 }
 
 export function drawBoard(board: string) {
@@ -76,6 +81,13 @@ export function drawBoard(board: string) {
         ctx.strokeRect(10 + (pieceWidth * x), 10 + (pieceHeight * y), 19, 19);
 
     }
+}
+
+
+async function startBoardChangeEventListener() {
+  await listen<BoardState>("board-changed", e => {
+    drawBoard(e.payload.board);
+  }) 
 }
 
 

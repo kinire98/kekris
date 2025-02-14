@@ -1,6 +1,4 @@
-use tauri::Runtime;
-
 #[tauri::command]
-pub async fn targeting_strategy_eliminations<R: Runtime>(app: tauri::AppHandle<R>, window: tauri::Window<R>) -> String {
+pub async fn targeting_strategy_eliminations() -> String {
     "".to_string()
 }

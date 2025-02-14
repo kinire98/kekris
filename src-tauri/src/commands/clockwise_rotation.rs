@@ -1,7 +1,4 @@
-use tauri::Runtime;
-
-
 #[tauri::command]
-pub async fn clockwise_rotation<R: Runtime>(app: tauri::AppHandle<R>, window: tauri::Window<R>) -> String {
+pub async fn clockwise_rotation() -> String {
     "".to_string()
 }
