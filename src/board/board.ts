@@ -72,7 +72,8 @@ export function drawBoard(board: string) {
         //Second magic number -> y offset
         //Third magic number -> width
         //Fourth magic number -> height
-        ctx.strokeRect(5 + (pieceWidth * x), 5 + (pieceWidth * y), 28, 28);
+        const widthSecondRing = 5;
+        ctx.strokeRect(widthSecondRing + (pieceWidth * x), widthSecondRing + (pieceWidth * y), pieceWidth - widthSecondRing, pieceHeight - widthSecondRing);
         ctx.strokeStyle = darkColor;
         ctx.lineWidth = 2;
         ctx.strokeRect(1 + (pieceWidth * x), 1 + (pieceHeight * y), 37, 37);
