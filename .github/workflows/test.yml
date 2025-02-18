@@ -17,6 +17,16 @@ jobs:
           - stable
     steps:
       - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y libglib2.0-dev libgobject-2.0-dev
+
+      - name: Set PKG_CONFIG_PATH
+        run: echo "PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/share/pkgconfig" >> $GITHUB_ENV
+      - name: Build
+        run: cargo build --verbose
+        working-directory: ./src-tauri
       - name: Test
         run: cargo test --verbose
         working-directory: ./src-tauri
