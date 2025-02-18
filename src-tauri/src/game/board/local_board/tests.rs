@@ -13,5 +13,6 @@ mod save_piece;
 mod soft_drop;
 mod strategy;
 
+mod board_state;
 mod danger_level;
 mod insert_trash;

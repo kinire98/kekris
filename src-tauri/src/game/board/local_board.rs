@@ -1,10 +1,9 @@
-use std::ops::Range;
-
-use crate::game::{
-    pieces::Piece,
-    queue::Queue,
-    strategy::Strategy,
+use std::{
+    io::{BufWriter, Write},
+    ops::Range,
 };
+
+use crate::game::{pieces::Piece, queue::Queue, strategy::Strategy};
 
 use super::{cell::Cell, danger_level::DangerLevel, Board};
 
@@ -17,6 +16,7 @@ pub struct LocalBoard {
     trash_lines_queue: Vec<(u8, u8)>,
     cells: [Cell; 200],
     piece_blocked: bool,
+    line_cleared: bool,
 }
 
 impl Board for LocalBoard {
@@ -29,7 +29,27 @@ impl Board for LocalBoard {
     }
 
     fn board_state(&self) -> String {
-        todo!()
+        let mut buf = BufWriter::new(Vec::new());
+        self.cells.iter().for_each(|cell| {
+            match cell {
+                Cell::Empty => buf.write(b"E"),
+                Cell::Full(piece) => match piece {
+                    Piece::T => buf.write(b"T"),
+                    Piece::O => buf.write(b"O"),
+                    Piece::I => buf.write(b"I"),
+                    Piece::L => buf.write(b"L"),
+                    Piece::J => buf.write(b"J"),
+                    Piece::S => buf.write(b"S"),
+                    Piece::Z => buf.write(b"Z"),
+                    Piece::Clear => buf.write(b"C"),
+                    Piece::Ghost => buf.write(b"G"),
+                    Piece::Trash => buf.write(b"R"),
+                },
+            }
+            .expect("Should be written correctly into buffer");
+        });
+        let bytes = buf.into_inner().expect("Should be valid");
+        String::from_utf8(bytes).expect("Should be valid UTF as I just wrote it")
     }
 
     fn new(mut queue: impl Queue + 'static) -> Self
@@ -48,6 +68,7 @@ impl Board for LocalBoard {
             trash_lines_queue: Vec::new(),
             cells: [Cell::Empty; 200],
             piece_blocked: false,
+            line_cleared: false,
         }
     }
 }
@@ -103,10 +124,6 @@ impl LocalBoard {
         self.strategy = strategy;
     }
 
-    pub fn board_state(&self) -> String {
-        todo!()
-    }
-
     pub fn held_piece(&self) -> Option<Piece> {
         self.held_piece
     }
@@ -141,6 +158,10 @@ impl LocalBoard {
 
     pub fn piece_blocked(&self) -> bool {
         self.piece_blocked
+    }
+
+    pub fn line_cleared(&self) -> bool {
+        self.line_cleared
     }
 
     fn next_piece(&mut self) {

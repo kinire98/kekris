@@ -9,4 +9,7 @@ pub enum Piece {
     J,
     S,
     Z,
+    Clear,
+    Ghost,
+    Trash,
 }
