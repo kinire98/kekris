@@ -38,7 +38,7 @@ impl LocalQueue {
             _ => Piece::Z,
         }
     }
-    fn new() -> LocalQueue {
+    pub fn new() -> LocalQueue {
         let mut queue = LocalQueue {
             pieces: Vec::new(),
             max_piece: 0,
