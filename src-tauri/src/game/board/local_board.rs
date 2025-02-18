@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use crate::game::{
     pieces::Piece,
-    queue::{self, Queue},
+    queue::Queue,
     strategy::Strategy,
 };
 
@@ -86,7 +86,7 @@ impl LocalBoard {
             return;
         }
         let cur_piece = self.cur_piece;
-        if (self.held_piece.is_none()) {
+        if self.held_piece.is_none() {
             self.piece_num += 1;
             self.cur_piece = self
                 .queue

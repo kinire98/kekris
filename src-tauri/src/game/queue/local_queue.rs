@@ -38,8 +38,6 @@ impl LocalQueue {
             _ => Piece::Z,
         }
     }
-}
-impl Queue for LocalQueue {
     fn new() -> LocalQueue {
         let mut queue = LocalQueue {
             pieces: Vec::new(),
@@ -48,6 +46,8 @@ impl Queue for LocalQueue {
         queue.generate_new_pieces();
         queue
     }
+}
+impl Queue for LocalQueue {
     fn get_piece(&mut self, position: usize) -> Option<Piece> {
         if self.max_piece < position {
             self.max_piece = position;
