@@ -18,9 +18,8 @@ fn board_state_1() {
 #[test]
 fn board_state_2() {
     let expected_board = format!(
-        "{}{}{}{}{}{}{}{}{}{}{}",
-        "E".repeat(100),
-        "C".repeat(10),
+        "{}{}{}{}{}{}{}{}{}{}",
+        "E".repeat(110),
         "G".repeat(10),
         "T".repeat(10),
         "I".repeat(10),
@@ -32,11 +31,8 @@ fn board_state_2() {
         "R".repeat(10)
     );
     let mut board = Vec::new();
-    for _ in 0..100 {
+    for _ in 0..110 {
         board.push(Cell::Empty);
-    }
-    for _ in 0..10 {
-        board.push(Cell::Full(Piece::Clear));
     }
     for _ in 0..10 {
         board.push(Cell::Full(Piece::Ghost));

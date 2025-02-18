@@ -1,5 +1,5 @@
 use crate::game::{
-    board::{local_board::LocalBoard, Board},
+    board::local_board::LocalBoard,
     queue::local_queue::LocalQueue,
     strategy::Strategy,
 };

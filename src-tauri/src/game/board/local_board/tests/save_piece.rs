@@ -1,6 +1,6 @@
 use crate::{
     game::{
-        board::{local_board::LocalBoard, Board},
+        board::local_board::LocalBoard,
         queue::local_queue::LocalQueue,
     },
     init_trace::initialize,
@@ -30,7 +30,7 @@ fn piece_saved_correctly_with_previously_saved_piece() {
     println!("{:?}", piece);
     let current_piece = board.cur_piece;
     println!("{:?}", current_piece);
-    assert_eq!(pieces[0], current_piece);
+    assert_eq!(pieces[0], current_piece.piece);
     assert!(piece.is_some());
     assert_eq!(pieces[1], piece.unwrap());
 }
