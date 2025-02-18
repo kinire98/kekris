@@ -17,6 +17,7 @@ pub struct LocalBoard {
     cells: [Cell; 200],
     piece_blocked: bool,
     line_cleared: bool,
+    lines_cleared: u32
 }
 
 impl Board for LocalBoard {
@@ -24,8 +25,9 @@ impl Board for LocalBoard {
         todo!()
     }
 
-    fn game_won(&self) -> bool {
-        todo!()
+    fn game_won(&self, win_condition: impl Fn(bool, u32) -> bool) -> bool 
+    {
+        win_condition(self.game_over(), self.lines_cleared)
     }
 
     fn board_state(&self) -> String {
@@ -69,6 +71,7 @@ impl Board for LocalBoard {
             cells: [Cell::Empty; 200],
             piece_blocked: false,
             line_cleared: false,
+            lines_cleared: 0
         }
     }
 }
