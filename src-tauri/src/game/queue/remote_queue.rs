@@ -1,8 +1,6 @@
 use super::Queue;
 
-pub struct RemoteQueue {
-
-}
+pub struct RemoteQueue {}
 
 impl Queue for RemoteQueue {
     fn new() -> RemoteQueue {

@@ -3,5 +3,5 @@ pub enum Strategy {
     Elimination,
     Even,
     PayBack,
-    Random
+    Random,
 }

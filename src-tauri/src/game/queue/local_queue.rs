@@ -1,6 +1,6 @@
-use std::collections::HashSet;
 use super::super::pieces::Piece;
 use super::Queue;
+use std::collections::HashSet;
 
 #[allow(dead_code)]
 const PIECES_SHOWN: usize = 5; // Used in the module, but marked as not used for an unknown reason
@@ -35,13 +35,16 @@ impl LocalQueue {
             3 => Piece::O,
             4 => Piece::S,
             5 => Piece::T,
-            _ => Piece::Z
+            _ => Piece::Z,
         }
     }
 }
 impl Queue for LocalQueue {
     fn new() -> LocalQueue {
-        let mut queue = LocalQueue { pieces: Vec::new(), max_piece: 0};
+        let mut queue = LocalQueue {
+            pieces: Vec::new(),
+            max_piece: 0,
+        };
         queue.generate_new_pieces();
         queue
     }
@@ -53,11 +56,8 @@ impl Queue for LocalQueue {
             self.generate_new_pieces();
         }
         self.pieces.get(position).copied()
-        
     }
-
 }
-
 
 #[cfg(test)]
 mod tests {

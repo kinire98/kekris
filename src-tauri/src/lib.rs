@@ -1,5 +1,5 @@
-use tauri::Manager;
 use init_trace::initialize;
+use tauri::Manager;
 mod commands;
 mod game;
 mod init_trace;

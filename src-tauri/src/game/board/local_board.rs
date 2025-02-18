@@ -1,9 +1,12 @@
 use std::ops::Range;
 
-use crate::game::{pieces::Piece, queue::{self, Queue}, strategy::Strategy};
+use crate::game::{
+    pieces::Piece,
+    queue::{self, Queue},
+    strategy::Strategy,
+};
 
 use super::{cell::Cell, danger_level::DangerLevel, Board};
-
 
 pub struct LocalBoard {
     queue: Box<dyn Queue>,
@@ -13,9 +16,8 @@ pub struct LocalBoard {
     piece_num: usize,
     trash_lines_queue: Vec<(u8, u8)>,
     cells: [Cell; 200],
-    piece_blocked: bool
+    piece_blocked: bool,
 }
-
 
 impl Board for LocalBoard {
     fn game_over(&self) -> bool {
@@ -29,17 +31,24 @@ impl Board for LocalBoard {
     fn board_state(&self) -> String {
         todo!()
     }
-    
-    fn new(mut queue: impl Queue + 'static) -> Self where Self:Sized {
-        let cur_piece = queue.get_piece(0).expect("Queue must have at least one piece!");
-        LocalBoard { queue: Box::new(queue),
+
+    fn new(mut queue: impl Queue + 'static) -> Self
+    where
+        Self: Sized,
+    {
+        let cur_piece = queue
+            .get_piece(0)
+            .expect("Queue must have at least one piece!");
+        LocalBoard {
+            queue: Box::new(queue),
             held_piece: None,
             cur_piece,
             strategy: Strategy::Even,
             piece_num: 0,
             trash_lines_queue: Vec::new(),
             cells: [Cell::Empty; 200],
-            piece_blocked: false}
+            piece_blocked: false,
+        }
     }
 }
 
@@ -77,9 +86,12 @@ impl LocalBoard {
             return;
         }
         let cur_piece = self.cur_piece;
-        if(self.held_piece.is_none()) {
+        if (self.held_piece.is_none()) {
             self.piece_num += 1;
-            self.cur_piece = self.queue.get_piece(self.piece_num).expect("Should be pieces");
+            self.cur_piece = self
+                .queue
+                .get_piece(self.piece_num)
+                .expect("Should be pieces");
         } else {
             self.cur_piece = self.held_piece.expect("Already checked");
         }
@@ -118,7 +130,11 @@ impl LocalBoard {
     pub fn get_pieces(&mut self, r: Range<u128>) -> Vec<Piece> {
         let mut pieces = Vec::new();
         for i in r {
-            pieces.push(self.queue.get_piece(i.try_into().unwrap()).expect("Should be pieces"));
+            pieces.push(
+                self.queue
+                    .get_piece(i.try_into().unwrap())
+                    .expect("Should be pieces"),
+            );
         }
         pieces
     }
@@ -131,10 +147,7 @@ impl LocalBoard {
         self.piece_num += 1;
         self.piece_blocked = false;
     }
-
 }
-
-
 
 #[cfg(test)]
 mod tests;

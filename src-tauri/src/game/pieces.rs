@@ -8,5 +8,5 @@ pub enum Piece {
     L,
     J,
     S,
-    Z
+    Z,
 }

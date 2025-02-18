@@ -6,5 +6,5 @@ pub enum DangerLevel {
     Medium,
     High,
     VeryHigh,
-    AlmostDead
+    AlmostDead,
 }

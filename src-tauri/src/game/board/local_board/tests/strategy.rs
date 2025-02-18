@@ -1,4 +1,8 @@
-use crate::game::{board::{local_board::LocalBoard, Board}, queue::{local_queue::LocalQueue, Queue}, strategy::Strategy};
+use crate::game::{
+    board::{local_board::LocalBoard, Board},
+    queue::{local_queue::LocalQueue, Queue},
+    strategy::Strategy,
+};
 
 #[test]
 fn correct_change() {

@@ -12,4 +12,3 @@ fn game_over_one_line() {
 fn lines_completed() {
     todo!()
 }
-

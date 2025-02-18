@@ -1,4 +1,10 @@
-use crate::{game::{board::{local_board::LocalBoard, Board}, queue::{local_queue::LocalQueue, Queue}}, init_trace::initialize};
+use crate::{
+    game::{
+        board::{local_board::LocalBoard, Board},
+        queue::{local_queue::LocalQueue, Queue},
+    },
+    init_trace::initialize,
+};
 
 #[test]
 fn piece_saved_correctly() {
