@@ -52,19 +52,8 @@ impl Queue for LocalQueue {
         if self.max_piece - position < PIECES_SHOWN {
             self.generate_new_pieces();
         }
-        let piece= self.pieces.get(position);
-        if piece.is_none() {
-            return None;
-        }
-        match piece.unwrap() {
-            Piece::I => Some(Piece::I),
-            Piece::T => Some(Piece::T),
-            Piece::J => Some(Piece::J),
-            Piece::L => Some(Piece::L),
-            Piece::S => Some(Piece::S),
-            Piece::Z => Some(Piece::Z),
-            Piece::O => Some(Piece::O),
-        }
+        self.pieces.get(position).copied()
+        
     }
 
 }
@@ -74,12 +63,13 @@ impl Queue for LocalQueue {
 mod tests {
     use std::collections::HashSet;
 
-    use crate::game::queue::Queue;
+    use crate::{game::queue::Queue, init_trace::initialize};
 
     use super::{LocalQueue, PIECES_GENERATED_BY_CYCLE};
 
     #[test]
     fn get_unique_pieces() {
+        initialize();
         let mut queue = LocalQueue::new();
         let mut pieces = HashSet::new();
         for i in 0..PIECES_GENERATED_BY_CYCLE {
@@ -91,6 +81,7 @@ mod tests {
 
     #[test]
     fn generate_undetermined_number_of_pieces() {
+        initialize();
         let mut queue = LocalQueue::new();
         let number_of_pieces = rand::random_range(1..500);
         for i in 0..number_of_pieces {
@@ -100,6 +91,7 @@ mod tests {
 
     #[test]
     fn generate_undetermined_number_of_pieces_and_check_unique() {
+        initialize();
         let mut queue = LocalQueue::new();
         let number_of_pieces = rand::random_range(1..500);
         let mut unique_pieces = HashSet::new();

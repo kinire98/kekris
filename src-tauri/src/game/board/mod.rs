@@ -1,9 +1,12 @@
+use super::queue::Queue;
+
 pub mod danger_level;
 pub mod cell;
 pub mod local_board;
 
 pub trait Board {
-    fn game_over() -> bool;
-    fn game_won() -> bool;
-    fn board_state() -> String;
+    fn new(queue: impl Queue + 'static) -> Self where Self:Sized;
+    fn game_over(&self) -> bool;
+    fn game_won(&self) -> bool;
+    fn board_state(&self) -> String;
 }

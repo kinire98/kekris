@@ -1,9 +1,12 @@
 use tauri::Manager;
+use init_trace::initialize;
 mod commands;
 mod game;
+mod init_trace;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    initialize();
     tauri::Builder::default()
         .setup(|app| {
             let main_window = app.get_webview_window("main").unwrap();
