@@ -30,7 +30,7 @@ fn piece_saved_correctly_with_previously_saved_piece() {
     println!("{:?}", piece);
     let current_piece = board.cur_piece;
     println!("{:?}", current_piece);
-    assert_eq!(pieces[0], current_piece.piece);
+    assert_eq!(pieces[0], current_piece.piece());
     assert!(piece.is_some());
     assert_eq!(pieces[1], piece.unwrap());
 }
@@ -50,7 +50,7 @@ fn piece_saved_lock() {
     let held_piece = board.held_piece();
     assert!(held_piece.is_some());
     assert_eq!(pieces[0], held_piece.unwrap());
-    board.next_piece();
+    board.next_piece_operations();
     assert!(!board.piece_blocked);
     board.save_piece();
     assert!(board.piece_blocked);

@@ -51,11 +51,6 @@ export function drawBoard(board: string) {
             continue;
         const y = Math.floor(i / columnNumber);
         const x = i % columnNumber;
-        if(piece == "C") {
-            lineCleared(ctx, x, y);
-            i += canvasWidth - 1;
-            continue;
-        }
         if(piece == "R") {
             trashPiece(ctx, x, y);
             continue;
@@ -176,7 +171,6 @@ function ghostPiece(ctx: CanvasRenderingContext2D, x: number, y: number) {
         pieceWidth - (offset * 2));
 }
 
-function lineCleared(ctx: CanvasRenderingContext2D, x: number, y: number) {}
 
 function clearCanvas(ctx: CanvasRenderingContext2D) {
   ctx.save();
