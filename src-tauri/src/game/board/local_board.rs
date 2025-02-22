@@ -3,7 +3,7 @@ use std::{
     ops::Range,
 };
 
-use moving_piece::{MovingPiece, Orientation};
+use moving_piece::MovingPiece;
 
 use crate::game::{pieces::Piece, queue::Queue, strategy::Strategy};
 
@@ -18,7 +18,7 @@ const BOARD_HEIGHT: i16 = 20;
 pub struct LocalBoard {
     queue: Box<dyn Queue>,
     held_piece: Option<Piece>,
-    cur_piece: MovingPiece,
+    cur_piece: Box<dyn MovingPiece>,
     strategy: Strategy,
     piece_num: usize,
     trash_lines_queue: Vec<(u8, u8)>,
@@ -73,7 +73,7 @@ impl LocalBoard {
         LocalBoard {
             queue: Box::new(queue),
             held_piece: None,
-            cur_piece: MovingPiece::new(cur_piece),
+            cur_piece: cur_piece.try_into().unwrap(),
             strategy: Strategy::Even,
             piece_num: 0,
             trash_lines_queue: Vec::new(),
@@ -92,9 +92,16 @@ impl LocalBoard {
             if x == BOARD_WIDTH - 1 {
                 return;
             }
-            match self.get_cell_from_main_board(x + 1, y) {
-                Cell::Empty => continue,
-                Cell::Full(_) => return,
+            if y >= 0 {
+                match self.get_cell_from_main_board(x + 1, y) {
+                    Cell::Empty => continue,
+                    Cell::Full(_) => return,
+                }
+            } else {
+                match self.get_cell_from_buffer_board(x + 1, y) {
+                    Cell::Empty => continue,
+                    Cell::Full(_) => return,
+                }
             }
         }
         self.cur_piece.move_right();
@@ -106,24 +113,77 @@ impl LocalBoard {
             if x == 0 {
                 return;
             }
-            match self.get_cell_from_main_board(x - 1, y) {
-                Cell::Empty => continue,
-                Cell::Full(_) => return,
+            if y >= 0 {
+                match self.get_cell_from_main_board(x - 1, y) {
+                    Cell::Empty => continue,
+                    Cell::Full(_) => return,
+                }
+            } else {
+                match self.get_cell_from_buffer_board(x - 1, y) {
+                    Cell::Empty => continue,
+                    Cell::Full(_) => return,
+                }
             }
         }
         self.cur_piece.move_left();
     }
 
     pub fn rotation_clockwise(&mut self) {
-        todo!()
+        let rotation_piece = self.cur_piece.clone();
+        self.check_rotation(rotation_piece, 1..3, RotationOption::ClockWise);
     }
 
     pub fn rotation_counterclockwise(&mut self) {
-        todo!()
+        let rotation_piece = self.cur_piece.clone();
+        self.check_rotation(rotation_piece, 1..3, RotationOption::CounterClockWise);
     }
 
     pub fn rotation_full(&mut self) {
-        todo!()
+        let rotation_piece = self.cur_piece.clone();
+        self.check_rotation(rotation_piece, 1..3, RotationOption::Full);
+    }
+    fn check_rotation(&mut self, piece: Box<dyn MovingPiece>, positibility_iteration_range: Range<u8>, option: RotationOption) {
+        let mut continue_in_iteration = false;
+        let mut piece = piece;
+        for i in positibility_iteration_range {
+            continue_in_iteration = false;
+            match option {
+                RotationOption::ClockWise => piece.rotate_clockwise(i.into()),
+                RotationOption::CounterClockWise => piece.rotate_counterclockwise(i.into()),
+                RotationOption::Full => piece.rotate_full(i.into()),
+            }
+            for (x, y) in piece.get_coords() {
+                if !(0..=BOARD_WIDTH - 1).contains(&x) {
+                    continue_in_iteration = true;
+                    break;
+                }
+                if !(-BOARD_HEIGHT..BOARD_HEIGHT).contains(&y) {
+                    continue_in_iteration = true;
+                    break;
+                }
+
+                if y >= 0 {
+                    match self.get_cell_from_main_board(x, y) {
+                        Cell::Empty => continue,
+                        Cell::Full(_) => {
+                            continue_in_iteration = true;
+                            break;
+                        }
+                    }
+                } else {
+                    match self.get_cell_from_buffer_board(x, y) {
+                        Cell::Empty => continue,
+                        Cell::Full(_) => {
+                            continue_in_iteration = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if !continue_in_iteration {
+                self.cur_piece = piece.clone();
+            }
+        }
     }
 
     pub fn soft_drop(&mut self) {
@@ -145,9 +205,16 @@ impl LocalBoard {
                 return true;
             }
 
-            match self.get_cell_from_main_board(x, y + 1) {
-                Cell::Empty => continue,
-                Cell::Full(_) => return true,
+            if y + 1 >= 0 {
+                match self.get_cell_from_main_board(x, y + 1) {
+                    Cell::Empty => continue,
+                    Cell::Full(_) => return true,
+                }
+            } else {
+                match self.get_cell_from_buffer_board(x, y + 1) {
+                    Cell::Empty => continue,
+                    Cell::Full(_) => return true,
+                }
             }
         }
         self.cur_piece.move_down();
@@ -163,12 +230,16 @@ impl LocalBoard {
         let coords = self.cur_piece.get_coords();
         let piece = self.cur_piece.piece();
         for (x, y) in coords {
-            self.set_cell_in_main_board(x, y, piece);
+            if y >= 0 {
+                self.set_cell_in_main_board(x, y, piece);
+            } else {
+                self.set_cell_in_buffer_board(x, y, piece);
+            }
         }
         self.game_over = self.game_over();
         self.prev_cells = self.cells;
         self.piece_num += 1;
-        self.cur_piece = MovingPiece::new(self.queue.get_piece(self.piece_num).unwrap());
+        self.cur_piece = self.queue.get_piece(self.piece_num).unwrap().try_into().unwrap();
         self.piece_blocked = false;
     }
 
@@ -176,15 +247,15 @@ impl LocalBoard {
         if self.piece_blocked {
             return;
         }
-        let cur_piece = self.cur_piece;
+        let cur_piece = self.cur_piece.clone();
         if self.held_piece.is_none() {
             self.piece_num += 1;
-            self.cur_piece = MovingPiece::new(self
+            self.cur_piece = self
                 .queue
                 .get_piece(self.piece_num)
-                .expect("Should be pieces"));
+                .expect("Should be pieces").try_into().unwrap();
         } else {
-            self.cur_piece = MovingPiece::new(self.held_piece.expect("Already checked"));
+            self.cur_piece = self.held_piece.expect("Already checked").try_into().unwrap();
         }
         self.piece_blocked = true;
         self.held_piece = Some(cur_piece.piece());
@@ -300,6 +371,10 @@ impl LocalBoard {
         self.buffer[((BOARD_HEIGHT + y /* y is less than 0 */)* BOARD_WIDTH + x) as usize ]
     }
 
+    fn set_cell_in_buffer_board(&mut self, x: i16, y: i16, piece: Piece) {
+        self.cells[((BOARD_HEIGHT + y) * BOARD_WIDTH + x) as usize] = Cell::Full(piece);
+    }
+
     fn get_highest_piece(&self) -> Option<(i16, i16)> {
         let mut i = 0;
         for el in self.buffer {
@@ -315,6 +390,12 @@ impl LocalBoard {
         None
     }
 
+}
+
+enum RotationOption {
+    ClockWise,
+    CounterClockWise,
+    Full
 }
 
 #[cfg(test)]
