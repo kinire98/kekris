@@ -1,22 +1,57 @@
-<!doctype html>
+---
+---
+
+<!DOCTYPE html>
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
 	</head>
 	<body>
+		<div id="bgc"></div>
 		<slot />
 	</body>
 </html>
 
-<style>
+<style is:global>
+	@font-face {
+		font-family: "audiowide";
+		src: url("/fonts/Audiowide-Regular.ttf");
+	}
+
+	:root {
+		font-family: audiowide;
+		font-synthesis: none;
+		text-rendering: optimizeLegibility;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+		-webkit-text-size-adjust: 100%;
+		--main-color: #00ADB5;
+		--transparent-main-color: #00ADB522;
+		--main-contrast: #222831;
+		--white-constrast: #EEEEEE;
+		--black-constrast: #000000;
+	}
+
 	html,
 	body {
 		margin: 0;
-		width: 100%;
+		padding: 0;
 		height: 100%;
+		min-height: 100%;
+		min-width: 100%;
+		color: var(--white-constrast);
+		background-color: var(--black-constrast);
+	}
+	#bgc {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		background-image: radial-gradient(transparent, #222831);
+	}
+	h1 {
+		text-align: center;
 	}
 </style>
