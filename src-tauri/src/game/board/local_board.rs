@@ -3,7 +3,7 @@ use std::{
     ops::Range,
 };
 
-use moving_piece::MovingPiece;
+use moving_piece::{MovingPiece, Orientation};
 
 use crate::game::{pieces::Piece, queue::Queue, strategy::Strategy};
 
@@ -41,27 +41,35 @@ impl Board for LocalBoard {
     }
 
     fn board_state(&self) -> String {
-        // ! Needs change to include moving piece
-        let mut buf = BufWriter::new(Vec::new());
-        self.cells.iter().for_each(|cell| {
-            match cell {
-                Cell::Empty => buf.write(b"E"),
-                Cell::Full(piece) => match piece {
-                    Piece::T => buf.write(b"T"),
-                    Piece::O => buf.write(b"O"),
-                    Piece::I => buf.write(b"I"),
-                    Piece::L => buf.write(b"L"),
-                    Piece::J => buf.write(b"J"),
-                    Piece::S => buf.write(b"S"),
-                    Piece::Z => buf.write(b"Z"),
-                    Piece::Ghost => buf.write(b"G"),
-                    Piece::Trash => buf.write(b"R"),
-                },
+        let mut buf: Vec<u8> = [Cell::Empty.string_representation() as u8; (BOARD_HEIGHT * BOARD_WIDTH * 2) as usize].into();
+        for (i, el) in self.cells.iter().enumerate() {
+            buf[i] = el.string_representation() as u8;
+        }
+        
+        for (i, el) in self.cells.iter().enumerate() {
+            buf[i + (BOARD_HEIGHT * BOARD_WIDTH) as usize] = el.string_representation() as u8;
+        }
+
+        for (x, y) in self.cur_piece.get_coords() {
+            if y >= 0 {
+                buf[(y * BOARD_WIDTH + x + (BOARD_HEIGHT * BOARD_WIDTH)) as usize] = self.cur_piece.piece().string_representation() as u8;
+            } else {
+                buf[((BOARD_HEIGHT + y) * BOARD_WIDTH + x) as usize] = self.cur_piece.piece().string_representation() as u8;
             }
-            .expect("Should be written correctly into buffer");
-        });
-        let bytes = buf.into_inner().expect("Should be valid");
-        String::from_utf8(bytes).expect("Should be valid UTF as I just wrote it")
+        }
+        let ghost_piece= self.ghost_piece(self.cur_piece.clone());
+        for (x, y) in ghost_piece.get_coords() {
+            if y >= 0 {
+                buf[(y * BOARD_WIDTH + x + (BOARD_HEIGHT * BOARD_WIDTH)) as usize] = Piece::Ghost.string_representation() as u8;
+            } else {
+                buf[((BOARD_HEIGHT + y) * BOARD_WIDTH + x) as usize] = Piece::Ghost.string_representation() as u8;
+            }
+        }
+        String::from_utf8(buf).expect("Should be valid UTF as I just wrote it")
+    }
+
+    fn strategy(&self) -> Strategy {
+        self.strategy
     }
 }
 
@@ -143,9 +151,10 @@ impl LocalBoard {
         self.check_rotation(rotation_piece, 1..3, RotationOption::Full);
     }
     fn check_rotation(&mut self, piece: Box<dyn MovingPiece>, positibility_iteration_range: Range<u8>, option: RotationOption) {
-        let mut continue_in_iteration = false;
+        let mut continue_in_iteration;
         let mut piece = piece;
         for i in positibility_iteration_range {
+            println!("{i}");
             continue_in_iteration = false;
             match option {
                 RotationOption::ClockWise => piece.rotate_clockwise(i.into()),
@@ -153,7 +162,8 @@ impl LocalBoard {
                 RotationOption::Full => piece.rotate_full(i.into()),
             }
             for (x, y) in piece.get_coords() {
-                if !(0..=BOARD_WIDTH - 1).contains(&x) {
+                if !(0..=BOARD_WIDTH - 1).contains(&x) { 
+                    // Checks that the coordinate is in the board bounds 
                     continue_in_iteration = true;
                     break;
                 }
@@ -161,7 +171,6 @@ impl LocalBoard {
                     continue_in_iteration = true;
                     break;
                 }
-
                 if y >= 0 {
                     match self.get_cell_from_main_board(x, y) {
                         Cell::Empty => continue,
@@ -182,6 +191,7 @@ impl LocalBoard {
             }
             if !continue_in_iteration {
                 self.cur_piece = piece.clone();
+                break;
             }
         }
     }
@@ -221,6 +231,31 @@ impl LocalBoard {
         false
     }
 
+    fn ghost_piece(&self, mut piece: Box<dyn MovingPiece>) -> Box<dyn MovingPiece> {
+        let mut bottom_reached = false;
+        while !bottom_reached {
+            piece.move_down();
+            for (x, y) in piece.get_bottom_facing_sides() {
+                if y == BOARD_HEIGHT - 1 {
+                    bottom_reached = true;
+                    break;
+                }
+                if y + 1 >= 0 {
+                    match self.get_cell_from_main_board(x, y + 1) {
+                        Cell::Empty => continue,
+                        Cell::Full(_) => bottom_reached = true,
+                    }
+                } else {
+                    match self.get_cell_from_buffer_board(x, y + 1) {
+                        Cell::Empty => continue,
+                        Cell::Full(_) => bottom_reached = true,
+                    }
+                }
+            }
+        }
+        piece
+    }
+
     pub fn hard_drop(&mut self) {
         while self.push_down() {}
         self.next_piece_operations();
@@ -241,6 +276,7 @@ impl LocalBoard {
         self.piece_num += 1;
         self.cur_piece = self.queue.get_piece(self.piece_num).unwrap().try_into().unwrap();
         self.piece_blocked = false;
+        todo!("clear line opps needed yet");
     }
 
     pub fn save_piece(&mut self) {
@@ -277,9 +313,6 @@ impl LocalBoard {
         lines
     }
 
-    pub fn strategy(&self) -> Strategy {
-        self.strategy
-    }
 
     pub fn danger_level(&self) -> DangerLevel {
         let coords = self.get_highest_piece();
@@ -388,6 +421,9 @@ impl LocalBoard {
             }
         }
         None
+    }
+    pub fn orientation(&self) -> Orientation {
+        self.cur_piece.orientation()
     }
 
 }

@@ -2,7 +2,7 @@ use crate::game::pieces::Piece;
 
 use super::{rotations::Rotations, MovingPiece, Orientation};
 
-const START_X: i16 = 4;
+const START_X: i16 = 3;
 const START_Y: i16 = -2;
 
 #[derive(Debug, Clone, Copy)]
@@ -72,6 +72,19 @@ impl MovingPiece for MovingPieceI {
     }
     
     fn rotate_full(&mut self, _option: super::RotationOption) {}
+    
+    fn x(&self) -> i16 {
+        self.x
+    }
+    
+    fn y(&self) -> i16 {
+        self.y
+    }
+    
+    fn orientation(&self) -> Orientation {
+        self.orientation
+    }
+    
     
 }
 

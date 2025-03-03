@@ -1,7 +1,7 @@
 use init_trace::initialize;
 use tauri::Manager;
 mod commands;
-mod game;
+pub mod game;
 mod init_trace;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

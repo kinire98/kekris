@@ -16,3 +16,4 @@ mod strategy;
 mod board_state;
 mod danger_level;
 mod insert_trash;
+mod next_tick;

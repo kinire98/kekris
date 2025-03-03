@@ -40,6 +40,7 @@ fn piece_saved_lock() {
     initialize();
     let mut board = LocalBoard::new(LocalQueue::new());
     let pieces = board.get_pieces(0..3);
+    println!("{:?}", pieces);
     board.save_piece();
     assert!(board.piece_blocked);
     board.save_piece();

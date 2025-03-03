@@ -1,4 +1,4 @@
-mod board;
+pub mod board;
 mod pieces;
-mod queue;
+pub mod queue;
 mod strategy;

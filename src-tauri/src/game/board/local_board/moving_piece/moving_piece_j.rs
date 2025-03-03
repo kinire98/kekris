@@ -2,7 +2,7 @@ use crate::game::pieces::Piece;
 
 use super::{rotations::Rotations, MovingPiece, Orientation, RotationOption};
 
-const START_X: i16 = 4;
+const START_X: i16 = 3;
 const START_Y: i16 = -2;
 
 #[derive(Debug, Clone, Copy)]
@@ -97,6 +97,18 @@ impl MovingPiece for MovingPieceJ {
 
     fn clone_box(&self) -> Box<dyn MovingPiece> {
         Box::new(*self)
+    }
+    
+    fn x(&self) -> i16 {
+        self.x
+    }
+    
+    fn y(&self) -> i16 {
+        self.y
+    }
+    
+    fn orientation(&self) -> Orientation {
+        self.orientation
     }
 }
 

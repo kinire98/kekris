@@ -8,5 +8,5 @@ use crate::game::{
 fn correct_change() {
     let mut board = LocalBoard::new(LocalQueue::new());
     board.change_strategy(Strategy::Elimination);
-    assert_eq!(Strategy::Elimination, board.strategy());
+    assert_eq!(Strategy::Elimination, board.strategy);
 }

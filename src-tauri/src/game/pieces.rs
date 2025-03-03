@@ -12,3 +12,28 @@ pub enum Piece {
     Ghost,
     Trash,
 }
+// E -> Empty
+// C -> Clear
+// G -> Ghost
+// O -> yellow
+// I -> cyan
+// T -> Purple
+// L -> orange
+// J -> blue
+// S -> green
+// Z -> red
+impl Piece {
+    pub fn string_representation(&self) -> char {
+        match self {
+            Piece::Ghost => 'G',
+            Piece::I => 'I',
+            Piece::J => 'J',
+            Piece::L => 'L',
+            Piece::O => 'O',
+            Piece::S => 'S',
+            Piece::T => 'T',
+            Piece::Trash => 'R',
+            Piece::Z => 'Z'
+        }
+    }
+}

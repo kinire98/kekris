@@ -50,6 +50,9 @@ pub trait MovingPiece : Send + Sync + std::fmt::Debug + rotations::Rotations {
 
     fn clone_box(&self) -> Box<dyn MovingPiece>;
 
+    fn x(&self) -> i16;
+    fn y(&self) -> i16;
+    fn orientation(&self) -> Orientation;
 }
 
 mod rotations {
