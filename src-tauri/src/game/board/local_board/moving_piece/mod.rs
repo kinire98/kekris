@@ -6,7 +6,6 @@ mod moving_piece_s;
 mod moving_piece_t;
 mod moving_piece_z;
 
-
 use moving_piece_i::MovingPieceI;
 use moving_piece_j::MovingPieceJ;
 use moving_piece_l::MovingPieceL;
@@ -17,7 +16,7 @@ use moving_piece_z::MovingPieceZ;
 
 use crate::game::pieces::Piece;
 
-pub trait MovingPiece : Send + Sync + std::fmt::Debug + rotations::Rotations {
+pub trait MovingPiece: Send + Sync + std::fmt::Debug + rotations::Rotations {
     fn move_down(&mut self);
     fn move_up(&mut self);
     fn move_left(&mut self);
@@ -57,11 +56,10 @@ pub trait MovingPiece : Send + Sync + std::fmt::Debug + rotations::Rotations {
 
 mod rotations {
     /// Rules for implementing:
-    /// Rule 1: the clockwise rotation must cancel out with its counterclockwise rotation counterpart 
+    /// Rule 1: the clockwise rotation must cancel out with its counterclockwise rotation counterpart
     /// Rule 2: all the rotations in one implementation must cancel each other (for example, if the north and east variants add 3 each to x, the south and west ones must substract 3 each).
     /// This rule has only one exception, the T piece doesn't implement some levels with certain rotations
     pub trait Rotations {
-
         fn first_option_clockwise(&mut self);
         fn second_option_clockwise(&mut self);
         fn third_option_clockwise(&mut self);
@@ -76,13 +74,12 @@ mod rotations {
     }
 }
 
-
 #[derive(Debug, Clone, Copy)]
 pub enum Orientation {
     North,
-    South, 
+    South,
     East,
-    West
+    West,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -91,12 +88,12 @@ pub enum RotationOption {
     Second,
     Third,
     Fourth,
-    Fifth
+    Fifth,
 }
 
 impl TryFrom<Piece> for Box<dyn MovingPiece> {
     type Error = ();
-    
+
     fn try_from(value: Piece) -> Result<Self, Self::Error> {
         match value {
             Piece::I => Ok(Box::new(MovingPieceI::new())),
@@ -106,7 +103,7 @@ impl TryFrom<Piece> for Box<dyn MovingPiece> {
             Piece::S => Ok(Box::new(MovingPieceS::new())),
             Piece::T => Ok(Box::new(MovingPieceT::new())),
             Piece::Z => Ok(Box::new(MovingPieceZ::new())),
-            _ => Err(())
+            _ => Err(()),
         }
     }
 }
@@ -118,7 +115,7 @@ impl From<u8> for RotationOption {
             2 => RotationOption::Second,
             3 => RotationOption::Third,
             4 => RotationOption::Fourth,
-            _ => RotationOption::Fifth
+            _ => RotationOption::Fifth,
         }
     }
 }
@@ -134,17 +131,16 @@ fn change_orientation_clockwise(orientation: Orientation) -> Orientation {
         Orientation::North => Orientation::East,
         Orientation::East => Orientation::South,
         Orientation::South => Orientation::West,
-        Orientation::West => Orientation::North
+        Orientation::West => Orientation::North,
     }
 }
-
 
 fn change_orientation_counterclockwise(orientation: Orientation) -> Orientation {
     match orientation {
         Orientation::North => Orientation::West,
         Orientation::East => Orientation::North,
         Orientation::South => Orientation::East,
-        Orientation::West => Orientation::South
+        Orientation::West => Orientation::South,
     }
 }
 
@@ -153,6 +149,6 @@ fn change_rotation_full(orientation: Orientation) -> Orientation {
         Orientation::North => Orientation::South,
         Orientation::East => Orientation::West,
         Orientation::South => Orientation::North,
-        Orientation::West => Orientation::East
+        Orientation::West => Orientation::East,
     }
 }

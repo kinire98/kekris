@@ -33,7 +33,7 @@ impl Piece {
             Piece::S => 'S',
             Piece::T => 'T',
             Piece::Trash => 'R',
-            Piece::Z => 'Z'
+            Piece::Z => 'Z',
         }
     }
 }

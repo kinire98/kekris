@@ -11,7 +11,7 @@ impl Cell {
     pub fn string_representation(&self) -> char {
         match self {
             Cell::Empty => 'E',
-            Cell::Full(piece) => piece.string_representation()
+            Cell::Full(piece) => piece.string_representation(),
         }
     }
 }

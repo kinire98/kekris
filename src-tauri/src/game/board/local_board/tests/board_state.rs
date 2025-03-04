@@ -94,4 +94,3 @@ fn board_state_3() {
     board.cells = cells.try_into().unwrap();
     assert_eq!(expected_board, board.board_state());
 }
-

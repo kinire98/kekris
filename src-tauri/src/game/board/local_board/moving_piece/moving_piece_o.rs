@@ -9,12 +9,16 @@ const START_Y: i16 = -2;
 pub struct MovingPieceO {
     x: i16,
     y: i16,
-    orientation: Orientation
+    orientation: Orientation,
 }
 
 impl MovingPieceO {
     pub fn new() -> Self {
-        MovingPieceO { x: START_X, y: START_Y, orientation: Orientation::North }
+        MovingPieceO {
+            x: START_X,
+            y: START_Y,
+            orientation: Orientation::North,
+        }
     }
 }
 
@@ -48,7 +52,13 @@ impl MovingPiece for MovingPieceO {
     }
 
     fn get_coords(&self) -> Vec<(i16, i16)> {
-        [(self.x, self.y), (self.x + 1, self.y), (self.x, self.y + 1), (self.x + 1, self.y + 1)].into()
+        [
+            (self.x, self.y),
+            (self.x + 1, self.y),
+            (self.x, self.y + 1),
+            (self.x + 1, self.y + 1),
+        ]
+        .into()
     }
 
     fn piece(&self) -> Piece {
@@ -60,15 +70,15 @@ impl MovingPiece for MovingPieceO {
     fn clone_box(&self) -> Box<dyn MovingPiece> {
         Box::new(*self)
     }
-    
+
     fn x(&self) -> i16 {
         self.x
     }
-    
+
     fn y(&self) -> i16 {
         self.y
     }
-    
+
     fn orientation(&self) -> Orientation {
         self.orientation
     }

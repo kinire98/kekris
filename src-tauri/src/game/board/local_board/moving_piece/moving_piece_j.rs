@@ -9,12 +9,16 @@ const START_Y: i16 = -2;
 pub struct MovingPieceJ {
     x: i16,
     y: i16,
-    orientation: Orientation
+    orientation: Orientation,
 }
 
 impl MovingPieceJ {
     pub fn new() -> Self {
-        MovingPieceJ { x: START_X, y: START_Y, orientation: Orientation::North }
+        MovingPieceJ {
+            x: START_X,
+            y: START_Y,
+            orientation: Orientation::North,
+        }
     }
 }
 
@@ -37,37 +41,88 @@ impl MovingPiece for MovingPieceJ {
 
     fn get_bottom_facing_sides(&self) -> Vec<(i16, i16)> {
         match self.orientation {
-            Orientation::North => [(self.x, self.y + 1), (self.x + 1, self.y + 1), (self.x + 2, self.y + 1)].into(),
+            Orientation::North => [
+                (self.x, self.y + 1),
+                (self.x + 1, self.y + 1),
+                (self.x + 2, self.y + 1),
+            ]
+            .into(),
             Orientation::East => [(self.x + 1, self.y), (self.x, self.y + 2)].into(),
-            Orientation::South => [(self.x, self.y), (self.x + 1, self.y), (self.x + 2, self.y + 1)].into(),
-            Orientation::West => [(self.x, self.y + 2), (self.x + 1, self.y + 2)].into()
+            Orientation::South => [
+                (self.x, self.y),
+                (self.x + 1, self.y),
+                (self.x + 2, self.y + 1),
+            ]
+            .into(),
+            Orientation::West => [(self.x, self.y + 2), (self.x + 1, self.y + 2)].into(),
         }
     }
 
     fn get_right_facing_sides(&self) -> Vec<(i16, i16)> {
         match self.orientation {
             Orientation::North => [(self.x, self.y), (self.x + 2, self.y + 1)].into(),
-            Orientation::East => [(self.x + 1, self.y), (self.x, self.y + 1), (self.x, self.y + 2)].into(),
+            Orientation::East => [
+                (self.x + 1, self.y),
+                (self.x, self.y + 1),
+                (self.x, self.y + 2),
+            ]
+            .into(),
             Orientation::South => [(self.x + 2, self.y), (self.x + 2, self.y + 1)].into(),
-            Orientation::West => [(self.x + 1, self.y), (self.x + 1, self.y + 1), (self.x + 1, self.y + 2)].into()
+            Orientation::West => [
+                (self.x + 1, self.y),
+                (self.x + 1, self.y + 1),
+                (self.x + 1, self.y + 2),
+            ]
+            .into(),
         }
     }
 
     fn get_left_facing_sides(&self) -> Vec<(i16, i16)> {
         match self.orientation {
             Orientation::North => [(self.x, self.y), (self.x, self.y + 1)].into(),
-            Orientation::East => [(self.x, self.y), (self.x, self.y + 1), (self.x, self.y + 2)].into(),
+            Orientation::East => {
+                [(self.x, self.y), (self.x, self.y + 1), (self.x, self.y + 2)].into()
+            }
             Orientation::South => [(self.x, self.y), (self.x + 2, self.y + 1)].into(),
-            Orientation::West => [(self.x + 1, self.y), (self.x + 1, self.y + 1), (self.x, self.y + 2)].into()
+            Orientation::West => [
+                (self.x + 1, self.y),
+                (self.x + 1, self.y + 1),
+                (self.x, self.y + 2),
+            ]
+            .into(),
         }
     }
 
     fn get_coords(&self) -> Vec<(i16, i16)> {
         match self.orientation {
-            Orientation::North => [(self.x, self.y), (self.x, self.y + 1), (self.x + 1, self.y + 1), (self.x + 2, self.y + 1)].into(),
-            Orientation::East => [(self.x, self.y), (self.x + 1, self.y), (self.x, self.y + 1), (self.x, self.y + 2)].into(),
-            Orientation::South => [(self.x, self.y), (self.x + 1, self.y), (self.x + 2, self.y), (self.x + 2, self.y + 1)].into(),
-            Orientation::West => [(self.x + 1, self.y), (self.x + 1, self.y + 1), (self.x, self.y + 2), (self.x + 1, self.y + 2)].into()
+            Orientation::North => [
+                (self.x, self.y),
+                (self.x, self.y + 1),
+                (self.x + 1, self.y + 1),
+                (self.x + 2, self.y + 1),
+            ]
+            .into(),
+            Orientation::East => [
+                (self.x, self.y),
+                (self.x + 1, self.y),
+                (self.x, self.y + 1),
+                (self.x, self.y + 2),
+            ]
+            .into(),
+            Orientation::South => [
+                (self.x, self.y),
+                (self.x + 1, self.y),
+                (self.x + 2, self.y),
+                (self.x + 2, self.y + 1),
+            ]
+            .into(),
+            Orientation::West => [
+                (self.x + 1, self.y),
+                (self.x + 1, self.y + 1),
+                (self.x, self.y + 2),
+                (self.x + 1, self.y + 2),
+            ]
+            .into(),
         }
     }
 
@@ -80,17 +135,17 @@ impl MovingPiece for MovingPieceJ {
             match self.orientation {
                 Orientation::North => {
                     self.y += 1;
-                },
+                }
                 Orientation::South => {
                     self.y -= 1;
-                },
+                }
                 Orientation::East => {
                     self.x -= 1;
-                },
+                }
                 Orientation::West => {
                     self.x += 1;
                 }
-            }     
+            }
         }
         self.orientation = super::change_rotation_full(self.orientation);
     }
@@ -98,15 +153,15 @@ impl MovingPiece for MovingPieceJ {
     fn clone_box(&self) -> Box<dyn MovingPiece> {
         Box::new(*self)
     }
-    
+
     fn x(&self) -> i16 {
         self.x
     }
-    
+
     fn y(&self) -> i16 {
         self.y
     }
-    
+
     fn orientation(&self) -> Orientation {
         self.orientation
     }
@@ -117,14 +172,14 @@ impl Rotations for MovingPieceJ {
         match self.orientation {
             Orientation::North => {
                 self.x += 1;
-            },
+            }
             Orientation::East => {
                 self.x -= 1;
                 self.y += 1;
-            },
+            }
             Orientation::South => {
                 self.y -= 1;
-            },
+            }
             Orientation::West => {}
         }
         self.orientation = super::change_orientation_clockwise(self.orientation);
@@ -132,14 +187,14 @@ impl Rotations for MovingPieceJ {
 
     fn second_option_clockwise(&mut self) {
         match self.orientation {
-            Orientation::North => {},
+            Orientation::North => {}
             Orientation::East => {
                 self.y += 1;
-            },
+            }
             Orientation::South => {
                 self.x += 1;
                 self.y -= 1;
-            },
+            }
             Orientation::West => {
                 self.x -= 1;
             }
@@ -151,14 +206,14 @@ impl Rotations for MovingPieceJ {
         match self.orientation {
             Orientation::North => {
                 self.y -= 1;
-            },
+            }
             Orientation::East => {
                 self.y += 2;
-            },
+            }
             Orientation::South => {
                 self.x += 1;
                 self.y -= 2;
-            },
+            }
             Orientation::West => {
                 self.x -= 1;
                 self.y += 1;
@@ -172,14 +227,14 @@ impl Rotations for MovingPieceJ {
             Orientation::North => {
                 self.x += 1;
                 self.y += 2;
-            },
+            }
             Orientation::East => {
                 self.x -= 1;
                 self.y -= 1;
-            },
+            }
             Orientation::South => {
                 self.y += 1;
-            },
+            }
             Orientation::West => {
                 self.y -= 2;
             }
@@ -191,14 +246,14 @@ impl Rotations for MovingPieceJ {
         match self.orientation {
             Orientation::North => {
                 self.y += 2;
-            },
+            }
             Orientation::East => {
                 self.y -= 1;
-            },
+            }
             Orientation::South => {
                 self.x += 1;
                 self.y += 1;
-            },
+            }
             Orientation::West => {
                 self.x -= 1;
                 self.y -= 2;
@@ -209,14 +264,14 @@ impl Rotations for MovingPieceJ {
 
     fn first_option_counterclockwise(&mut self) {
         match self.orientation {
-            Orientation::North => {},
+            Orientation::North => {}
             Orientation::East => {
                 self.x -= 1;
-            },
+            }
             Orientation::South => {
                 self.x += 1;
                 self.y -= 1;
-            },
+            }
             Orientation::West => {
                 self.y += 1;
             }
@@ -228,11 +283,11 @@ impl Rotations for MovingPieceJ {
         match self.orientation {
             Orientation::North => {
                 self.x += 1;
-            },
-            Orientation::East => {},
+            }
+            Orientation::East => {}
             Orientation::South => {
                 self.y -= 1;
-            },
+            }
             Orientation::West => {
                 self.x -= 1;
                 self.y += 1;
@@ -246,13 +301,13 @@ impl Rotations for MovingPieceJ {
             Orientation::North => {
                 self.x += 1;
                 self.y -= 1;
-            },
+            }
             Orientation::East => {
                 self.y += 1;
-            },
+            }
             Orientation::South => {
                 self.y -= 2;
-            },
+            }
             Orientation::West => {
                 self.x -= 1;
                 self.y += 2;
@@ -265,15 +320,15 @@ impl Rotations for MovingPieceJ {
         match self.orientation {
             Orientation::North => {
                 self.y += 2;
-            },
+            }
             Orientation::East => {
                 self.x -= 1;
                 self.y -= 2;
-            },
+            }
             Orientation::South => {
                 self.x += 1;
                 self.y += 1;
-            },
+            }
             Orientation::West => {
                 self.y -= 1;
             }
@@ -286,13 +341,13 @@ impl Rotations for MovingPieceJ {
             Orientation::North => {
                 self.x += 1;
                 self.y += 2;
-            },
+            }
             Orientation::East => {
                 self.y -= 2;
-            },
+            }
             Orientation::South => {
                 self.y += 1;
-            },
+            }
             Orientation::West => {
                 self.x -= 1;
                 self.y -= 1;

@@ -1,4 +1,11 @@
-use crate::game::{board::{local_board::{moving_piece::MovingPiece, LocalBoard}, Board}, pieces::Piece, queue::local_queue::LocalQueue};
+use crate::game::{
+    board::{
+        local_board::{moving_piece::MovingPiece, LocalBoard},
+        Board,
+    },
+    pieces::Piece,
+    queue::local_queue::LocalQueue,
+};
 
 #[test]
 fn next_tick_posible() {

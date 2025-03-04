@@ -14,7 +14,6 @@ mod moving_piece;
 const BOARD_WIDTH: i16 = 10;
 const BOARD_HEIGHT: i16 = 20;
 
-
 pub struct LocalBoard {
     queue: Box<dyn Queue>,
     held_piece: Option<Piece>,
@@ -28,10 +27,9 @@ pub struct LocalBoard {
     piece_blocked: bool,
     line_cleared: bool,
     lines_cleared: u32,
-    game_over: bool
+    game_over: bool,
 }
 impl Board for LocalBoard {
-
     fn game_over(&self) -> bool {
         self.game_over || self.top_out() || self.lock_out() || self.block_out()
     }
@@ -41,28 +39,34 @@ impl Board for LocalBoard {
     }
 
     fn board_state(&self) -> String {
-        let mut buf: Vec<u8> = [Cell::Empty.string_representation() as u8; (BOARD_HEIGHT * BOARD_WIDTH * 2) as usize].into();
+        let mut buf: Vec<u8> = [Cell::Empty.string_representation() as u8;
+            (BOARD_HEIGHT * BOARD_WIDTH * 2) as usize]
+            .into();
         for (i, el) in self.cells.iter().enumerate() {
             buf[i] = el.string_representation() as u8;
         }
-        
+
         for (i, el) in self.cells.iter().enumerate() {
             buf[i + (BOARD_HEIGHT * BOARD_WIDTH) as usize] = el.string_representation() as u8;
         }
 
         for (x, y) in self.cur_piece.get_coords() {
             if y >= 0 {
-                buf[(y * BOARD_WIDTH + x + (BOARD_HEIGHT * BOARD_WIDTH)) as usize] = self.cur_piece.piece().string_representation() as u8;
+                buf[(y * BOARD_WIDTH + x + (BOARD_HEIGHT * BOARD_WIDTH)) as usize] =
+                    self.cur_piece.piece().string_representation() as u8;
             } else {
-                buf[((BOARD_HEIGHT + y) * BOARD_WIDTH + x) as usize] = self.cur_piece.piece().string_representation() as u8;
+                buf[((BOARD_HEIGHT + y) * BOARD_WIDTH + x) as usize] =
+                    self.cur_piece.piece().string_representation() as u8;
             }
         }
-        let ghost_piece= self.ghost_piece(self.cur_piece.clone());
+        let ghost_piece = self.ghost_piece(self.cur_piece.clone());
         for (x, y) in ghost_piece.get_coords() {
             if y >= 0 {
-                buf[(y * BOARD_WIDTH + x + (BOARD_HEIGHT * BOARD_WIDTH)) as usize] = Piece::Ghost.string_representation() as u8;
+                buf[(y * BOARD_WIDTH + x + (BOARD_HEIGHT * BOARD_WIDTH)) as usize] =
+                    Piece::Ghost.string_representation() as u8;
             } else {
-                buf[((BOARD_HEIGHT + y) * BOARD_WIDTH + x) as usize] = Piece::Ghost.string_representation() as u8;
+                buf[((BOARD_HEIGHT + y) * BOARD_WIDTH + x) as usize] =
+                    Piece::Ghost.string_representation() as u8;
             }
         }
         String::from_utf8(buf).expect("Should be valid UTF as I just wrote it")
@@ -91,7 +95,7 @@ impl LocalBoard {
             piece_blocked: false,
             line_cleared: false,
             lines_cleared: 0,
-            game_over: false
+            game_over: false,
         }
     }
     pub fn move_right(&mut self) {
@@ -150,7 +154,12 @@ impl LocalBoard {
         let rotation_piece = self.cur_piece.clone();
         self.check_rotation(rotation_piece, 1..3, RotationOption::Full);
     }
-    fn check_rotation(&mut self, piece: Box<dyn MovingPiece>, positibility_iteration_range: Range<u8>, option: RotationOption) {
+    fn check_rotation(
+        &mut self,
+        piece: Box<dyn MovingPiece>,
+        positibility_iteration_range: Range<u8>,
+        option: RotationOption,
+    ) {
         let mut continue_in_iteration;
         let mut piece = piece;
         for i in positibility_iteration_range {
@@ -162,8 +171,8 @@ impl LocalBoard {
                 RotationOption::Full => piece.rotate_full(i.into()),
             }
             for (x, y) in piece.get_coords() {
-                if !(0..=BOARD_WIDTH - 1).contains(&x) { 
-                    // Checks that the coordinate is in the board bounds 
+                if !(0..=BOARD_WIDTH - 1).contains(&x) {
+                    // Checks that the coordinate is in the board bounds
                     continue_in_iteration = true;
                     break;
                 }
@@ -266,19 +275,74 @@ impl LocalBoard {
         let piece = self.cur_piece.piece();
         for (x, y) in coords {
             if y >= 0 {
-                self.set_cell_in_main_board(x, y, piece);
+                self.set_cell_in_main_board(x, y, Cell::Full(piece));
             } else {
-                self.set_cell_in_buffer_board(x, y, piece);
+                self.set_cell_in_buffer_board(x, y, Cell::Full(piece));
             }
         }
         self.game_over = self.game_over();
         self.prev_cells = self.cells;
         self.piece_num += 1;
-        self.cur_piece = self.queue.get_piece(self.piece_num).unwrap().try_into().unwrap();
+        self.cur_piece = self
+            .queue
+            .get_piece(self.piece_num)
+            .unwrap()
+            .try_into()
+            .unwrap();
         self.piece_blocked = false;
-        todo!("clear line opps needed yet");
+        println!("{:?}", self.is_line_cleared());
+        match self.is_line_cleared() {
+            None => (),
+            Some(y_cleared) => {
+                y_cleared.iter().for_each(|y| {
+                    self.clear_line(*y);
+                });
+            }
+        }
     }
-
+    fn is_line_cleared(&self) -> Option<[i16; 4]> {
+        let mut lines = [-128; 4];
+        let mut pieces_cleared = 0;
+        let mut cur_position = 0;
+        for (i, el) in self.buffer.iter().enumerate() {
+            if i % (BOARD_WIDTH) as usize == 0 {
+                if pieces_cleared == BOARD_WIDTH {
+                    lines[cur_position] = (i / (BOARD_WIDTH) as usize - 1) as i16;
+                    cur_position += 1;
+                }
+                pieces_cleared = 0;
+            }
+            if let &Cell::Full(_) = el {
+                pieces_cleared += 1;
+            }
+        }
+        if lines[0] == -128 {
+            None
+        } else {
+            Some(lines)
+        }
+    }
+    fn clear_line(&mut self, y: i16) {
+        let mut prev_row = [Cell::Empty; BOARD_WIDTH as usize];
+        let mut prev_tmp_row = [Cell::Empty; BOARD_WIDTH as usize];
+        (-BOARD_HEIGHT..=y).for_each(|y| {
+            (0..BOARD_WIDTH).for_each(|x| { // Get cells
+                if y >= 0 {
+                    prev_tmp_row[x as usize] = self.get_cell_from_main_board(x, y);
+                } else {
+                    prev_tmp_row[x as usize] = self.get_cell_from_buffer_board(x, y);
+                }
+            }); 
+            prev_row.iter().enumerate().for_each(|(x, el)| {
+                if y >= 0 {
+                    self.set_cell_in_main_board(x as i16, y, *el);
+                } else {
+                    self.set_cell_in_buffer_board(x as i16, y, *el);
+                }
+            });
+            prev_row = prev_tmp_row;
+        });
+    }
     pub fn save_piece(&mut self) {
         if self.piece_blocked {
             return;
@@ -289,9 +353,15 @@ impl LocalBoard {
             self.cur_piece = self
                 .queue
                 .get_piece(self.piece_num)
-                .expect("Should be pieces").try_into().unwrap();
+                .expect("Should be pieces")
+                .try_into()
+                .unwrap();
         } else {
-            self.cur_piece = self.held_piece.expect("Already checked").try_into().unwrap();
+            self.cur_piece = self
+                .held_piece
+                .expect("Already checked")
+                .try_into()
+                .unwrap();
         }
         self.piece_blocked = true;
         self.held_piece = Some(cur_piece.piece());
@@ -312,7 +382,6 @@ impl LocalBoard {
         });
         lines
     }
-
 
     pub fn danger_level(&self) -> DangerLevel {
         let coords = self.get_highest_piece();
@@ -368,7 +437,6 @@ impl LocalBoard {
         self.line_cleared
     }
 
-
     fn top_out(&self) -> bool {
         // ! Probably needs a fix
         let highest_coords = self.get_highest_piece();
@@ -387,25 +455,24 @@ impl LocalBoard {
         if self.cur_piece.piece() == Piece::O {
             self.get_cell_from_buffer_board(5, -2) == Cell::Empty
         } else {
-            self.get_cell_from_buffer_board(4, -2) == Cell::Empty 
+            self.get_cell_from_buffer_board(4, -2) == Cell::Empty
         }
     }
-
 
     fn get_cell_from_main_board(&self, x: i16, y: i16) -> Cell {
         self.cells[(y * BOARD_WIDTH + x) as usize]
     }
 
-    fn set_cell_in_main_board(&mut self, x: i16, y: i16, piece: Piece) {
-        self.cells[(y * BOARD_WIDTH + x) as usize] = Cell::Full(piece);
+    fn set_cell_in_main_board(&mut self, x: i16, y: i16, cell: Cell) {
+        self.cells[(y * BOARD_WIDTH + x) as usize] = cell;
     }
 
     fn get_cell_from_buffer_board(&self, x: i16, y: i16) -> Cell {
-        self.buffer[((BOARD_HEIGHT + y /* y is less than 0 */)* BOARD_WIDTH + x) as usize ]
+        self.buffer[((BOARD_HEIGHT + y/* y is less than 0 */) * BOARD_WIDTH + x) as usize]
     }
 
-    fn set_cell_in_buffer_board(&mut self, x: i16, y: i16, piece: Piece) {
-        self.cells[((BOARD_HEIGHT + y) * BOARD_WIDTH + x) as usize] = Cell::Full(piece);
+    fn set_cell_in_buffer_board(&mut self, x: i16, y: i16, cell: Cell) {
+        self.cells[((BOARD_HEIGHT + y) * BOARD_WIDTH + x) as usize] = cell;
     }
 
     fn get_highest_piece(&self) -> Option<(i16, i16)> {
@@ -425,13 +492,12 @@ impl LocalBoard {
     pub fn orientation(&self) -> Orientation {
         self.cur_piece.orientation()
     }
-
 }
 
 enum RotationOption {
     ClockWise,
     CounterClockWise,
-    Full
+    Full,
 }
 
 #[cfg(test)]

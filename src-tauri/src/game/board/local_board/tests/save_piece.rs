@@ -1,8 +1,5 @@
 use crate::{
-    game::{
-        board::local_board::LocalBoard,
-        queue::local_queue::LocalQueue,
-    },
+    game::{board::local_board::LocalBoard, queue::local_queue::LocalQueue},
     init_trace::initialize,
 };
 
