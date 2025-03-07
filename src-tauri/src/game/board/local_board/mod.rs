@@ -1,4 +1,5 @@
 use std::{
+    cmp::Ordering,
     io::{BufWriter, Write},
     ops::Range,
 };
@@ -28,6 +29,7 @@ pub struct LocalBoard {
     line_cleared: bool,
     lines_cleared: u32,
     game_over: bool,
+    clear_pattern: ClearLinePattern,
 }
 impl Board for LocalBoard {
     fn game_over(&self) -> bool {
@@ -96,6 +98,7 @@ impl LocalBoard {
             line_cleared: false,
             lines_cleared: 0,
             game_over: false,
+            clear_pattern: ClearLinePattern::None,
         }
     }
     pub fn move_right(&mut self) {
@@ -163,7 +166,6 @@ impl LocalBoard {
         let mut continue_in_iteration;
         let mut piece = piece;
         for i in positibility_iteration_range {
-            println!("{i}");
             continue_in_iteration = false;
             match option {
                 RotationOption::ClockWise => piece.rotate_clockwise(i.into()),
@@ -217,27 +219,9 @@ impl LocalBoard {
         self.next_piece_operations();
     }
 
-    fn push_down(&mut self) -> bool {
-        let sides = self.cur_piece.get_bottom_facing_sides();
-        for (x, y) in sides {
-            if y == BOARD_HEIGHT - 1 {
-                return true;
-            }
-
-            if y + 1 >= 0 {
-                match self.get_cell_from_main_board(x, y + 1) {
-                    Cell::Empty => continue,
-                    Cell::Full(_) => return true,
-                }
-            } else {
-                match self.get_cell_from_buffer_board(x, y + 1) {
-                    Cell::Empty => continue,
-                    Cell::Full(_) => return true,
-                }
-            }
-        }
-        self.cur_piece.move_down();
-        false
+    pub fn hard_drop(&mut self) {
+        while !self.push_down() {}
+        self.next_piece_operations();
     }
 
     fn ghost_piece(&self, mut piece: Box<dyn MovingPiece>) -> Box<dyn MovingPiece> {
@@ -265,9 +249,27 @@ impl LocalBoard {
         piece
     }
 
-    pub fn hard_drop(&mut self) {
-        while self.push_down() {}
-        self.next_piece_operations();
+    fn push_down(&mut self) -> bool {
+        let sides = self.cur_piece.get_bottom_facing_sides();
+        for (x, y) in sides {
+            if y == BOARD_HEIGHT - 1 {
+                return true;
+            }
+
+            if y + 1 >= 0 {
+                match self.get_cell_from_main_board(x, y + 1) {
+                    Cell::Empty => continue,
+                    Cell::Full(_) => return true,
+                }
+            } else {
+                match self.get_cell_from_buffer_board(x, y + 1) {
+                    Cell::Empty => continue,
+                    Cell::Full(_) => return true,
+                }
+            }
+        }
+        self.cur_piece.move_down();
+        false
     }
 
     fn next_piece_operations(&mut self) {
@@ -290,12 +292,13 @@ impl LocalBoard {
             .try_into()
             .unwrap();
         self.piece_blocked = false;
-        println!("{:?}", self.is_line_cleared());
         match self.is_line_cleared() {
             None => (),
             Some(y_cleared) => {
                 y_cleared.iter().for_each(|y| {
-                    self.clear_line(*y);
+                    if *y != -128 {
+                        self.clear_line(*y);
+                    }
                 });
             }
         }
@@ -305,15 +308,31 @@ impl LocalBoard {
         let mut pieces_cleared = 0;
         let mut cur_position = 0;
         for (i, el) in self.buffer.iter().enumerate() {
-            if i % (BOARD_WIDTH) as usize == 0 {
+            if let &Cell::Full(_) = el {
+                pieces_cleared += 1;
+            }
+            if i % (BOARD_WIDTH) as usize == 9 {
+                // Checks if an entire row has been read
                 if pieces_cleared == BOARD_WIDTH {
-                    lines[cur_position] = (i / (BOARD_WIDTH) as usize - 1) as i16;
+                    // Checks if the number of cleared pieces is equal to the width of the board
+                    lines[cur_position] = BOARD_HEIGHT - ((i / (BOARD_WIDTH) as usize - 1) as i16); // Stores the y position in an array
                     cur_position += 1;
                 }
                 pieces_cleared = 0;
             }
+        }
+        for (i, el) in self.cells.iter().enumerate() {
             if let &Cell::Full(_) = el {
                 pieces_cleared += 1;
+            }
+            if i % (BOARD_WIDTH) as usize == 9 {
+                // Checks if an entire row has been read
+                if pieces_cleared == BOARD_WIDTH {
+                    // Checks if the number of cleared pieces is equal to the width of the board
+                    lines[cur_position] = (i / (BOARD_WIDTH) as usize) as i16; // Stores the y position in an array
+                    cur_position += 1;
+                }
+                pieces_cleared = 0;
             }
         }
         if lines[0] == -128 {
@@ -323,24 +342,34 @@ impl LocalBoard {
         }
     }
     fn clear_line(&mut self, y: i16) {
-        let mut prev_row = [Cell::Empty; BOARD_WIDTH as usize];
-        let mut prev_tmp_row = [Cell::Empty; BOARD_WIDTH as usize];
-        (-BOARD_HEIGHT..=y).for_each(|y| {
-            (0..BOARD_WIDTH).for_each(|x| { // Get cells
-                if y >= 0 {
-                    prev_tmp_row[x as usize] = self.get_cell_from_main_board(x, y);
-                } else {
-                    prev_tmp_row[x as usize] = self.get_cell_from_buffer_board(x, y);
+        (-BOARD_HEIGHT..=y).rev().for_each(|y| {
+            (0..BOARD_WIDTH).for_each(|x| {
+                if y == -BOARD_HEIGHT {
+                    self.set_cell_in_buffer_board(x, y, Cell::Empty);
+                    return;
                 }
-            }); 
-            prev_row.iter().enumerate().for_each(|(x, el)| {
-                if y >= 0 {
-                    self.set_cell_in_main_board(x as i16, y, *el);
-                } else {
-                    self.set_cell_in_buffer_board(x as i16, y, *el);
+                match y.cmp(&0) {
+                    Ordering::Greater => {
+                        self.set_cell_in_main_board(x, y, self.get_cell_from_main_board(x, y - 1));
+                    }
+                    Ordering::Less => {
+                        self.set_cell_in_buffer_board(
+                            x,
+                            y,
+                            self.get_cell_from_buffer_board(x, y - 1),
+                        );
+                    }
+                    Ordering::Equal => {
+                        self.set_cell_in_main_board(
+                            x,
+                            y,
+                            self.get_cell_from_buffer_board(x, y - 1),
+                        );
+                    }
                 }
             });
-            prev_row = prev_tmp_row;
+            println!("{y}");
+            println!("{:?}", self.cells);
         });
     }
     pub fn save_piece(&mut self) {
@@ -472,7 +501,7 @@ impl LocalBoard {
     }
 
     fn set_cell_in_buffer_board(&mut self, x: i16, y: i16, cell: Cell) {
-        self.cells[((BOARD_HEIGHT + y) * BOARD_WIDTH + x) as usize] = cell;
+        self.buffer[((BOARD_HEIGHT + y) * BOARD_WIDTH + x) as usize] = cell;
     }
 
     fn get_highest_piece(&self) -> Option<(i16, i16)> {
@@ -492,12 +521,27 @@ impl LocalBoard {
     pub fn orientation(&self) -> Orientation {
         self.cur_piece.orientation()
     }
+    pub fn clear_line_pattern(&mut self) -> ClearLinePattern {
+        let pattern_tmp = self.clear_pattern;
+        self.clear_pattern = ClearLinePattern::None;
+        pattern_tmp
+    }
 }
 
+#[derive(Debug, Clone, Copy)]
 enum RotationOption {
     ClockWise,
     CounterClockWise,
     Full,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ClearLinePattern {
+    None,
+    Single,
+    Double,
+    Triple,
+    Tetris,
 }
 
 #[cfg(test)]
