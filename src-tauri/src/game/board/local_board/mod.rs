@@ -368,8 +368,6 @@ impl LocalBoard {
                     }
                 }
             });
-            println!("{y}");
-            println!("{:?}", self.cells);
         });
     }
     pub fn save_piece(&mut self) {
