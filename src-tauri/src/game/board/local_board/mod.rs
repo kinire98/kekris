@@ -4,11 +4,11 @@ use std::{
     ops::Range,
 };
 
-use moving_piece::{MovingPiece, Orientation};
+use moving_piece::{MovingPiece, Orientation, moving_piece_t::MovingPieceT};
 
 use crate::game::{pieces::Piece, queue::Queue, strategy::Strategy};
 
-use super::{cell::Cell, danger_level::DangerLevel, Board};
+use super::{Board, cell::Cell, danger_level::DangerLevel};
 
 mod moving_piece;
 
@@ -30,6 +30,9 @@ pub struct LocalBoard {
     lines_cleared: u32,
     game_over: bool,
     clear_pattern: ClearLinePattern,
+    rotation: bool,
+    rotation_option: RotationOption,
+    rotation_variation: i16,
 }
 impl Board for LocalBoard {
     fn game_over(&self) -> bool {
@@ -99,6 +102,9 @@ impl LocalBoard {
             lines_cleared: 0,
             game_over: false,
             clear_pattern: ClearLinePattern::None,
+            rotation: false,
+            rotation_option: RotationOption::Full,
+            rotation_variation: 0,
         }
     }
     pub fn move_right(&mut self) {
@@ -145,12 +151,14 @@ impl LocalBoard {
 
     pub fn rotation_clockwise(&mut self) {
         let rotation_piece = self.cur_piece.clone();
-        self.check_rotation(rotation_piece, 1..3, RotationOption::ClockWise);
+        self.check_rotation(rotation_piece, 1..6, RotationOption::ClockWise);
+        self.rotation = true;
     }
 
     pub fn rotation_counterclockwise(&mut self) {
         let rotation_piece = self.cur_piece.clone();
-        self.check_rotation(rotation_piece, 1..3, RotationOption::CounterClockWise);
+        self.check_rotation(rotation_piece, 1..6, RotationOption::CounterClockWise);
+        self.rotation = true;
     }
 
     pub fn rotation_full(&mut self) {
@@ -164,8 +172,8 @@ impl LocalBoard {
         option: RotationOption,
     ) {
         let mut continue_in_iteration;
-        let mut piece = piece;
         for i in positibility_iteration_range {
+            let mut piece = piece.clone();
             continue_in_iteration = false;
             match option {
                 RotationOption::ClockWise => piece.rotate_clockwise(i.into()),
@@ -202,6 +210,10 @@ impl LocalBoard {
             }
             if !continue_in_iteration {
                 self.cur_piece = piece.clone();
+                if self.rotation {
+                    self.rotation_option = option;
+                    self.rotation_variation = i as i16;
+                }
                 break;
             }
         }
@@ -269,17 +281,18 @@ impl LocalBoard {
             }
         }
         self.cur_piece.move_down();
+        self.rotation = false;
         false
     }
 
     fn next_piece_operations(&mut self) {
         let coords = self.cur_piece.get_coords();
-        let piece = self.cur_piece.piece();
+        let piece = self.cur_piece.clone();
         for (x, y) in coords {
             if y >= 0 {
-                self.set_cell_in_main_board(x, y, Cell::Full(piece));
+                self.set_cell_in_main_board(x, y, Cell::Full(piece.piece()));
             } else {
-                self.set_cell_in_buffer_board(x, y, Cell::Full(piece));
+                self.set_cell_in_buffer_board(x, y, Cell::Full(piece.piece()));
             }
         }
         self.game_over = self.game_over();
@@ -293,8 +306,17 @@ impl LocalBoard {
             .unwrap();
         self.piece_blocked = false;
         match self.is_line_cleared() {
-            None => (),
+            None => {
+                self.clear_pattern(0, piece);
+            }
             Some(y_cleared) => {
+                let mut lines = 0;
+                y_cleared.iter().for_each(|y| {
+                    if *y != -128 {
+                        lines += 1;
+                    }
+                });
+                self.clear_pattern(lines, piece);
                 y_cleared.iter().for_each(|y| {
                     if *y != -128 {
                         self.clear_line(*y);
@@ -335,11 +357,7 @@ impl LocalBoard {
                 pieces_cleared = 0;
             }
         }
-        if lines[0] == -128 {
-            None
-        } else {
-            Some(lines)
-        }
+        if lines[0] == -128 { None } else { Some(lines) }
     }
     fn clear_line(&mut self, y: i16) {
         (-BOARD_HEIGHT..=y).rev().for_each(|y| {
@@ -369,6 +387,98 @@ impl LocalBoard {
                 }
             });
         });
+    }
+    fn clear_pattern(&mut self, lines_cleared: i16, piece_settled: Box<dyn MovingPiece>) {
+        match (piece_settled.piece(), self.rotation) {
+            (Piece::T, true) => self.t_spin_calculation(lines_cleared, piece_settled),
+            _ => match lines_cleared {
+                0 => self.clear_pattern = ClearLinePattern::None,
+                1 => self.clear_pattern = ClearLinePattern::Single,
+                2 => self.clear_pattern = ClearLinePattern::Double,
+                3 => self.clear_pattern = ClearLinePattern::Triple,
+                4 => self.clear_pattern = ClearLinePattern::Tetris,
+                _ => panic!("Shouldn't arrive here"),
+            },
+        }
+    }
+    fn t_spin_calculation(&mut self, lines_cleared: i16, piece_settled: Box<dyn MovingPiece>) {
+        let t_piece: MovingPieceT = *piece_settled
+            .as_any()
+            .downcast::<MovingPieceT>()
+            .expect("Checked that is the correct type");
+        let a_slot = t_piece.get_t_spin_point_a();
+        let a_cell = if a_slot.1 >= 0 {
+            self.get_cell_from_main_board(a_slot.0, a_slot.1)
+        } else {
+            self.get_cell_from_buffer_board(a_slot.0, a_slot.1)
+        };
+        let b_slot = t_piece.get_t_spin_point_b();
+        let b_cell = if b_slot.1 >= 0 {
+            self.get_cell_from_main_board(b_slot.0, b_slot.1)
+        } else {
+            self.get_cell_from_buffer_board(b_slot.0, b_slot.1)
+        };
+        let c_slot = t_piece.get_t_spin_point_c();
+        let c_cell = if c_slot.1 >= 0 {
+            self.get_cell_from_main_board(c_slot.0, c_slot.1)
+        } else {
+            self.get_cell_from_buffer_board(c_slot.0, c_slot.1)
+        };
+        let d_slot = t_piece.get_t_spin_point_d();
+        let d_cell = if d_slot.1 >= 0 {
+            self.get_cell_from_main_board(d_slot.0, d_slot.1)
+        } else {
+            self.get_cell_from_buffer_board(d_slot.0, d_slot.1)
+        };
+
+        if let (Cell::Full(_), Cell::Full(_)) = (a_cell, b_cell) {
+            if let Cell::Full(_) = c_cell {
+                match lines_cleared {
+                    0 => self.clear_pattern = ClearLinePattern::TSpin,
+                    1 => self.clear_pattern = ClearLinePattern::TSpinSingle,
+                    2 => self.clear_pattern = ClearLinePattern::TSpinDouble,
+                    3 => self.clear_pattern = ClearLinePattern::TSpinTriple,
+                    _ => panic!("Shouldn't arrive here"),
+                }
+                return;
+            }
+            if let Cell::Full(_) = d_cell {
+                println!("Here");
+                match lines_cleared {
+                    0 => self.clear_pattern = ClearLinePattern::TSpin,
+                    1 => self.clear_pattern = ClearLinePattern::TSpinSingle,
+                    2 => self.clear_pattern = ClearLinePattern::TSpinDouble,
+                    3 => self.clear_pattern = ClearLinePattern::TSpinTriple,
+                    _ => panic!("Shouldn't arrive here"),
+                }
+                return;
+            }
+        }
+        if let (Cell::Full(_), Cell::Full(_)) = (c_cell, d_cell) {
+            if let Cell::Full(_) = a_cell {
+                match lines_cleared {
+                    0 => self.clear_pattern = ClearLinePattern::MiniTSpin,
+                    1 => self.clear_pattern = ClearLinePattern::MiniTSpinSingle,
+                    _ => panic!("Shouldn't arrive here"),
+                }
+                return;
+            }
+            if let Cell::Full(_) = b_cell {
+                match lines_cleared {
+                    0 => self.clear_pattern = ClearLinePattern::MiniTSpin,
+                    1 => self.clear_pattern = ClearLinePattern::MiniTSpinSingle,
+                    _ => panic!("Shouldn't arrive here"),
+                }
+                return;
+            }
+        }
+        match lines_cleared {
+            0 => self.clear_pattern = ClearLinePattern::None,
+            1 => self.clear_pattern = ClearLinePattern::Single,
+            2 => self.clear_pattern = ClearLinePattern::Double,
+            3 => self.clear_pattern = ClearLinePattern::Triple,
+            _ => panic!("Shouldn't arrive here"),
+        }
     }
     pub fn save_piece(&mut self) {
         if self.piece_blocked {
@@ -540,6 +650,12 @@ enum ClearLinePattern {
     Double,
     Triple,
     Tetris,
+    TSpin,
+    TSpinSingle,
+    TSpinDouble,
+    TSpinTriple,
+    MiniTSpin,
+    MiniTSpinSingle,
 }
 
 #[cfg(test)]

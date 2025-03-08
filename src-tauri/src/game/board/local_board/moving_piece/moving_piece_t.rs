@@ -1,6 +1,6 @@
 use crate::game::pieces::Piece;
 
-use super::{rotations::Rotations, MovingPiece, Orientation, RotationOption};
+use super::{MovingPiece, Orientation, RotationOption, rotations::Rotations};
 
 const START_X: i16 = 3;
 const START_Y: i16 = -2;
@@ -164,6 +164,10 @@ impl MovingPiece for MovingPieceT {
 
     fn orientation(&self) -> Orientation {
         self.orientation
+    }
+
+    fn as_any(&self) -> Box<dyn std::any::Any> {
+        Box::new(*self)
     }
 }
 
@@ -362,5 +366,43 @@ impl Rotations for MovingPieceT {
             }
         }
         self.orientation = super::change_orientation_counterclockwise(self.orientation);
+    }
+}
+
+impl MovingPieceT {
+    pub fn get_t_spin_point_a(&self) -> (i16, i16) {
+        match self.orientation {
+            Orientation::North => (self.x, self.y),
+            Orientation::East => (self.x + 1, self.y),
+            Orientation::South => (self.x + 2, self.y + 1),
+            Orientation::West => (self.x, self.y + 2),
+        }
+    }
+
+    pub fn get_t_spin_point_b(&self) -> (i16, i16) {
+        match self.orientation {
+            Orientation::North => (self.x + 2, self.y),
+            Orientation::East => (self.x + 1, self.y + 2),
+            Orientation::South => (self.x, self.y + 1),
+            Orientation::West => (self.x, self.y),
+        }
+    }
+
+    pub fn get_t_spin_point_c(&self) -> (i16, i16) {
+        match self.orientation {
+            Orientation::North => (self.x, self.y + 2),
+            Orientation::East => (self.x - 1, self.y),
+            Orientation::South => (self.x + 2, self.y - 1),
+            Orientation::West => (self.x + 2, self.y + 2),
+        }
+    }
+
+    pub fn get_t_spin_point_d(&self) -> (i16, i16) {
+        match self.orientation {
+            Orientation::North => (self.x + 2, self.y + 2),
+            Orientation::East => (self.x - 1, self.y + 2),
+            Orientation::South => (self.x, self.y - 1),
+            Orientation::West => (self.x + 2, self.y),
+        }
     }
 }

@@ -4,7 +4,7 @@ use crate::game::{
 
 #[test]
 fn correct_change() {
-    let mut board = LocalBoard::new(LocalQueue::new());
+    let mut board = LocalBoard::new(LocalQueue::default());
     board.change_strategy(Strategy::Elimination);
     assert_eq!(Strategy::Elimination, board.strategy);
 }

@@ -1,6 +1,6 @@
 use crate::game::pieces::Piece;
 
-use super::{rotations::Rotations, MovingPiece, Orientation, RotationOption};
+use super::{MovingPiece, Orientation, RotationOption, rotations::Rotations};
 
 const START_X: i16 = 3;
 const START_Y: i16 = -2;
@@ -164,6 +164,10 @@ impl MovingPiece for MovingPieceL {
 
     fn orientation(&self) -> Orientation {
         self.orientation
+    }
+
+    fn as_any(&self) -> Box<dyn std::any::Any> {
+        Box::new(*self)
     }
 }
 impl Rotations for MovingPieceL {

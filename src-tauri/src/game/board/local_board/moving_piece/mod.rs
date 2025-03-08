@@ -3,8 +3,10 @@ mod moving_piece_j;
 mod moving_piece_l;
 mod moving_piece_o;
 mod moving_piece_s;
-mod moving_piece_t;
+pub mod moving_piece_t; // This specific module must be public for the specific functionality for the t-spins
 mod moving_piece_z;
+
+use std::any::Any;
 
 use moving_piece_i::MovingPieceI;
 use moving_piece_j::MovingPieceJ;
@@ -16,7 +18,7 @@ use moving_piece_z::MovingPieceZ;
 
 use crate::game::pieces::Piece;
 
-pub trait MovingPiece: Send + Sync + std::fmt::Debug + rotations::Rotations {
+pub trait MovingPiece: Send + Sync + std::fmt::Debug + rotations::Rotations + Any {
     fn move_down(&mut self);
     fn move_up(&mut self);
     fn move_left(&mut self);
@@ -52,6 +54,8 @@ pub trait MovingPiece: Send + Sync + std::fmt::Debug + rotations::Rotations {
     fn x(&self) -> i16;
     fn y(&self) -> i16;
     fn orientation(&self) -> Orientation;
+
+    fn as_any(&self) -> Box<dyn Any>;
 }
 
 mod rotations {

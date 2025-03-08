@@ -6,7 +6,7 @@ use crate::{
 #[test]
 fn piece_saved_correctly() {
     initialize();
-    let mut board = LocalBoard::new(LocalQueue::new());
+    let mut board = LocalBoard::new(LocalQueue::default());
     let pieces = board.get_pieces(0..5);
     board.save_piece();
     let piece = board.held_piece();
@@ -17,7 +17,7 @@ fn piece_saved_correctly() {
 #[test]
 fn piece_saved_correctly_with_previously_saved_piece() {
     initialize();
-    let mut board = LocalBoard::new(LocalQueue::new());
+    let mut board = LocalBoard::new(LocalQueue::default());
     let pieces = board.get_pieces(0..2);
     println!("{:?}", &pieces);
     board.save_piece();
@@ -35,7 +35,7 @@ fn piece_saved_correctly_with_previously_saved_piece() {
 #[test]
 fn piece_saved_lock() {
     initialize();
-    let mut board = LocalBoard::new(LocalQueue::new());
+    let mut board = LocalBoard::new(LocalQueue::default());
     let pieces = board.get_pieces(0..3);
     println!("{:?}", pieces);
     board.save_piece();

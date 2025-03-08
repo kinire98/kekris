@@ -5,13 +5,13 @@ use crate::game::{
 
 #[test]
 fn danger_level_empty() {
-    let mut board = LocalBoard::new(LocalQueue::new());
+    let board = LocalBoard::new(LocalQueue::default());
     assert_eq!(board.danger_level(), DangerLevel::Empty);
 }
 
 #[test]
 fn danger_level_low() {
-    let mut board = LocalBoard::new(LocalQueue::new());
+    let mut board = LocalBoard::new(LocalQueue::default());
     board.hard_drop();
     assert_eq!(board.danger_level(), DangerLevel::VeryLow);
 }

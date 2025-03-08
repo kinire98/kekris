@@ -1,6 +1,6 @@
 use crate::{
     game::{
-        board::{cell::Cell, local_board::LocalBoard, Board},
+        board::{Board, cell::Cell, local_board::LocalBoard},
         pieces::Piece,
         queue::local_queue::LocalQueue,
     },
@@ -11,7 +11,7 @@ use crate::{
 fn board_state_1() {
     initialize();
     let expected_board = "E".repeat(200);
-    let board = LocalBoard::new(LocalQueue::new());
+    let board = LocalBoard::new(LocalQueue::default());
     assert_eq!(expected_board, board.board_state());
 }
 
@@ -61,7 +61,7 @@ fn board_state_2() {
     for _ in 0..10 {
         board.push(Cell::Full(Piece::Trash));
     }
-    let mut board_impl = LocalBoard::new(LocalQueue::new());
+    let mut board_impl = LocalBoard::new(LocalQueue::default());
     board_impl.cells = board.try_into().unwrap();
     assert_eq!(expected_board, board_impl.board_state());
 }
@@ -90,7 +90,7 @@ fn board_state_3() {
     for _ in 0..7 {
         cells.push(Cell::Empty);
     }
-    let mut board = LocalBoard::new(LocalQueue::new());
+    let mut board = LocalBoard::new(LocalQueue::default());
     board.cells = cells.try_into().unwrap();
     assert_eq!(expected_board, board.board_state());
 }

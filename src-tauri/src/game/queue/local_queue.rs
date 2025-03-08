@@ -8,6 +8,7 @@ const PIECES_SHOWN: usize = 5; // Used in the module, but marked as not used for
 #[allow(dead_code)]
 const PIECES_GENERATED_BY_CYCLE: usize = 7; // Used in the module, but marked as not used for an unknown reason
 
+#[derive(Default)]
 pub struct LocalQueue {
     pieces: Vec<Piece>,
     max_piece: usize,
@@ -38,14 +39,6 @@ impl LocalQueue {
             _ => Piece::Z,
         }
     }
-    pub fn new() -> LocalQueue {
-        let mut queue = LocalQueue {
-            pieces: Vec::new(),
-            max_piece: 0,
-        };
-        queue.generate_new_pieces();
-        queue
-    }
 }
 impl Queue for LocalQueue {
     fn get_piece(&mut self, position: usize) -> Option<Piece> {
@@ -70,7 +63,7 @@ mod tests {
     #[test]
     fn get_unique_pieces() {
         initialize();
-        let mut queue = LocalQueue::new();
+        let mut queue = LocalQueue::default();
         let mut pieces = HashSet::new();
         for i in 0..PIECES_GENERATED_BY_CYCLE {
             let piece = queue.get_piece(i);
@@ -82,7 +75,7 @@ mod tests {
     #[test]
     fn generate_undetermined_number_of_pieces() {
         initialize();
-        let mut queue = LocalQueue::new();
+        let mut queue = LocalQueue::default();
         let number_of_pieces = rand::random_range(1..500);
         for i in 0..number_of_pieces {
             assert!(queue.get_piece(i).is_some());
@@ -92,7 +85,7 @@ mod tests {
     #[test]
     fn generate_undetermined_number_of_pieces_and_check_unique() {
         initialize();
-        let mut queue = LocalQueue::new();
+        let mut queue = LocalQueue::default();
         let number_of_pieces = rand::random_range(1..500);
         let mut unique_pieces = HashSet::new();
         for i in 0..number_of_pieces {

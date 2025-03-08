@@ -1,10 +1,6 @@
 use crate::{
     game::{
-        board::{
-            cell::Cell,
-            local_board::{ClearLinePattern, LocalBoard},
-            Board,
-        },
+        board::{cell::Cell, local_board::LocalBoard},
         pieces::Piece,
         queue::local_queue::LocalQueue,
     },
@@ -14,10 +10,10 @@ use crate::{
 #[test]
 fn clear_single_line() {
     initialize();
-    let mut board = LocalBoard::new(LocalQueue::new());
+    let mut board = LocalBoard::new(LocalQueue::default());
     let mut cells: [Cell; 200] = [Cell::Empty; 200];
-    for i in 191..200 {
-        cells[i] = Cell::Full(Piece::I);
+    for el in cells.iter_mut().skip(191) {
+        *el = Cell::Full(Piece::I);
     }
     let mut cells_check = [Cell::Empty; 200];
     cells_check[190] = Cell::Full(Piece::I);
@@ -37,7 +33,7 @@ fn clear_single_line() {
 fn clear_two_lines() {
     initialize();
     let cells_check = [Cell::Empty; 200];
-    let mut board = LocalBoard::new(LocalQueue::new());
+    let mut board = LocalBoard::new(LocalQueue::default());
     board.cur_piece = Piece::T.try_into().unwrap();
     for i in 180..183 {
         board.cells[i] = Cell::Full(Piece::T);
@@ -59,7 +55,7 @@ fn clear_two_lines() {
 #[test]
 fn clear_three_lines() {
     let cells_check = [Cell::Empty; 200];
-    let mut board = LocalBoard::new(LocalQueue::new());
+    let mut board = LocalBoard::new(LocalQueue::default());
     board.cur_piece = Piece::J.try_into().unwrap();
     for i in 172..180 {
         board.cells[i] = Cell::Full(Piece::J);
@@ -81,18 +77,22 @@ fn clear_three_lines() {
 #[test]
 fn bad_play_but_not_terrible() {
     let mut cells_check = [Cell::Empty; 200];
-    let mut board = LocalBoard::new(LocalQueue::new());
+    let mut board = LocalBoard::new(LocalQueue::default());
     board.cur_piece = Piece::J.try_into().unwrap();
     for i in 172..180 {
         board.cells[i] = Cell::Full(Piece::J);
     }
+    for el in cells_check.iter_mut().take(190).skip(181) {
+        *el = Cell::Full(Piece::J);
+    }
     for i in 181..190 {
         board.cells[i] = Cell::Full(Piece::J);
-        cells_check[i] = Cell::Full(Piece::J);
+    }
+    for el in cells_check.iter_mut().skip(191) {
+        *el = Cell::Full(Piece::J);
     }
     for i in 191..200 {
         board.cells[i] = Cell::Full(Piece::J);
-        cells_check[i] = Cell::Full(Piece::J);
     }
     cells_check[161] = Cell::Full(Piece::J);
     cells_check[171] = Cell::Full(Piece::J);
@@ -102,13 +102,4 @@ fn bad_play_but_not_terrible() {
     }
     board.hard_drop();
     assert_eq!(cells_check, board.cells);
-}
-
-#[test]
-fn pattern_correct_behaviour() {
-    initialize();
-    let mut board = LocalBoard::new(LocalQueue::new());
-    board.clear_pattern = ClearLinePattern::Tetris;
-    assert_eq!(ClearLinePattern::Tetris, board.clear_line_pattern());
-    assert_eq!(ClearLinePattern::None, board.clear_line_pattern());
 }

@@ -14,7 +14,8 @@ mod soft_drop;
 mod strategy;
 
 mod board_state;
+mod clear_line;
+mod clear_pattern;
 mod danger_level;
 mod insert_trash;
 mod next_tick;
-mod clear_line;
