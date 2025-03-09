@@ -6,7 +6,6 @@ use crate::{
     },
     init_trace::initialize,
 };
-// ! Incorrect tests as functionality changed
 #[test]
 fn board_state_1() {
     initialize();
