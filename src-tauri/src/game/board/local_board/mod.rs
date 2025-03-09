@@ -407,28 +407,56 @@ impl LocalBoard {
             .downcast::<MovingPieceT>()
             .expect("Checked that is the correct type");
         let a_slot = t_piece.get_t_spin_point_a();
-        let a_cell = if a_slot.1 >= 0 {
+        let a_cell = if a_slot.1 >= 0
+            && a_slot.1 < 20
+            && a_slot.1 >= -20
+            && a_slot.0 >= 0
+            && a_slot.0 < 20
+        {
             self.get_cell_from_main_board(a_slot.0, a_slot.1)
-        } else {
+        } else if a_slot.1 < 20 && a_slot.1 >= -20 && a_slot.0 >= 0 && a_slot.0 < 20 {
             self.get_cell_from_buffer_board(a_slot.0, a_slot.1)
+        } else {
+            Cell::Full(Piece::I)
         };
         let b_slot = t_piece.get_t_spin_point_b();
-        let b_cell = if b_slot.1 >= 0 {
+        let b_cell = if b_slot.1 >= 0
+            && b_slot.1 < 20
+            && b_slot.1 >= -20
+            && b_slot.0 >= 0
+            && b_slot.0 < 20
+        {
             self.get_cell_from_main_board(b_slot.0, b_slot.1)
-        } else {
+        } else if b_slot.1 < 20 && b_slot.1 >= -20 && b_slot.0 >= 0 && b_slot.0 < 20 {
             self.get_cell_from_buffer_board(b_slot.0, b_slot.1)
+        } else {
+            Cell::Full(Piece::I)
         };
         let c_slot = t_piece.get_t_spin_point_c();
-        let c_cell = if c_slot.1 >= 0 {
+        let c_cell = if c_slot.1 >= 0
+            && c_slot.1 < 20
+            && c_slot.1 >= -20
+            && c_slot.0 >= 0
+            && c_slot.0 < 20
+        {
             self.get_cell_from_main_board(c_slot.0, c_slot.1)
-        } else {
+        } else if c_slot.1 < 20 && c_slot.1 >= -20 && c_slot.0 >= 0 && c_slot.0 < 20 {
             self.get_cell_from_buffer_board(c_slot.0, c_slot.1)
+        } else {
+            Cell::Full(Piece::I) // Piece is irrelevant
         };
         let d_slot = t_piece.get_t_spin_point_d();
-        let d_cell = if d_slot.1 >= 0 {
+        let d_cell = if d_slot.1 >= 0
+            && d_slot.1 < 20
+            && d_slot.1 >= -20
+            && d_slot.0 >= 0
+            && d_slot.0 < 20
+        {
             self.get_cell_from_main_board(d_slot.0, d_slot.1)
-        } else {
+        } else if d_slot.1 < 20 && d_slot.1 >= -20 && d_slot.0 >= 0 && d_slot.0 < 20 {
             self.get_cell_from_buffer_board(d_slot.0, d_slot.1)
+        } else {
+            Cell::Full(Piece::I)
         };
 
         if let (Cell::Full(_), Cell::Full(_)) = (a_cell, b_cell) {
@@ -443,7 +471,6 @@ impl LocalBoard {
                 return;
             }
             if let Cell::Full(_) = d_cell {
-                println!("Here");
                 match lines_cleared {
                     0 => self.clear_pattern = ClearLinePattern::TSpin,
                     1 => self.clear_pattern = ClearLinePattern::TSpinSingle,
