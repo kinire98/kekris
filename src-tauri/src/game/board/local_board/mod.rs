@@ -47,14 +47,14 @@ impl Board for LocalBoard {
         let mut buf: Vec<u8> = [Cell::Empty.string_representation() as u8;
             (BOARD_HEIGHT * BOARD_WIDTH * 2) as usize]
             .into();
-        for (i, el) in self.cells.iter().enumerate() {
+        for (i, el) in self.buffer.iter().enumerate() {
             buf[i] = el.string_representation() as u8;
         }
 
         for (i, el) in self.cells.iter().enumerate() {
             buf[i + (BOARD_HEIGHT * BOARD_WIDTH) as usize] = el.string_representation() as u8;
         }
-
+        println!("tf{}", String::from_utf8(buf.clone()).unwrap());
         for (x, y) in self.cur_piece.get_coords() {
             if y >= 0 {
                 buf[(y * BOARD_WIDTH + x + (BOARD_HEIGHT * BOARD_WIDTH)) as usize] =
