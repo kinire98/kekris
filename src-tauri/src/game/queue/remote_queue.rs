@@ -3,12 +3,12 @@ use super::Queue;
 pub struct RemoteQueue {}
 
 impl Queue for RemoteQueue {
-    fn get_piece(&mut self, position: usize) -> Option<crate::game::pieces::Piece> {
+    fn get_piece(&mut self, _position: usize) -> Option<crate::game::pieces::Piece> {
         todo!()
     }
 }
 impl RemoteQueue {
-    fn new() -> RemoteQueue {
+    fn _new() -> RemoteQueue {
         todo!()
     }
 }

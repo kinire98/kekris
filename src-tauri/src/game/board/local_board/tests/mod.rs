@@ -1,4 +1,3 @@
-mod change_strategy;
 mod game_over;
 mod game_won;
 mod hard_drop;

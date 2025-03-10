@@ -1,8 +1,4 @@
-use std::{
-    cmp::Ordering,
-    io::{BufWriter, Write},
-    ops::Range,
-};
+use std::{cmp::Ordering, ops::Range};
 
 use moving_piece::{MovingPiece, Orientation, moving_piece_t::MovingPieceT};
 
@@ -24,11 +20,10 @@ pub struct LocalBoard {
     trash_lines_queue: Vec<(u8, u8)>,
     cells: [Cell; (BOARD_HEIGHT * BOARD_WIDTH) as usize],
     buffer: [Cell; (BOARD_HEIGHT * BOARD_WIDTH) as usize],
-    prev_cells: [Cell; (BOARD_HEIGHT * BOARD_WIDTH) as usize],
+    lock_out: bool,
     piece_blocked: bool,
     line_cleared: bool,
     lines_cleared: u32,
-    game_over: bool,
     clear_pattern: ClearLinePattern,
     rotation: bool,
     rotation_option: RotationOption,
@@ -36,7 +31,7 @@ pub struct LocalBoard {
 }
 impl Board for LocalBoard {
     fn game_over(&self) -> bool {
-        self.game_over || self.top_out() || self.lock_out() || self.block_out()
+        self.top_out() || self.lock_out || self.block_out()
     }
 
     fn game_won(&self, win_condition: impl Fn(bool, u32) -> bool) -> bool {
@@ -54,7 +49,6 @@ impl Board for LocalBoard {
         for (i, el) in self.cells.iter().enumerate() {
             buf[i + (BOARD_HEIGHT * BOARD_WIDTH) as usize] = el.string_representation() as u8;
         }
-        println!("tf{}", String::from_utf8(buf.clone()).unwrap());
         for (x, y) in self.cur_piece.get_coords() {
             if y >= 0 {
                 buf[(y * BOARD_WIDTH + x + (BOARD_HEIGHT * BOARD_WIDTH)) as usize] =
@@ -96,11 +90,10 @@ impl LocalBoard {
             trash_lines_queue: Vec::new(),
             cells: [Cell::Empty; 200],
             buffer: [Cell::Empty; 200],
-            prev_cells: [Cell::Empty; 200],
+            lock_out: false,
             piece_blocked: false,
             line_cleared: false,
             lines_cleared: 0,
-            game_over: false,
             clear_pattern: ClearLinePattern::None,
             rotation: false,
             rotation_option: RotationOption::Full,
@@ -288,15 +281,16 @@ impl LocalBoard {
     fn next_piece_operations(&mut self) {
         let coords = self.cur_piece.get_coords();
         let piece = self.cur_piece.clone();
+        let mut topped = true;
         for (x, y) in coords {
             if y >= 0 {
                 self.set_cell_in_main_board(x, y, Cell::Full(piece.piece()));
+                topped = false;
             } else {
                 self.set_cell_in_buffer_board(x, y, Cell::Full(piece.piece()));
             }
         }
-        self.game_over = self.game_over();
-        self.prev_cells = self.cells;
+        self.lock_out = topped;
         self.piece_num += 1;
         self.cur_piece = self
             .queue
@@ -316,6 +310,7 @@ impl LocalBoard {
                         lines += 1;
                     }
                 });
+                self.lines_cleared += lines as u32;
                 self.clear_pattern(lines, piece);
                 y_cleared.iter().for_each(|y| {
                     if *y != -128 {
@@ -577,7 +572,7 @@ impl LocalBoard {
         DangerLevel::AlmostDead
     }
 
-    pub fn insert_trash(&mut self, number_of_trash_received: u8) {
+    pub fn insert_trash(&mut self, _number_of_trash_received: u8) {
         todo!()
     }
 
@@ -611,16 +606,13 @@ impl LocalBoard {
         }
     }
 
-    fn lock_out(&self) -> bool {
-        self.prev_cells == self.cells
-    }
-
     fn block_out(&self) -> bool {
-        if self.cur_piece.piece() == Piece::O {
-            self.get_cell_from_buffer_board(5, -2) == Cell::Empty
-        } else {
-            self.get_cell_from_buffer_board(4, -2) == Cell::Empty
+        for (x, y) in self.cur_piece.get_coords() {
+            if let Cell::Full(_) = self.get_cell_from_buffer_board(x, y) {
+                return true;
+            }
         }
+        false
     }
 
     fn get_cell_from_main_board(&self, x: i16, y: i16) -> Cell {
@@ -640,15 +632,14 @@ impl LocalBoard {
     }
 
     fn get_highest_piece(&self) -> Option<(i16, i16)> {
-        let mut i = 0;
-        for el in self.buffer {
-            if el != Cell::Empty {
-                return Some((i % BOARD_WIDTH, i / BOARD_WIDTH));
+        for (i, el) in self.buffer.iter().enumerate() {
+            if *el != Cell::Empty {
+                return Some((i as i16 % BOARD_WIDTH, i as i16 / BOARD_WIDTH));
             }
         }
-        for el in self.cells {
-            if el != Cell::Empty {
-                return Some((i % BOARD_WIDTH, i / BOARD_WIDTH));
+        for (i, el) in self.cells.iter().enumerate() {
+            if *el != Cell::Empty {
+                return Some((i as i16 % BOARD_WIDTH, i as i16 / BOARD_WIDTH));
             }
         }
         None
@@ -671,7 +662,7 @@ enum RotationOption {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum ClearLinePattern {
+pub enum ClearLinePattern {
     None,
     Single,
     Double,
