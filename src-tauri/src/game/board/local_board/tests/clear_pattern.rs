@@ -215,6 +215,7 @@ fn t_spin_2() {
     assert_eq!(ClearLinePattern::TSpin, board.clear_line_pattern());
 }
 #[test]
+/// Extracted directly from Tetris Implementation Guide
 fn t_spin_3() {
     initialize();
     let mut board = LocalBoard::new(LocalQueue::default());
@@ -244,6 +245,7 @@ fn t_spin_3() {
 }
 
 #[test]
+/// Extracted directly from Tetris Implementation Guide
 fn t_spin_4() {
     let mut board = LocalBoard::new(LocalQueue::default());
     board.cells[152] = Cell::Full(Piece::T);
@@ -299,6 +301,7 @@ fn t_spin_5() {
 }
 
 #[test]
+/// Extracted directly from Tetris Implementation Guide
 fn t_spin_6() {
     initialize();
     let mut board = LocalBoard::new(LocalQueue::default());
@@ -322,6 +325,7 @@ fn t_spin_6() {
 }
 
 #[test]
+/// Extracted directly from Tetris Implementation Guide
 fn t_spin_7() {
     initialize();
     let mut board = LocalBoard::new(LocalQueue::default());
@@ -352,6 +356,7 @@ fn t_spin_7() {
 }
 
 #[test]
+/// Extracted directly from Tetris Implementation Guide
 fn t_spin_8() {
     initialize();
     let mut board = LocalBoard::new(LocalQueue::default());
@@ -377,6 +382,7 @@ fn t_spin_8() {
 }
 
 #[test]
+/// Extracted directly from Tetris Implementation Guide
 fn t_spin_9() {
     initialize();
     let mut board = LocalBoard::new(LocalQueue::default());
@@ -410,6 +416,7 @@ fn t_spin_9() {
 }
 
 #[test]
+/// Extracted directly from Tetris Implementation Guide
 fn t_spin_10() {
     let mut board = LocalBoard::new(LocalQueue::default());
     board.cells[152] = Cell::Full(Piece::T);
@@ -441,6 +448,7 @@ fn t_spin_10() {
 }
 
 #[test]
+/// Extracted directly from Tetris Implementation Guide
 fn mini_t_spin_1() {
     let mut board = LocalBoard::new(LocalQueue::default());
     for i in 191..197 {
@@ -460,6 +468,7 @@ fn mini_t_spin_1() {
 }
 
 #[test]
+/// Extracted directly from Tetris Implementation Guide
 fn mini_t_spin_2() {
     let mut board = LocalBoard::new(LocalQueue::default());
     board.cells[172] = Cell::Full(Piece::T);
@@ -483,6 +492,7 @@ fn mini_t_spin_2() {
 }
 
 #[test]
+/// Extracted directly from Tetris Implementation Guide
 fn mini_t_spin_3() {
     let mut board = LocalBoard::new(LocalQueue::default());
     board.cells[150] = Cell::Full(Piece::T);
@@ -508,6 +518,7 @@ fn mini_t_spin_3() {
 }
 
 #[test]
+/// Extracted directly from Tetris Implementation Guide
 fn mini_t_spin_4() {
     let mut board = LocalBoard::new(LocalQueue::default());
     for i in 191..200 {
@@ -527,6 +538,7 @@ fn mini_t_spin_4() {
 }
 
 #[test]
+/// Extracted directly from Tetris Implementation Guide
 fn mini_t_spin_5() {
     let mut board = LocalBoard::new(LocalQueue::default());
     board.cells[172] = Cell::Full(Piece::T);
@@ -553,6 +565,7 @@ fn mini_t_spin_5() {
 }
 
 #[test]
+/// Extracted directly from Tetris Implementation Guide
 fn mini_t_spin_6() {
     let mut board = LocalBoard::new(LocalQueue::default());
     board.cells[180] = Cell::Full(Piece::T);
@@ -574,6 +587,7 @@ fn mini_t_spin_6() {
 }
 
 #[test]
+/// Extracted directly from Tetris Implementation Guide
 fn mini_t_spin_7() {
     let mut board = LocalBoard::new(LocalQueue::default());
     board.cells[180] = Cell::Full(Piece::T);

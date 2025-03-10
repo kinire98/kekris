@@ -8,7 +8,6 @@ mod num_of_trash_lines;
 mod rotation_clockwise;
 mod rotation_counterclockwise;
 mod rotation_full;
-mod save_piece;
 mod soft_drop;
 mod strategy;
 
