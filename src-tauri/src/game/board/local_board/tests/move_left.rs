@@ -12,8 +12,8 @@ fn move_left_1() {
         board.move_left();
     }
     let coords = board.cur_piece.get_coords();
-    for i in 0..4 {
-        assert_eq!(coords[i].0 as usize, i);
+    for (i, el) in coords.iter().enumerate().take(4) {
+        assert_eq!(el.0 as usize, i);
     }
 }
 
@@ -29,9 +29,8 @@ fn move_left_2() {
         board.move_left();
     }
     let coords = board.cur_piece.get_coords();
-    for i in 0..4 {
-        println!("x: {} y:{}", coords[i].0, coords[i].1);
-        assert_eq!(coords[i].0 as usize, i + 1);
+    for (i, el) in coords.iter().enumerate().take(4) {
+        assert_eq!(el.0 as usize, i + 1);
     }
 }
 #[test]
@@ -46,8 +45,7 @@ fn move_left_3() {
         board.move_left();
     }
     let coords = board.cur_piece.get_coords();
-    for i in 0..4 {
-        println!("x: {} y:{}", coords[i].0, coords[i].1);
-        assert_eq!(coords[i].0 as usize, i + 2);
+    for (i, el) in coords.iter().enumerate().take(4) {
+        assert_eq!(el.0 as usize, i + 2);
     }
 }
