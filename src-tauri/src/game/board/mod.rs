@@ -1,3 +1,5 @@
+use danger_level::DangerLevel;
+
 use super::strategy::Strategy;
 
 pub mod cell;
@@ -12,4 +14,5 @@ pub trait Board {
     fn game_won(&self, win_condition: impl Fn(bool, u32) -> bool) -> bool;
     fn board_state(&self) -> String;
     fn strategy(&self) -> Strategy;
+    fn danger_level(&self) -> DangerLevel;
 }

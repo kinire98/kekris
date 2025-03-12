@@ -16,7 +16,12 @@
         "height": 600,
         "focus": false,
         "fullscreen": true,
-        "minimizable": true
+        "minimizable": false
+      },
+      {
+        "title": "game",
+        "fullscreen": true,
+        "minimizable": false
       }
     ],
     "security": {

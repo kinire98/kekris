@@ -11,6 +11,7 @@ mod moving_piece;
 const BOARD_WIDTH: i16 = 10;
 const BOARD_HEIGHT: i16 = 20;
 
+#[derive(Debug)]
 pub struct LocalBoard {
     queue: Box<dyn Queue>,
     held_piece: Option<Piece>,
@@ -73,6 +74,36 @@ impl Board for LocalBoard {
 
     fn strategy(&self) -> Strategy {
         self.strategy
+    }
+    fn danger_level(&self) -> DangerLevel {
+        let coords = self.get_highest_piece();
+        if coords.is_none() {
+            return DangerLevel::Empty;
+        }
+
+        let coords = coords.unwrap();
+        println!("{:?}", coords);
+        if coords.1 > 14 && coords.1 <= 19 {
+            return DangerLevel::VeryLow;
+        }
+
+        if coords.1 > 12 && coords.1 <= 14 {
+            return DangerLevel::Low;
+        }
+
+        if coords.1 > 7 && coords.1 <= 12 {
+            return DangerLevel::Medium;
+        }
+
+        if coords.1 > 5 && coords.1 <= 7 {
+            return DangerLevel::High;
+        }
+
+        if coords.1 > 2 && coords.1 <= 5 {
+            return DangerLevel::VeryHigh;
+        }
+
+        DangerLevel::AlmostDead
     }
 }
 
@@ -542,36 +573,6 @@ impl LocalBoard {
         lines
     }
 
-    pub fn danger_level(&self) -> DangerLevel {
-        let coords = self.get_highest_piece();
-        if coords.is_none() {
-            return DangerLevel::Empty;
-        }
-
-        let coords = coords.unwrap();
-        if coords.1 > 0 && coords.1 <= 5 {
-            return DangerLevel::VeryLow;
-        }
-
-        if coords.1 > 5 && coords.1 <= 7 {
-            return DangerLevel::Low;
-        }
-
-        if coords.1 > 7 && coords.1 <= 12 {
-            return DangerLevel::Medium;
-        }
-
-        if coords.1 > 12 && coords.1 <= 14 {
-            return DangerLevel::High;
-        }
-
-        if coords.1 > 14 && coords.1 <= 18 {
-            return DangerLevel::VeryHigh;
-        }
-
-        DangerLevel::AlmostDead
-    }
-
     pub fn insert_trash(&mut self, _number_of_trash_received: u8) {
         todo!()
     }
@@ -634,7 +635,10 @@ impl LocalBoard {
     fn get_highest_piece(&self) -> Option<(i16, i16)> {
         for (i, el) in self.buffer.iter().enumerate() {
             if *el != Cell::Empty {
-                return Some((i as i16 % BOARD_WIDTH, i as i16 / BOARD_WIDTH));
+                return Some((
+                    i as i16 % BOARD_WIDTH,
+                    (i as i16 / BOARD_WIDTH) - BOARD_HEIGHT,
+                ));
             }
         }
         for (i, el) in self.cells.iter().enumerate() {
@@ -651,6 +655,9 @@ impl LocalBoard {
         let pattern_tmp = self.clear_pattern;
         self.clear_pattern = ClearLinePattern::None;
         pattern_tmp
+    }
+    pub fn lines_completed(&self) -> u32 {
+        self.lines_cleared
     }
 }
 

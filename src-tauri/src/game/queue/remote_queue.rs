@@ -1,5 +1,6 @@
 use super::Queue;
 
+#[derive(Debug)]
 pub struct RemoteQueue {}
 
 impl Queue for RemoteQueue {

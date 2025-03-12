@@ -8,7 +8,7 @@ const PIECES_SHOWN: usize = 5; // Used in the module, but marked as not used for
 #[allow(dead_code)]
 const PIECES_GENERATED_BY_CYCLE: usize = 7; // Used in the module, but marked as not used for an unknown reason
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct LocalQueue {
     pieces: Vec<Piece>,
     max_piece: usize,

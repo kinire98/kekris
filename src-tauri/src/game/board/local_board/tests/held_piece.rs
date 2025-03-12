@@ -1,5 +1,5 @@
 use crate::{
-    game::{board::local_board::LocalBoard, queue::local_queue::LocalQueue},
+    game::{board::local_board::LocalBoard, pieces::Piece, queue::local_queue::LocalQueue},
     init_trace::initialize,
 };
 
@@ -36,23 +36,19 @@ fn piece_saved_correctly_with_previously_saved_piece() {
 fn piece_saved_lock() {
     initialize();
     let mut board = LocalBoard::new(LocalQueue::default());
-    let pieces = board.get_pieces(0..3);
-    println!("{:?}", pieces);
+    board.cur_piece = Piece::T.try_into().unwrap();
     board.save_piece();
-    assert!(board.piece_blocked);
-    board.save_piece();
+    board.cur_piece = Piece::I.try_into().unwrap();
     board.save_piece();
     board.save_piece();
     board.save_piece();
     board.save_piece();
-    let held_piece = board.held_piece();
-    assert!(held_piece.is_some());
-    assert_eq!(pieces[0], held_piece.unwrap());
-    board.next_piece_operations();
-    assert!(!board.piece_blocked);
     board.save_piece();
-    assert!(board.piece_blocked);
-    let held_piece = board.held_piece();
-    assert!(held_piece.is_some());
-    assert_eq!(pieces[1], held_piece.unwrap());
+    board.save_piece();
+    board.hard_drop();
+    board.cur_piece = Piece::J.try_into().unwrap();
+    board.save_piece();
+    assert_eq!(board.cur_piece.piece(), Piece::T);
+    assert!(board.held_piece.is_some());
+    assert_eq!(board.held_piece.unwrap(), Piece::J);
 }
