@@ -1,7 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
 
-import { drawBoard } from "../board/board";
-
 export default function manageInput(keyCode: string) {
     switch(keyCode) {
         case "ArrowDown":
@@ -50,60 +48,57 @@ export default function manageInput(keyCode: string) {
 }
 
 async function clockwise() {
-    await invoke("clockwise_rotation").then((boardState) => drawBoard(boardState as string));
+     invoke("clockwise_rotation");
 }
 
 async function counterClockWise() {
-    await invoke("counter_clockwise_rotation").then((boardState) => drawBoard(boardState as string));
+     invoke("counter_clockwise_rotation");
 }
 
 async function forfeit() {
-    await invoke("forfeit_game").then((boardState) => {
-        drawBoard(boardState as string)
-    });
+     invoke("forfeit_game")
 }
 
 async function fullRotation() {
-    await invoke("full_rotation").then((boardState) => drawBoard(boardState as string));
+     invoke("full_rotation");
 }
 
 async function hardDrop() {
-    await invoke("hard_drop").then((boardState) => drawBoard(boardState as string));
+     invoke("hard_drop");
 }
 
 async function leftMove() {
-    await invoke("left_move").then((boardState) => drawBoard(boardState as string));
+     invoke("left_move");
 }
 
 async function retryGame() {
-    await invoke("retry_game").then((boardState) => drawBoard(boardState as string));
+     invoke("retry_game");
 }
 
 async function rightMove() {
-    console.log("right")
-    await invoke("right_move").then((boardState) => drawBoard(boardState as string));
+     invoke("right_move");
 }
 
 async function savePiece() {
-    await invoke("save_piece").then((boardState) => drawBoard(boardState as string));
+     invoke("save_piece");
 }
 
 async function softDrop() {
-    await invoke("soft_drop").then((boardState) => drawBoard(boardState as string));
+     invoke("soft_drop");
 }
 
 async function targetingEliminations() {
-    await invoke("targeting_strategy_eliminations").then((boardState) => drawBoard(boardState as string));
+     invoke("targeting_strategy_eliminations");
 }
 
 async function targetingEven() {
-    await invoke("targeting_strategy_even").then((boardState) => drawBoard(boardState as string));
+     invoke("targeting_strategy_even");
 }
 
 async function targetingRandom() {
-    await invoke("targeting_strategy_random").then((boardState) => drawBoard(boardState as string));
+     invoke("targeting_strategy_random");
 }
 
 async function targetingPayback() {
-    await invoke("targeting_strategy_payback").then((boardState) => drawBoard(boardState as string));
+     invoke("targeting_strategy_payback");
 }

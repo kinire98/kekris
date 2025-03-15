@@ -6,10 +6,9 @@ import { getBorderColor, getIPieceColor, getIPieceDarkColor, getJPieceColor,
       trashColor, 
       trashBorderColor,
       getGhostColor} from "./colors";
+import { invoke } from "@tauri-apps/api/core";
+import type { GameOptions } from "../types";
 
-type BoardState = {
-  board: string;
-}
 
 const canvasHeight = 760;
 const canvasWidth = 380;
@@ -23,6 +22,10 @@ const pieceHeight = 38;
 
 
 const boardSize = columnNumber * rowNumber;
+const HELD_PIECE_EMIT = "held_piece_emit";
+const QUEUE_EMIT = "queue_emit";
+const STRATEGY_EMIT = "strategy_emit";
+const BOARD_STATE_EMIT = "board_state_emit";
 // E -> Empty
 // C -> Clear
 // G -> Ghost
@@ -33,19 +36,40 @@ const boardSize = columnNumber * rowNumber;
 // J -> blue
 // S -> green
 // Z -> red
+
 let mainCanvas: HTMLCanvasElement;
-export default function startDraw(canvas: HTMLCanvasElement) {
+let bufferCanvas: HTMLCanvasElement;
+
+export default function startDraw(canvas: HTMLCanvasElement, secondCanvas: HTMLCanvasElement) {
     const ctx: CanvasRenderingContext2D = canvas.getContext("2d")!;
     mainCanvas = canvas;
+    bufferCanvas = secondCanvas;
     drawLines(ctx);
     startBoardChangeEventListener();
+    let options: GameOptions = {
+      number_of_players: 1,
+      lines_40: false,
+      normal: true,
+      blitz: false
+    };
+    invoke("start_game", {
+      options: options
+    });
 }
-
-export function drawBoard(board: string) {
-    const ctx: CanvasRenderingContext2D = mainCanvas.getContext("2d")!;
+function drawBufferBoard(board: string) {
+  const ctx: CanvasRenderingContext2D = bufferCanvas.getContext("2d")!;
+  drawBoardInternal(board, ctx, false);
+}
+function drawMainBoard(board: string) {
+  const ctx: CanvasRenderingContext2D = mainCanvas.getContext("2d")!;
+  drawBoardInternal(board, ctx, true);
+}
+function drawBoardInternal(board: string, ctx: CanvasRenderingContext2D, drawLDivisories: boolean) {
     clearCanvas(ctx);
-    drawLines(ctx);
-    for(let i = 0; i < boardSize; i++) {
+    if(drawLDivisories) {
+      drawLines(ctx);
+    }
+    for(let i = boardSize - 1; i > -1; i--) {
         const piece: string = board[i]!;
         if(piece == "E")
             continue;
@@ -81,8 +105,8 @@ export function drawBoard(board: string) {
 
 
 async function startBoardChangeEventListener() {
-  await listen<BoardState>("board-changed", e => {
-    drawBoard(e.payload.board);
+  await listen<string>(BOARD_STATE_EMIT, e => {
+    drawBoard(e.payload);
   }) 
 }
 
@@ -182,5 +206,9 @@ function clearCanvas(ctx: CanvasRenderingContext2D) {
 }
 
 
+export function drawBoard(board: string) {
+  drawBufferBoard(board.substring(0, 200));
+  drawMainBoard(board.substring(200, 400));
+}
 
 //await listen('new-board-state', (e) => drawBoard(e.payload as string))

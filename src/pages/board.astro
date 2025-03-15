@@ -4,19 +4,25 @@ import Layout from "../layouts/Layout.astro";
 
 <Layout>
     <div id="board">
-        <canvas height="760" width="380"></canvas>
+        <canvas height="760" width="380" id="main"></canvas>
+        <canvas height="760" width="380" id="buffer"></canvas>
     </div>
 </Layout>
 
 <style>
-canvas {
-    background: #000;
-    border: 1px solid #909090;
+canvas#main {
+    border-inline: 1px solid #909090;
+    border-bottom: 1px solid #909090;
 }
 #board { 
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -35%;
     display: flex;
     align-items: center;    
     justify-content: center;
+    flex-direction: column-reverse;
     height: 100%;
 }
 </style>
@@ -28,7 +34,7 @@ import manageInput from "../controls/keyboard";
 import { getRepeatInterval, getStartRepeatInterval } from "../controls/interval";
 document.addEventListener('DOMContentLoaded', () => {
     forbidBack();
-    startDraw(document.querySelector("canvas")! as HTMLCanvasElement);
+    startDraw(document.getElementById("main")! as HTMLCanvasElement, document.getElementById("buffer")! as HTMLCanvasElement);
     const customRepeatInterval = getRepeatInterval(); // Customize this value (in milliseconds)
     const customStartRepeatInteval = getStartRepeatInterval();
     const keyIntervals: Record<string, NodeJS.Timeout> = {}; // Tracks active intervals for keys

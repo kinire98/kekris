@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use danger_level::DangerLevel;
 
 use super::strategy::Strategy;
@@ -5,8 +7,9 @@ use super::strategy::Strategy;
 pub mod cell;
 pub mod danger_level;
 pub mod local_board;
+pub mod remote_board;
 
-pub trait Board {
+pub trait Board: Debug + Send + Sync {
     /// Assume it's only be called when a piece is set
     fn game_over(&self) -> bool;
     /// The win condition receives if the game has been meet one of the game over conditions

@@ -11,21 +11,27 @@
   },
   "app": {"windows": [
       {
-        "title": "kekris",
+        "title": "main",
         "width": 800,
         "height": 600,
         "focus": false,
         "fullscreen": true,
-        "minimizable": false
-      },
-      {
-        "title": "game",
-        "fullscreen": true,
-        "minimizable": false
+        "minimizable": true
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "capabilities": [
+        {
+          "identifier": "listen_to_events",
+          "windows": ["main"],
+          "permissions": [
+            "core:event:default",
+            "core:event:allow-listen"
+          ],
+          "platforms": ["macOS", "windows", "linux"]
+        }
+      ]
     }
   },
   "bundle": {

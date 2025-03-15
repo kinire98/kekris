@@ -1,126 +1,162 @@
 use std::sync::Arc;
 
-use tauri::{AppHandle, async_runtime::Mutex};
-use tokio::sync::OnceCell;
+use tauri::AppHandle;
+use tokio::sync::{
+    Mutex, OnceCell,
+    mpsc::{self, Sender},
+};
 
-use crate::game::{Game, GameOptions};
+use crate::game::{FirstLevelCommands, Game, game_options::GameOptions};
 
-static BOARD: OnceCell<Arc<Mutex<Game>>> = OnceCell::const_new();
+static CHANNEL: OnceCell<Arc<Mutex<Sender<FirstLevelCommands>>>> = OnceCell::const_new();
 
 #[tauri::command]
-pub async fn clockwise_rotation() -> String {
-    if let Some(board) = BOARD.get() {
-        board.lock().await.clockwise_rotation().await
-    } else {
-        String::new()
+pub async fn clockwise_rotation() {
+    if let Some(channel) = CHANNEL.get() {
+        channel
+            .lock()
+            .await
+            .send(FirstLevelCommands::ClockWiseRotation)
+            .await
+            .unwrap();
     }
 }
 
 #[tauri::command]
-pub async fn counter_clockwise_rotation() -> String {
-    if let Some(board) = BOARD.get() {
-        board.lock().await.counter_clockwise_rotation().await
-    } else {
-        String::new()
+pub async fn counter_clockwise_rotation() {
+    if let Some(channel) = CHANNEL.get() {
+        channel
+            .lock()
+            .await
+            .send(FirstLevelCommands::CounterClockWiseRotation)
+            .await
+            .unwrap();
     }
 }
 
 #[tauri::command]
 pub async fn forfeit_game() {
-    if let Some(board) = BOARD.get() {
-        board.lock().await.forfeit_game();
+    if let Some(channel) = CHANNEL.get() {
+        // channel.lock().await.forfeit_game();
     }
 }
 
 #[tauri::command]
-pub async fn full_rotation() -> String {
-    if let Some(board) = BOARD.get() {
-        board.lock().await.full_rotation().await
-    } else {
-        String::new()
+pub async fn full_rotation() {
+    if let Some(channel) = CHANNEL.get() {
+        channel
+            .lock()
+            .await
+            .send(FirstLevelCommands::FullRotation)
+            .await
+            .unwrap();
     }
 }
 
 #[tauri::command]
-pub async fn hard_drop() -> String {
-    if let Some(board) = BOARD.get() {
-        board.lock().await.hard_drop().await
-    } else {
-        String::new()
+pub async fn hard_drop() {
+    if let Some(channel) = CHANNEL.get() {
+        channel
+            .lock()
+            .await
+            .send(FirstLevelCommands::HardDrop)
+            .await
+            .unwrap();
     }
 }
 
 #[tauri::command]
-pub async fn left_move() -> String {
-    if let Some(board) = BOARD.get() {
-        board.lock().await.hard_drop().await
-    } else {
-        String::new()
+pub async fn left_move() {
+    if let Some(channel) = CHANNEL.get() {
+        channel
+            .lock()
+            .await
+            .send(FirstLevelCommands::LeftMove)
+            .await
+            .unwrap();
     }
 }
 
 #[tauri::command]
 pub async fn retry_game() {
-    if let Some(board) = BOARD.get() {
-        board.lock().await.retry_game();
+    if let Some(channel) = CHANNEL.get() {
+        // channel.lock().await.retry_game();
     }
 }
 
 #[tauri::command]
-pub async fn right_move() -> String {
-    if let Some(board) = BOARD.get() {
-        board.lock().await.right_move().await
-    } else {
-        String::new()
+pub async fn right_move() {
+    if let Some(channel) = CHANNEL.get() {
+        channel
+            .lock()
+            .await
+            .send(FirstLevelCommands::RightMove)
+            .await
+            .unwrap();
     }
 }
 
 #[tauri::command]
 pub async fn save_piece() {
-    if let Some(board) = BOARD.get() {
-        board.lock().await.save_piece().await;
+    if let Some(channel) = CHANNEL.get() {
+        channel
+            .lock()
+            .await
+            .send(FirstLevelCommands::SavePiece)
+            .await
+            .unwrap();
     }
 }
 
 #[tauri::command]
-pub async fn soft_drop() -> String {
-    if let Some(board) = BOARD.get() {
-        board.lock().await.soft_drop().await
-    } else {
-        String::new()
+pub async fn soft_drop() {
+    if let Some(channel) = CHANNEL.get() {
+        channel
+            .lock()
+            .await
+            .send(FirstLevelCommands::SoftDrop)
+            .await
+            .unwrap();
     }
 }
 
 #[tauri::command]
 pub async fn start_game(app: AppHandle, options: GameOptions) {
-    let game = Game::new(options, app);
-    BOARD.set(Arc::new(Mutex::new(game))).unwrap();
+    let (tx, rx) = mpsc::channel(256);
+    let mut game = Game::new(options, app, rx);
+    CHANNEL.set(Arc::new(Mutex::new(tx))).unwrap();
+    // let mut lock = channel.get().unwrap().lock().await;
+    tokio::spawn(async move {
+        game.start_game().await;
+    })
+    .await
+    .unwrap();
 }
 
 #[tauri::command]
 pub async fn targeting_strategy_eliminations() {
-    if let Some(board) = BOARD.get() {
-        board.lock().await.targeting_strategy_elimination().await;
+    if let Some(channel) = CHANNEL.get() {
+        // channel.clone().send(FirstLevelCommands::SoftDrop);
     }
 }
 
 #[tauri::command]
 pub async fn targeting_strategy_even() {
-    if let Some(board) = BOARD.get() {
-        board.lock().await.targeting_strategy_even().await;
+    if let Some(channel) = CHANNEL.get() {
+        // channel.lock().await.targeting_strategy_elimination();
     }
 }
 
 #[tauri::command]
 pub async fn targeting_strategy_payback() {
-    if let Some(board) = BOARD.get() {
-        board.lock().await.targeting_strategy_payback().await;
+    if let Some(channel) = CHANNEL.get() {
+        // channel.lock().await.targeting_strategy_elimination();
     }
 }
 
 #[tauri::command]
 pub async fn targeting_strategy_random() {
-    if let Some(board) = BOARD.get() {
-        board.lock().await.targeting_strategy_random().await;
+    if let Some(channel) = CHANNEL.get() {
+        // channel.lock().await.targeting_strategy_elimination();
     }
 }

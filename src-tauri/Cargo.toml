@@ -26,8 +26,6 @@ tokio = { version = "1.44.0", features = ["full"] }
 [dev-dependencies]
 color-eyre = "0.6.3"
 
-[build]
-incremental = true
 
 [profile.release]
 panic = "abort" # Strip expensive panic clean-up logic
@@ -40,7 +38,6 @@ strip = true
 [profile.dev]
 opt-level = 0
 debug = true
-split-debuginfo = 'unix'
 strip = "none"
 debug-assertions = true
 overflow-checks = true

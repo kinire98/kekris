@@ -1,7 +1,7 @@
 export function getStartRepeatInterval(): number {
-    return 100;
+    return 150;
 }
 
 export function getRepeatInterval(): number {
-    return 75;
+    return 100;
 }

@@ -43,22 +43,6 @@ impl Board for LocalBoard {
         let mut buf: Vec<u8> = [Cell::Empty.string_representation() as u8;
             (BOARD_HEIGHT * BOARD_WIDTH * 2) as usize]
             .into();
-        for (i, el) in self.buffer.iter().enumerate() {
-            buf[i] = el.string_representation() as u8;
-        }
-
-        for (i, el) in self.cells.iter().enumerate() {
-            buf[i + (BOARD_HEIGHT * BOARD_WIDTH) as usize] = el.string_representation() as u8;
-        }
-        for (x, y) in self.cur_piece.get_coords() {
-            if y >= 0 {
-                buf[(y * BOARD_WIDTH + x + (BOARD_HEIGHT * BOARD_WIDTH)) as usize] =
-                    self.cur_piece.piece().string_representation() as u8;
-            } else {
-                buf[((BOARD_HEIGHT + y) * BOARD_WIDTH + x) as usize] =
-                    self.cur_piece.piece().string_representation() as u8;
-            }
-        }
         let ghost_piece = self.ghost_piece(self.cur_piece.clone());
         for (x, y) in ghost_piece.get_coords() {
             if y >= 0 {
@@ -69,6 +53,30 @@ impl Board for LocalBoard {
                     Piece::Ghost.string_representation() as u8;
             }
         }
+        for (i, el) in self.buffer.iter().enumerate() {
+            if *el == Cell::Empty {
+                continue;
+            }
+            buf[i] = el.string_representation() as u8;
+        }
+
+        for (i, el) in self.cells.iter().enumerate() {
+            if *el == Cell::Empty {
+                continue;
+            }
+            buf[i + (BOARD_HEIGHT * BOARD_WIDTH) as usize] = el.string_representation() as u8;
+        }
+
+        for (x, y) in self.cur_piece.get_coords() {
+            if y >= 0 {
+                buf[(y * BOARD_WIDTH + x + (BOARD_HEIGHT * BOARD_WIDTH)) as usize] =
+                    self.cur_piece.piece().string_representation() as u8;
+            } else {
+                buf[((BOARD_HEIGHT + y) * BOARD_WIDTH + x) as usize] =
+                    self.cur_piece.piece().string_representation() as u8;
+            }
+        }
+
         String::from_utf8(buf).expect("Should be valid UTF as I just wrote it")
     }
 
@@ -263,23 +271,33 @@ impl LocalBoard {
     fn ghost_piece(&self, mut piece: Box<dyn MovingPiece>) -> Box<dyn MovingPiece> {
         let mut bottom_reached = false;
         while !bottom_reached {
-            piece.move_down();
-            for (x, y) in piece.get_bottom_facing_sides() {
-                if y == BOARD_HEIGHT - 1 {
+            let sides = piece.get_bottom_facing_sides();
+            for (x, y) in sides {
+                if y >= BOARD_HEIGHT - 1 {
                     bottom_reached = true;
                     break;
                 }
+
                 if y + 1 >= 0 {
                     match self.get_cell_from_main_board(x, y + 1) {
                         Cell::Empty => continue,
-                        Cell::Full(_) => bottom_reached = true,
+                        Cell::Full(_) => {
+                            bottom_reached = true;
+                            break;
+                        }
                     }
                 } else {
                     match self.get_cell_from_buffer_board(x, y + 1) {
                         Cell::Empty => continue,
-                        Cell::Full(_) => bottom_reached = true,
+                        Cell::Full(_) => {
+                            bottom_reached = true;
+                            break;
+                        }
                     }
                 }
+            }
+            if !bottom_reached {
+                piece.move_down();
             }
         }
         piece
@@ -288,7 +306,7 @@ impl LocalBoard {
     fn push_down(&mut self) -> bool {
         let sides = self.cur_piece.get_bottom_facing_sides();
         for (x, y) in sides {
-            if y == BOARD_HEIGHT - 1 {
+            if y >= BOARD_HEIGHT - 1 {
                 return true;
             }
 

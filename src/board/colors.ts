@@ -21,7 +21,7 @@ export function trashColor(): string {
 }
 
 export function getGhostColor(): string {
-    return "#f0f0f066";
+    return "#f0f0f0";
 }
 
 export function getOPieceColor(): string {
