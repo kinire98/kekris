@@ -1,6 +1,7 @@
 use std::{cmp::Ordering, ops::Range};
 
 use moving_piece::{MovingPiece, Orientation, moving_piece_t::MovingPieceT};
+use serde::{Deserialize, Serialize};
 
 use crate::game::{pieces::Piece, queue::Queue, strategy::Strategy};
 
@@ -255,12 +256,13 @@ impl LocalBoard {
         let _ = self.push_down();
     }
 
-    pub fn next_tick(&mut self) {
+    pub fn next_tick(&mut self) -> bool {
         let is_in_bottom = self.push_down();
         if !is_in_bottom {
-            return;
+            return false;
         }
         self.next_piece_operations();
+        true
     }
 
     pub fn hard_drop(&mut self) {
@@ -619,7 +621,8 @@ impl LocalBoard {
         // ! Probably needs a fix
         let highest_coords = self.get_highest_piece();
         if let Some(coord) = highest_coords {
-            (self.num_of_trash_lines() as isize - coord.1 as isize) < 0
+            println!("{coord:?}");
+            (self.num_of_trash_lines() as isize - coord.1 as isize) < -20
         } else {
             false
         }
@@ -677,6 +680,12 @@ impl LocalBoard {
     pub fn lines_completed(&self) -> u32 {
         self.lines_cleared
     }
+    pub fn piece_num(&self) -> usize {
+        self.piece_num
+    }
+    pub fn cur_piece(&self) -> Piece {
+        self.cur_piece.piece()
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -686,7 +695,7 @@ enum RotationOption {
     Full,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ClearLinePattern {
     None,
     Single,

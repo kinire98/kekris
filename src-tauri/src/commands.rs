@@ -125,12 +125,9 @@ pub async fn start_game(app: AppHandle, options: GameOptions) {
     let (tx, rx) = mpsc::channel(256);
     let mut game = Game::new(options, app, rx);
     CHANNEL.set(Arc::new(Mutex::new(tx))).unwrap();
-    // let mut lock = channel.get().unwrap().lock().await;
     tokio::spawn(async move {
         game.start_game().await;
-    })
-    .await
-    .unwrap();
+    });
 }
 
 #[tauri::command]

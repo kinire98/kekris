@@ -1,7 +1,45 @@
 import { invoke } from "@tauri-apps/api/core";
+import { getRepeatInterval, getStartRepeatInterval } from "./interval";
 
-export default function manageInput(keyCode: string) {
-    switch(keyCode) {
+export default function manageInputListeners() {
+    // ! Take out to another file
+    const customRepeatInterval = getRepeatInterval(); // Customize this value (in milliseconds)
+    const customStartRepeatInteval = getStartRepeatInterval();
+    const keyIntervals: Record<string, NodeJS.Timeout> = {}; // Tracks active intervals for keys
+    const keySet = new Set<string>();
+
+    // Handle keydown event
+    document.addEventListener("keydown", (event: KeyboardEvent) => {
+        if (keyIntervals[event.key]) return;
+
+        // Trigger the action immediately
+        manageInput(event.key);
+
+        // Set up a custom interval for repeated actions
+
+        keySet.add(event.key);
+        setTimeout(() => {
+            if (keySet.has(event.key)) {
+                keyIntervals[event.key] = setInterval(() => {
+                    manageInput(event.key);
+                }, customRepeatInterval);
+            }
+        }, customStartRepeatInteval);
+    });
+
+    // Handle keyup event
+    document.addEventListener("keyup", (event: KeyboardEvent) => {
+        if (keySet.has(event.key)) keySet.delete(event.key);
+        if (keyIntervals[event.key]) {
+            clearInterval(keyIntervals[event.key]);
+            delete keyIntervals[event.key];
+        }
+    });
+}
+
+
+function manageInput(keyCode: string) {
+    switch (keyCode) {
         case "ArrowDown":
             hardDrop();
             break;
@@ -48,57 +86,57 @@ export default function manageInput(keyCode: string) {
 }
 
 async function clockwise() {
-     invoke("clockwise_rotation");
+    await invoke("clockwise_rotation");
 }
 
 async function counterClockWise() {
-     invoke("counter_clockwise_rotation");
+    await invoke("counter_clockwise_rotation");
 }
 
 async function forfeit() {
-     invoke("forfeit_game")
+    await invoke("forfeit_game")
 }
 
 async function fullRotation() {
-     invoke("full_rotation");
+    await invoke("full_rotation");
 }
 
 async function hardDrop() {
-     invoke("hard_drop");
+    await invoke("hard_drop");
 }
 
 async function leftMove() {
-     invoke("left_move");
+    await invoke("left_move");
 }
 
 async function retryGame() {
-     invoke("retry_game");
+    await invoke("retry_game");
 }
 
 async function rightMove() {
-     invoke("right_move");
+    await invoke("right_move");
 }
 
 async function savePiece() {
-     invoke("save_piece");
+    await invoke("save_piece");
 }
 
 async function softDrop() {
-     invoke("soft_drop");
+    await invoke("soft_drop");
 }
 
 async function targetingEliminations() {
-     invoke("targeting_strategy_eliminations");
+    await invoke("targeting_strategy_eliminations");
 }
 
 async function targetingEven() {
-     invoke("targeting_strategy_even");
+    await invoke("targeting_strategy_even");
 }
 
 async function targetingRandom() {
-     invoke("targeting_strategy_random");
+    await invoke("targeting_strategy_random");
 }
 
 async function targetingPayback() {
-     invoke("targeting_strategy_payback");
+    await invoke("targeting_strategy_payback");
 }

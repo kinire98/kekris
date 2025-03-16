@@ -3,71 +3,109 @@ import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout>
-    <div id="board">
-        <canvas height="760" width="380" id="main"></canvas>
-        <canvas height="760" width="380" id="buffer"></canvas>
+  <div id="board">
+    <div id="visible">
+      <canvas height="100" width="150" id="held" class="bgc top"></canvas>
+      <canvas height="760" width="380" id="main" class="bgc"></canvas>
+      <canvas height="480" width="150" id="next" class="bgc top"></canvas>
     </div>
+    <canvas height="760" width="380" id="buffer"></canvas>
+  </div>
 </Layout>
 
 <style>
-canvas#main {
+  .bgc {
     border-inline: 1px solid #909090;
     border-bottom: 1px solid #909090;
-}
-#board { 
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: -35%;
+    background-color: var(--black-constrast-transparent);
+  }
+  .top {
+    border-top: 1px solid #909090;
+  }
+  #board {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -35%;
     display: flex;
-    align-items: center;    
+    align-items: center;
     justify-content: center;
     flex-direction: column-reverse;
     height: 100%;
-}
+    transition: transform 0.1s;
+  }
+  #visible {
+    display: flex;
+    align-items: start;
+    justify-content: center;
+    flex-direction: row;
+  }
+
+  .drop {
+    transform: rotate(-15deg);
+    animation: drop_board 1s ease-in;
+  }
+  @keyframes drop_board {
+    0% {
+      transform: translateY(0px) rotate(-15deg);
+    }
+
+    10% {
+      transform: translateY(2px) rotate(-15deg);
+    }
+
+    20% {
+      transform: translateY(4px) rotate(-15deg);
+    }
+
+    30% {
+      transform: translateY(8px) rotate(-15deg);
+    }
+
+    40% {
+      transform: translateY(16px) rotate(-15deg);
+    }
+
+    50% {
+      transform: translateY(32px) rotate(-15deg);
+    }
+
+    60% {
+      transform: translateY(64px) rotate(-15deg);
+    }
+
+    70% {
+      transform: translateY(128px) rotate(-15deg);
+    }
+
+    80% {
+      transform: translateY(256px) rotate(-15deg);
+    }
+
+    90% {
+      transform: translateY(512px) rotate(-15deg);
+    }
+
+    100% {
+      transform: translateY(1024px) rotate(-15deg);
+    }
+  }
 </style>
 
 <script>
-import forbidBack from "../helpers/forbidBack";
-import startDraw from "../board/board";
-import manageInput from "../controls/keyboard";
-import { getRepeatInterval, getStartRepeatInterval } from "../controls/interval";
-document.addEventListener('DOMContentLoaded', () => {
+  import forbidBack from "../helpers/forbidBack";
+  import startDraw from "../board/board";
+  import manageInput from "../controls/keyboard";
+  import startHeld from "../board/held_piece";
+  import startQueue from "../board/queue";
+  document.addEventListener("DOMContentLoaded", () => {
     forbidBack();
-    startDraw(document.getElementById("main")! as HTMLCanvasElement, document.getElementById("buffer")! as HTMLCanvasElement);
-    const customRepeatInterval = getRepeatInterval(); // Customize this value (in milliseconds)
-    const customStartRepeatInteval = getStartRepeatInterval();
-    const keyIntervals: Record<string, NodeJS.Timeout> = {}; // Tracks active intervals for keys
-    const keySet = new Set<string>();
-
-      // Handle keydown event
-    document.addEventListener('keydown', (event: KeyboardEvent) => {
-      if (keyIntervals[event.key]) return;
-
-      // Trigger the action immediately
-      manageInput(event.key);
-
-      // Set up a custom interval for repeated actions
-
-    keySet.add(event.key);
-      setTimeout(() => {
-        if(keySet.has(event.key)) {
-            keyIntervals[event.key] = setInterval(() => {
-                manageInput(event.key);
-            }, customRepeatInterval);
-        }
-      }, customStartRepeatInteval)
-    });
-
-    // Handle keyup event
-    document.addEventListener('keyup', (event: KeyboardEvent) => {
-        if(keySet.has(event.key))
-            keySet.delete(event.key);
-      if (keyIntervals[event.key]) {
-        clearInterval(keyIntervals[event.key]);
-        delete keyIntervals[event.key];
-      }
-    });
-});
-
+    startDraw(
+      document.getElementById("main")! as HTMLCanvasElement,
+      document.getElementById("buffer")! as HTMLCanvasElement,
+    );
+    startHeld(document.getElementById("held")! as HTMLCanvasElement);
+    startQueue(document.getElementById("next")! as HTMLCanvasElement);
+    manageInput();
+  });
 </script>
