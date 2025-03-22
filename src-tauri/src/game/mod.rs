@@ -12,7 +12,6 @@ use board::{
 use game_options::GameOptions;
 use pieces::Piece;
 use queue::local_queue::LocalQueue;
-use strategy::Strategy;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
@@ -26,6 +25,7 @@ const QUEUE_EMIT: &str = "queue_emit";
 const STRATEGY_EMIT: &str = "strategy_emit";
 const BOARD_STATE_EMIT: &str = "board_state_emit";
 const LINE_CLEARED_EMIT: &str = "line_cleared";
+const LINE_CLEARED_INFO_EMIT: &str = "line_cleared_info";
 const HARD_DROP_EMIT: &str = "hard_drop";
 const PIECE_FIXED_EMIT: &str = "piece_fixed";
 const POINTS_EMIT: &str = "points";
@@ -397,13 +397,6 @@ impl Game {
             .emit(QUEUE_EMIT, self.local_board.get_pieces(range))
             .unwrap();
     }
-
-    fn startegy_emit(&self) {
-        self.app
-            .emit(STRATEGY_EMIT, self.local_board.strategy())
-            .unwrap();
-    }
-
     fn state_emit(&self) {
         self.app
             .emit(BOARD_STATE_EMIT, self.local_board.board_state())
@@ -411,6 +404,12 @@ impl Game {
     }
     fn line_emit(&self, pattern: ClearLinePattern) {
         self.app.emit(LINE_CLEARED_EMIT, pattern).unwrap();
+        self.app
+            .emit(
+                LINE_CLEARED_INFO_EMIT,
+                format!("{}/{}", self.line_clears, self.level * 5),
+            )
+            .unwrap();
     }
     fn piece_fixed_emit(&self) {
         self.app.emit(PIECE_FIXED_EMIT, self.last_piece).unwrap();

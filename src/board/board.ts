@@ -10,6 +10,8 @@ import {
 } from "./colors";
 import { invoke } from "@tauri-apps/api/core";
 import type { GameOptions } from "../types";
+import { gameWonEffect, lineClearedEffect, lostEffect, pieceFixedEffect } from "./effects";
+import type { ClearLinePattern } from "../types/ClearLinePattern";
 
 
 const canvasHeight = 760;
@@ -24,14 +26,13 @@ const pieceHeight = 38;
 
 
 const boardSize = columnNumber * rowNumber;
-const strategyEmit = "strategy_emit";
 const boardStateEmit = "board_state_emit";
 const lineClearedEmit = "line_cleared";
-const hardDrop = "hard_drop";
 const pieceFixed = "piece_fixed";
 const pointsEmit = "points";
 const gameOverEmit = "game_over";
 const gameWonEmit = "game_won";
+const lineClearedInfoEmit = "line_cleared_info";
 // E -> Empty
 // C -> Clear
 // G -> Ghost
@@ -62,6 +63,10 @@ export default function startDraw(canvas: HTMLCanvasElement, secondCanvas: HTMLC
     options: options
   });
   gameLost();
+  lineCleared();
+  pieceFixedEvent();
+  gameWon();
+  lineClearedInfo();
 }
 function drawBufferBoard(board: string) {
   const ctx: CanvasRenderingContext2D = bufferCanvas.getContext("2d")!;
@@ -224,17 +229,31 @@ function drawBoard(board: string) {
 
 async function gameLost() {
   await listen(gameOverEmit, () => {
-    const $bgc = document.getElementById("bgc")! as HTMLElement;
-    const $board = document.getElementById("board")! as HTMLElement;
-    $bgc.style.backgroundImage = `radial-gradient(transparent, #ff000066)`;
-    $board.classList.add("drop");
-    setTimeout(() => {
-      $bgc.style.backgroundImage = `radial-gradient(transparent, #222831)`;
-      const $a = document.createElement("a");
-      $a.href = "/";
-      $a.style.display = "none";
-      document.body.append($a);
-      $a.click();
-    }, 1500);
+    lostEffect();
   });
+}
+
+async function lineCleared() {
+  await listen(lineClearedEmit, (e) => {
+    lineClearedEffect(e.payload as ClearLinePattern);
+  });
+}
+
+async function pieceFixedEvent() {
+  await listen(pieceFixed, () => {
+    pieceFixedEffect();
+  });
+}
+
+async function gameWon() {
+  await listen(gameWonEmit, () => {
+    gameWonEffect();
+  });
+}
+
+async function lineClearedInfo() {
+  await listen(lineClearedInfoEmit, (e) => {
+    const $lines = document.getElementById("write-lines") as HTMLElement;
+    $lines.innerHTML = e.payload as string;
+  })
 }

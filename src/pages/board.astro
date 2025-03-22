@@ -5,7 +5,13 @@ import Layout from "../layouts/Layout.astro";
 <Layout>
   <div id="board">
     <div id="visible">
-      <canvas height="100" width="150" id="held" class="bgc top"></canvas>
+      <div id="left">
+        <canvas height="100" width="150" id="held" class="bgc top"></canvas>
+        <div id="left-bottom">
+          <p>Lines</p>
+          <p id="write-lines"></p>
+        </div>
+      </div>
       <canvas height="760" width="380" id="main" class="bgc"></canvas>
       <canvas height="480" width="150" id="next" class="bgc top"></canvas>
     </div>
@@ -37,6 +43,13 @@ import Layout from "../layouts/Layout.astro";
     align-items: start;
     justify-content: center;
     flex-direction: row;
+  }
+  #left {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-direction: column;
+    height: 100%;
   }
 
   .drop {
