@@ -5,9 +5,9 @@ use std::{
 };
 
 use board::{
-    Board,
     local_board::{ClearLinePattern, LocalBoard},
     remote_board::RemoteBoard,
+    Board,
 };
 use game_options::GameOptions;
 use pieces::Piece;
@@ -38,6 +38,9 @@ const STATE_FOR_NUMBER_3: &str = "EEEEEEEEEEEEEGGGGEEEEEGEEEEGEEEGEEEEEEGEEEEEEE
 const STATE_FOR_NUMBER_2: &str = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEGGGGEEEEEGEEEEGEEEGEEEEEEGEEEEEEEEEGEEEEEEEEEGEEEEEEEEGEEEEEEEEGEEEEEEEEGEEEEEEEEGEEEEEEEEGEEEEEEEEGEEEEEEEEGEEEEEEEEEGEEEEEEEEEGGGGGGGGEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE";
 const STATE_FOR_NUMBER_1: &str = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEGEEEEEEEEGGEEEEEEEGEGEEEEEEGEEGEEEEEEEEEGEEEEEEEEEGEEEEEEEEEGEEEEEEEEEGEEEEEEEEEGEEEEEEEEEGEEEEEEEEEGEEEEEEEEEGEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE";
 
+const EXTENDED_TIME_LOCK_MILIS: u64 = 500;
+const MOVEMENTS_LEFT_RESET: u8 = 15;
+
 #[derive(Debug)]
 pub struct Game {
     app: AppHandle,
@@ -55,6 +58,9 @@ pub struct Game {
     first_level_commands: Receiver<FirstLevelCommands>,
     run: bool,
     last_piece: Piece,
+    piece_lowest_y: i16,
+    count_movements_enabled: bool,
+    movements_left: u8,
 }
 
 impl Game {
@@ -82,6 +88,9 @@ impl Game {
             first_level_commands: receiver,
             run: true,
             last_piece: Piece::Ghost,
+            piece_lowest_y: -20,
+            count_movements_enabled: false,
+            movements_left: MOVEMENTS_LEFT_RESET,
         }
     }
 
@@ -146,13 +155,36 @@ impl Game {
     async fn game_loop(&mut self) {
         let (tx, mut rx) = mpsc::channel(32);
         let (tx_points, rx_points) = mpsc::channel(32);
+        let (tx_extended_lock, mut rx_extended_lock) = mpsc::channel(32);
         Self::tick_loop(tx, rx_points).await;
         self.queue_emit();
         self.state_emit();
         self.game_started = true;
         while self.first_level_commands.try_recv().is_ok() {} // Empty possible orders given before start
         while self.run {
-            if rx.try_recv().is_ok() {
+            if self.local_board.piece_y() > self.piece_lowest_y {
+                self.piece_lowest_y = self.local_board.piece_y();
+            }
+            if self.movements_left == 0 && self.count_movements_enabled {
+                self.local_board.next_tick();
+                self.state_emit();
+                self.count_movements_enabled = false;
+                self.movements_left = MOVEMENTS_LEFT_RESET;
+            }
+            while let Ok(y) = rx_extended_lock.try_recv() {
+                if y >= self.piece_lowest_y && self.count_movements_enabled {
+                    self.local_board.next_tick();
+                    self.state_emit();
+                    self.piece_fixed(&tx_points).await;
+                }
+            }
+            if self.local_board.piece_at_bottom() {
+                self.count_movements_enabled = true;
+                self.movements_left = MOVEMENTS_LEFT_RESET;
+                self.piece_lowest_y = self.local_board.piece_y();
+                Self::extended_lock_down(tx_extended_lock.clone(), self.piece_lowest_y).await;
+            }
+            if rx.try_recv().is_ok() && !self.count_movements_enabled {
                 self.last_piece = self.local_board.cur_piece();
                 if self.local_board.next_tick() {
                     self.piece_fixed(&tx_points).await;
@@ -164,8 +196,14 @@ impl Game {
                     continue;
                 }
                 match command {
-                    FirstLevelCommands::RightMove => self.local_board.move_right(),
-                    FirstLevelCommands::LeftMove => self.local_board.move_left(),
+                    FirstLevelCommands::RightMove => {
+                        self.local_board.move_right();
+                        self.count_movements();
+                    }
+                    FirstLevelCommands::LeftMove => {
+                        self.local_board.move_left();
+                        self.count_movements();
+                    }
                     FirstLevelCommands::ClockWiseRotation => self.local_board.rotation_clockwise(),
                     FirstLevelCommands::CounterClockWiseRotation => {
                         self.local_board.rotation_counterclockwise()
@@ -174,7 +212,6 @@ impl Game {
                         self.local_board.hard_drop();
                         self.piece_fixed(&tx_points).await;
                         self.state_emit();
-                        self.hard_drop_emit();
                     }
                     FirstLevelCommands::SoftDrop => self.local_board.soft_drop(),
                     FirstLevelCommands::SavePiece => {
@@ -192,30 +229,43 @@ impl Game {
             tokio::time::sleep(Duration::from_micros(16_666)).await;
         }
     }
+    fn count_movements(&mut self) {
+        if self.count_movements_enabled {
+            self.movements_left -= 1;
+        }
+    }
     async fn tick_loop(sender: Sender<bool>, mut receiver: Receiver<u16>) {
+        //  This thread will die, it's fine
         tokio::spawn(async move {
             let mut level = 1;
             loop {
                 if let Ok(level_received) = receiver.try_recv() {
                     level = level_received;
                 }
-                let duration = ((level - 1) as f64 * 0.007);
-                let duration = (0.8 - duration);
+                let duration = (level - 1) as f64 * 0.007;
+                let duration = 0.8 - duration;
                 let duration = (duration.powf((level - 1) as f64) * 1000.0).round() as u64;
                 tokio::time::sleep(Duration::from_millis(duration)).await;
                 sender.send(true).await.unwrap();
             }
         });
     }
+    async fn extended_lock_down(sender: Sender<i16>, lowest_y: i16) {
+        tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(EXTENDED_TIME_LOCK_MILIS)).await;
+            sender.send(lowest_y).await.unwrap();
+        });
+    }
     async fn piece_fixed(&mut self, sender: &Sender<u16>) {
+        self.piece_lowest_y = -20;
+        self.count_movements_enabled = false;
+        self.movements_left = MOVEMENTS_LEFT_RESET;
         self.queue_emit();
         self.piece_fixed_emit();
         self.check_line_cleared();
 
         let game_over = self.local_board.game_over();
         let game_won = self.local_board.game_won(self.get_win_condition());
-        println!("over: {game_over}");
-        println!("won: {game_won}");
         if game_won {
             self.game_won_emit();
             self.run = false;
@@ -258,13 +308,8 @@ impl Game {
         if pattern != ClearLinePattern::None {
             self.points_calculation(pattern);
             self.lines_awarded_calculation(pattern);
-            let level = if self.line_clears < 10 {
-                1
-            } else {
-                self.line_clears / (5 * self.level)
-            };
-            if self.level < level {
-                self.level = level;
+            if self.line_clears >= self.level * 5 {
+                self.level += 1;
                 self.line_clears = 0;
             }
             self.line_emit(pattern);
@@ -369,9 +414,6 @@ impl Game {
     }
     fn piece_fixed_emit(&self) {
         self.app.emit(PIECE_FIXED_EMIT, self.last_piece).unwrap();
-    }
-    fn hard_drop_emit(&self) {
-        self.app.emit(HARD_DROP_EMIT, true).unwrap();
     }
     fn points_emit(&self) {
         self.app.emit(POINTS_EMIT, self.points).unwrap();

@@ -22,7 +22,6 @@ const spacing = 38;
 const pieceWidth = 38;
 const pieceHeight = 38;
 
-const pixelsOffset = 5;
 
 const boardSize = columnNumber * rowNumber;
 const strategyEmit = "strategy_emit";
@@ -62,7 +61,6 @@ export default function startDraw(canvas: HTMLCanvasElement, secondCanvas: HTMLC
   invoke("start_game", {
     options: options
   });
-  hardDropEffect();
   gameLost();
 }
 function drawBufferBoard(board: string) {
@@ -223,15 +221,6 @@ function drawBoard(board: string) {
   drawMainBoard(board.substring(200, 400));
 }
 
-async function hardDropEffect() {
-  const $board = document.getElementById("board")! as HTMLElement;
-  await listen(hardDrop, () => {
-    $board.style.transform = `translateY(${pixelsOffset}px)`;
-    setTimeout(() => {
-      $board.style.transform = `translateY(0px)`;
-    }, 100);
-  });
-}
 
 async function gameLost() {
   await listen(gameOverEmit, () => {
@@ -246,8 +235,6 @@ async function gameLost() {
       $a.style.display = "none";
       document.body.append($a);
       $a.click();
-    }, 1900);
+    }, 1500);
   });
 }
-
-//await listen('new-board-state', (e) => drawBoard(e.payload as string))

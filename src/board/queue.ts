@@ -100,10 +100,10 @@ function draw(piece: Piece, position: number, ctx: CanvasRenderingContext2D) {
             drawPiece(start_x + pieceWidth, start_y + pieceHeight, getSPieceColor(), getSPieceDarkColor(), ctx, position);
             break;
         case Piece.Z:
+            drawPiece(start_x, start_y, getZPieceColor(), getZPieceDarkColor(), ctx, position);
             drawPiece(start_x + pieceWidth, start_y, getZPieceColor(), getZPieceDarkColor(), ctx, position);
-            drawPiece(start_x + (pieceWidth * 2), start_y, getZPieceColor(), getZPieceDarkColor(), ctx, position);
-            drawPiece(start_x, start_y + pieceHeight, getZPieceColor(), getZPieceDarkColor(), ctx, position);
             drawPiece(start_x + pieceWidth, start_y + pieceHeight, getZPieceColor(), getZPieceDarkColor(), ctx, position);
+            drawPiece(start_x + (pieceWidth * 2), start_y + pieceHeight, getZPieceColor(), getZPieceDarkColor(), ctx, position);
             break;
         default:
             throw new Error(`${piece} shouldn't be sent through here`);

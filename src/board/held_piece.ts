@@ -101,10 +101,10 @@ function draw(piece: Piece) {
             drawPiece(start_x + pieceWidth, start_y + pieceHeight, getSPieceColor(), getSPieceDarkColor(), ctx);
             break;
         case Piece.Z:
+            drawPiece(start_x, start_y, getZPieceColor(), getZPieceDarkColor(), ctx);
             drawPiece(start_x + pieceWidth, start_y, getZPieceColor(), getZPieceDarkColor(), ctx);
-            drawPiece(start_x + (pieceWidth * 2), start_y, getZPieceColor(), getZPieceDarkColor(), ctx);
-            drawPiece(start_x, start_y + pieceHeight, getZPieceColor(), getZPieceDarkColor(), ctx);
             drawPiece(start_x + pieceWidth, start_y + pieceHeight, getZPieceColor(), getZPieceDarkColor(), ctx);
+            drawPiece(start_x + (pieceWidth * 2), start_y + pieceHeight, getZPieceColor(), getZPieceDarkColor(), ctx);
             break;
         default:
             throw new Error(`${piece} shouldn't be sent through here`);

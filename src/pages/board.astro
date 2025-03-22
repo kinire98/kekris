@@ -11,8 +11,6 @@ import Layout from "../layouts/Layout.astro";
     </div>
     <canvas height="760" width="380" id="buffer"></canvas>
   </div>
-</Layout>
-
 <style>
   .bgc {
     border-inline: 1px solid #909090;
@@ -43,7 +41,7 @@ import Layout from "../layouts/Layout.astro";
 
   .drop {
     transform: rotate(-15deg);
-    animation: drop_board 1s ease-in;
+    animation: drop_board 1.5s ease-in forwards;
   }
   @keyframes drop_board {
     0% {

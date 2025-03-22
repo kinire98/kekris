@@ -2,11 +2,11 @@ use std::sync::Arc;
 
 use tauri::AppHandle;
 use tokio::sync::{
-    Mutex, OnceCell,
     mpsc::{self, Sender},
+    Mutex, OnceCell,
 };
 
-use crate::game::{FirstLevelCommands, Game, game_options::GameOptions};
+use crate::game::{game_options::GameOptions, FirstLevelCommands, Game};
 
 static CHANNEL: OnceCell<Arc<Mutex<Sender<FirstLevelCommands>>>> = OnceCell::const_new();
 
@@ -124,7 +124,12 @@ pub async fn soft_drop() {
 pub async fn start_game(app: AppHandle, options: GameOptions) {
     let (tx, rx) = mpsc::channel(256);
     let mut game = Game::new(options, app, rx);
-    CHANNEL.set(Arc::new(Mutex::new(tx))).unwrap();
+    if let Some(channel) = CHANNEL.get() {
+        let mut locked = channel.lock().await;
+        *locked = tx;
+    } else {
+        CHANNEL.set(Arc::new(Mutex::new(tx))).unwrap();
+    }
     tokio::spawn(async move {
         game.start_game().await;
     });
@@ -157,3 +162,6 @@ pub async fn targeting_strategy_random() {
         // channel.lock().await.targeting_strategy_elimination();
     }
 }
+
+#[tauri::command]
+pub async fn pause_game() {}

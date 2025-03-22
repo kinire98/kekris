@@ -1,11 +1,11 @@
 use std::{cmp::Ordering, ops::Range};
 
-use moving_piece::{MovingPiece, Orientation, moving_piece_t::MovingPieceT};
+use moving_piece::{moving_piece_t::MovingPieceT, MovingPiece, Orientation};
 use serde::{Deserialize, Serialize};
 
 use crate::game::{pieces::Piece, queue::Queue, strategy::Strategy};
 
-use super::{Board, cell::Cell, danger_level::DangerLevel};
+use super::{cell::Cell, danger_level::DangerLevel, Board};
 
 mod moving_piece;
 
@@ -91,7 +91,6 @@ impl Board for LocalBoard {
         }
 
         let coords = coords.unwrap();
-        println!("{:?}", coords);
         if coords.1 > 14 && coords.1 <= 19 {
             return DangerLevel::VeryLow;
         }
@@ -252,12 +251,15 @@ impl LocalBoard {
         }
     }
 
+    pub fn piece_at_bottom(&mut self) -> bool {
+        return self.push_down(false);
+    }
     pub fn soft_drop(&mut self) {
-        let _ = self.push_down();
+        let _ = self.push_down(true);
     }
 
     pub fn next_tick(&mut self) -> bool {
-        let is_in_bottom = self.push_down();
+        let is_in_bottom = self.push_down(true);
         if !is_in_bottom {
             return false;
         }
@@ -266,7 +268,7 @@ impl LocalBoard {
     }
 
     pub fn hard_drop(&mut self) {
-        while !self.push_down() {}
+        while !self.push_down(true) {}
         self.next_piece_operations();
     }
 
@@ -305,7 +307,7 @@ impl LocalBoard {
         piece
     }
 
-    fn push_down(&mut self) -> bool {
+    fn push_down(&mut self, move_piece: bool) -> bool {
         let sides = self.cur_piece.get_bottom_facing_sides();
         for (x, y) in sides {
             if y >= BOARD_HEIGHT - 1 {
@@ -324,7 +326,9 @@ impl LocalBoard {
                 }
             }
         }
-        self.cur_piece.move_down();
+        if move_piece {
+            self.cur_piece.move_down();
+        }
         self.rotation = false;
         false
     }
@@ -403,7 +407,11 @@ impl LocalBoard {
                 pieces_cleared = 0;
             }
         }
-        if lines[0] == -128 { None } else { Some(lines) }
+        if lines[0] == -128 {
+            None
+        } else {
+            Some(lines)
+        }
     }
     fn clear_line(&mut self, y: i16) {
         (-BOARD_HEIGHT..=y).rev().for_each(|y| {
@@ -621,7 +629,6 @@ impl LocalBoard {
         // ! Probably needs a fix
         let highest_coords = self.get_highest_piece();
         if let Some(coord) = highest_coords {
-            println!("{coord:?}");
             (self.num_of_trash_lines() as isize - coord.1 as isize) < -20
         } else {
             false
@@ -630,6 +637,9 @@ impl LocalBoard {
 
     fn block_out(&self) -> bool {
         for (x, y) in self.cur_piece.get_coords() {
+            if y >= 0 {
+                return false;
+            }
             if let Cell::Full(_) = self.get_cell_from_buffer_board(x, y) {
                 return true;
             }
@@ -685,6 +695,12 @@ impl LocalBoard {
     }
     pub fn cur_piece(&self) -> Piece {
         self.cur_piece.piece()
+    }
+    pub fn piece_x(&self) -> i16 {
+        self.cur_piece.x()
+    }
+    pub fn piece_y(&self) -> i16 {
+        self.cur_piece.y()
     }
 }
 
