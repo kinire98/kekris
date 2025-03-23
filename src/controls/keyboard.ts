@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getRepeatInterval, getStartRepeatInterval } from "./interval";
-import { hardDropEffect } from "../board/effects";
+import { hardDropEffect, leftRightEffect } from "../board/effects";
 import { getClockwiseCode, getCounterClockwiseCode, getForfeitCode, getFullRotationCode, getHardDropCode, getLeftMoveCode, getPauseCode, getRetryCode, getRigthMoveCode, getSavePieceCode, getSoftDropCode, getTargetingEliminationsCode, getTargetingEvenCode, getTargetingPaybackCode, getTargetingRandomCode } from "./keycodes";
 
 export default function manageInputListeners() {
@@ -119,6 +119,7 @@ async function hardDrop() {
 }
 
 async function leftMove() {
+  leftRightEffect();
   await invoke("left_move");
 }
 
@@ -127,6 +128,7 @@ async function retryGame() {
 }
 
 async function rightMove() {
+  leftRightEffect();
   await invoke("right_move");
 }
 

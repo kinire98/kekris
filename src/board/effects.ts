@@ -1,5 +1,7 @@
-import type { ClearLinePattern } from "../types/ClearLinePattern";
+import playAudio from "../helpers/playAudio";
+import { ClearLinePattern } from "../types/ClearLinePattern";
 
+const substituteTetrisValue = "Quad";
 const pixelsOffset = 5;
 export function hardDropEffect() {
   const $board = document.getElementById("board")! as HTMLElement;
@@ -9,7 +11,7 @@ export function hardDropEffect() {
   }, 100);
 }
 
-export function lostEffect() {
+export async function lostEffect() {
   const $bgc = document.getElementById("bgc")! as HTMLElement;
   const $board = document.getElementById("board")! as HTMLElement;
   $bgc.style.backgroundImage = `radial-gradient(transparent, #ff000066)`;
@@ -25,7 +27,23 @@ export function lostEffect() {
 }
 
 export function lineClearedEffect(pattern: ClearLinePattern) {
-
+  const $el = document.getElementById("pattern")! as HTMLElement;
+  $el.classList.remove("animation-letters");
+  $el.innerHTML = "";
+  let value;
+  if (pattern == ClearLinePattern.Tetris) {
+    value = substituteTetrisValue;
+  } else {
+    value = pattern;
+  }
+  $el.innerHTML = value;
+  setTimeout(() => {
+    $el.classList.add("animation-letters");
+  }, 10);
+  setTimeout(() => {
+    $el.classList.remove("animation-letters");
+    $el.innerHTML = "";
+  }, 1000);
 }
 
 export function pieceFixedEffect() {
@@ -36,4 +54,5 @@ export function gameWonEffect() {
 
 }
 
-
+export function leftRightEffect() {
+}

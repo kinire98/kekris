@@ -8,8 +8,11 @@ import Layout from "../layouts/Layout.astro";
       <div id="left">
         <canvas height="100" width="150" id="held" class="bgc top"></canvas>
         <div id="left-bottom">
-          <p>Lines</p>
-          <p id="write-lines"></p>
+          <p id="pattern"></p>
+          <div id="lines-div">
+            <p>Lines</p>
+            <p id="write-lines">0/5</p>
+          </div>
         </div>
       </div>
       <canvas height="760" width="380" id="main" class="bgc"></canvas>
@@ -50,6 +53,26 @@ import Layout from "../layouts/Layout.astro";
     justify-content: space-between;
     flex-direction: column;
     height: 100%;
+  }
+  #left-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-direction: column;
+    height: 50%;
+    opacity: 1;
+    letter-spacing: 1px;
+    transition: all 1s;
+    font-size: 24px;
+  }
+  #pattern {
+    width: 150px; 
+  }
+  .animation-letters {
+    opacity: 0;
+    letter-spacing: 5px;
+    transform: translateY(-15px);
+    transition: all 2s;
   }
 
   .drop {

@@ -12,12 +12,14 @@ use board::{
 use game_options::GameOptions;
 use pieces::Piece;
 use queue::local_queue::LocalQueue;
+use sound::SoundPlayer;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
 pub mod board;
 mod pieces;
 pub mod queue;
+mod sound;
 mod strategy;
 
 const HELD_PIECE_EMIT: &str = "held_piece_emit";
@@ -61,6 +63,7 @@ pub struct Game {
     piece_lowest_y: i16,
     count_movements_enabled: bool,
     movements_left: u8,
+    //player: SoundPlayer,
 }
 
 impl Game {
@@ -70,6 +73,7 @@ impl Game {
         receiver: Receiver<FirstLevelCommands>,
     ) -> Self {
         Game {
+            //player: SoundPlayer::new(&app),
             app,
             local_board: LocalBoard::new(LocalQueue::default()),
             remote_boards: Vec::new(),
@@ -166,14 +170,13 @@ impl Game {
                 self.piece_lowest_y = self.local_board.piece_y();
             }
             if self.movements_left == 0 && self.count_movements_enabled {
-                self.local_board.next_tick();
+                self.local_board.hard_drop();
                 self.state_emit();
-                self.count_movements_enabled = false;
-                self.movements_left = MOVEMENTS_LEFT_RESET;
+                self.piece_fixed(&tx_points).await;
             }
             while let Ok(y) = rx_extended_lock.try_recv() {
                 if y >= self.piece_lowest_y && self.count_movements_enabled {
-                    self.local_board.next_tick();
+                    self.local_board.hard_drop();
                     self.state_emit();
                     self.piece_fixed(&tx_points).await;
                 }
@@ -199,10 +202,12 @@ impl Game {
                     FirstLevelCommands::RightMove => {
                         self.local_board.move_right();
                         self.count_movements();
+                        // self.player.play_right_left().await;
                     }
                     FirstLevelCommands::LeftMove => {
                         self.local_board.move_left();
                         self.count_movements();
+                        // self.player.play_right_left().await;
                     }
                     FirstLevelCommands::ClockWiseRotation => self.local_board.rotation_clockwise(),
                     FirstLevelCommands::CounterClockWiseRotation => {
@@ -212,8 +217,12 @@ impl Game {
                         self.local_board.hard_drop();
                         self.piece_fixed(&tx_points).await;
                         self.state_emit();
+                        // self.player.play_piece_drop().await;
                     }
-                    FirstLevelCommands::SoftDrop => self.local_board.soft_drop(),
+                    FirstLevelCommands::SoftDrop => {
+                        self.local_board.soft_drop();
+                        // self.player.play_soft_drop().await
+                    }
                     FirstLevelCommands::SavePiece => {
                         let piece = self.local_board.held_piece();
                         self.local_board.save_piece();
@@ -262,7 +271,7 @@ impl Game {
         self.movements_left = MOVEMENTS_LEFT_RESET;
         self.queue_emit();
         self.piece_fixed_emit();
-        self.check_line_cleared();
+        self.check_line_cleared().await;
 
         let game_over = self.local_board.game_over();
         let game_won = self.local_board.game_won(self.get_win_condition());
@@ -271,6 +280,7 @@ impl Game {
             self.run = false;
         } else if game_over {
             self.game_over_emit();
+            // self.player.play_loss().await;
             self.run = false;
         }
         sender.send(self.level).await.unwrap();
@@ -303,7 +313,7 @@ impl Game {
         }
     }
 
-    fn check_line_cleared(&mut self) {
+    async fn check_line_cleared(&mut self) {
         let pattern = self.local_board.clear_line_pattern();
         if pattern != ClearLinePattern::None {
             self.points_calculation(pattern);
@@ -314,6 +324,12 @@ impl Game {
             }
             self.line_emit(pattern);
             self.points_emit();
+            // match pattern {
+            //     ClearLinePattern::TSpinDouble
+            //     | ClearLinePattern::TSpinTriple
+            //     | ClearLinePattern::Tetris => self.player.play_tspin_tetris().await,
+            //     _ => (),
+            // }
         }
         self.prev_clear_line_pattern = pattern;
     }

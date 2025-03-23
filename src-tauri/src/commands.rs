@@ -123,7 +123,6 @@ pub async fn soft_drop() {
 #[tauri::command]
 pub async fn start_game(app: AppHandle, options: GameOptions) {
     let (tx, rx) = mpsc::channel(256);
-    let mut game = Game::new(options, app, rx);
     if let Some(channel) = CHANNEL.get() {
         let mut locked = channel.lock().await;
         *locked = tx;
@@ -131,6 +130,7 @@ pub async fn start_game(app: AppHandle, options: GameOptions) {
         CHANNEL.set(Arc::new(Mutex::new(tx))).unwrap();
     }
     tokio::spawn(async move {
+        let mut game = Game::new(options, app, rx);
         game.start_game().await;
     });
 }

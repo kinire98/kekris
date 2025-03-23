@@ -41,6 +41,7 @@ img {
 </style>
 <script>
 import openPage from "../helpers/openPage";
+import playAudio from "../helpers/playAudio";
 const url = "./board";
 openPage(document.body, url)
 addEventListener("keypress", () => {
@@ -50,4 +51,9 @@ addEventListener("keypress", () => {
 	document.body.appendChild($a);
 	$a.click();
 });
+await playAudio("/music/menu.mp3", true);
+
+
+
+
 </script>
