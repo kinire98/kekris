@@ -1,3 +1,4 @@
+
 import { invoke } from "@tauri-apps/api/core";
 import { getRepeatInterval, getStartRepeatInterval } from "./interval";
 import { hardDropEffect } from "../board/effects";
@@ -155,6 +156,9 @@ async function leftMove() {
 }
 
 async function retryGame() {
+  if (currentGameOptions.number_of_players > 1) {
+    return;
+  }
   await invoke("retry_game", { options: currentGameOptions });
   const $canvas = document.getElementById("next")! as HTMLCanvasElement;
   $canvas.getContext("2d")?.clearRect(0, 0, $canvas.width, $canvas.height);
@@ -166,7 +170,6 @@ async function retryGame() {
 }
 
 async function rightMove() {
-  console.log("right");
   await invoke("right_move");
 }
 
@@ -180,16 +183,31 @@ async function softDrop() {
 
 async function targetingEliminations() {
   await invoke("targeting_strategy_eliminations");
+  changeStrategy(2);
 }
 
 async function targetingEven() {
   await invoke("targeting_strategy_even");
+  changeStrategy(1);
 }
 
 async function targetingRandom() {
   await invoke("targeting_strategy_random");
+  changeStrategy(0);
 }
 
 async function targetingPayback() {
   await invoke("targeting_strategy_payback");
+  changeStrategy(3);
 }
+
+function changeStrategy(position: number) {
+  let strategies = document.querySelectorAll(".strategies");
+  if (strategies.length == 0) {
+    return;
+  }
+  strategies.forEach(el => el.classList.remove("active"));
+  strategies[position].classList.add("active");
+}
+
+

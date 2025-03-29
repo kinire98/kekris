@@ -86,10 +86,9 @@ export default function startDraw(canvas: HTMLCanvasElement, secondCanvas: HTMLC
   } else {
     pointsInfo();
   }
-  if (!options.normal || options.number_of_players > 1) {
-    gameWon();
-  }
+
   if (!options.normal) {
+    gameWon();
     timer();
   }
 }

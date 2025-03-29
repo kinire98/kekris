@@ -221,10 +221,15 @@ if (name == "host") {
     room = tmpRoom!;
     roomName = room.name;
   }
-} else if (name == "rehost") {
-  console.log("rehost");
-} else if (name == "rejoin") {
-  console.log("rejoin");
+} else {
+  console.log("different route");
+  room = {
+    players: [],
+    name: "",
+    visibility: "LocalNetwork",
+    limit_of_players: 0,
+    games_played: 0,
+  };
 }
 listen(playersEmit, (e) => {
   players.value = e.payload as Player[];
