@@ -255,14 +255,17 @@ impl Game {
                 let duration = 0.8 - duration;
                 let duration = (duration.powf((level - 1) as f64) * 1000.0).round() as u64;
                 tokio::time::sleep(Duration::from_millis(duration)).await;
-                sender.send(true).await.unwrap();
+                match sender.send(true).await {
+                    Ok(_) => (),
+                    Err(_) => break,
+                }
             }
         });
     }
     async fn extended_lock_down(sender: Sender<i16>, lowest_y: i16) {
         tokio::spawn(async move {
             tokio::time::sleep(Duration::from_millis(EXTENDED_TIME_LOCK_MILIS)).await;
-            sender.send(lowest_y).await.unwrap();
+            let _ = sender.send(lowest_y).await;
         });
     }
     async fn piece_fixed(&mut self, sender: &Sender<u16>) {
