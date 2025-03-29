@@ -327,7 +327,7 @@ impl Game {
             match pattern {
                 ClearLinePattern::TSpinDouble
                 | ClearLinePattern::TSpinTriple
-                | ClearLinePattern::Tetris => play_tspin_teris(self.app.clone()).await,
+                | ClearLinePattern::Tetris => play_tspin_tetris(self.app.clone()).await,
                 ClearLinePattern::None => (),
                 _ => play_line_clear(self.app.clone()).await,
             }
