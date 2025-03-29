@@ -13,24 +13,22 @@ static CHANNEL: OnceCell<Arc<Mutex<Sender<FirstLevelCommands>>>> = OnceCell::con
 #[tauri::command]
 pub async fn clockwise_rotation() {
     if let Some(channel) = CHANNEL.get() {
-        channel
+        let _ = channel
             .lock()
             .await
             .send(FirstLevelCommands::ClockWiseRotation)
-            .await
-            .unwrap();
+            .await;
     }
 }
 
 #[tauri::command]
 pub async fn counter_clockwise_rotation() {
     if let Some(channel) = CHANNEL.get() {
-        channel
+        let _ = channel
             .lock()
             .await
             .send(FirstLevelCommands::CounterClockWiseRotation)
-            .await
-            .unwrap();
+            .await;
     }
 }
 
@@ -44,36 +42,33 @@ pub async fn forfeit_game() {
 #[tauri::command]
 pub async fn full_rotation() {
     if let Some(channel) = CHANNEL.get() {
-        channel
+        let _ = channel
             .lock()
             .await
             .send(FirstLevelCommands::FullRotation)
-            .await
-            .unwrap();
+            .await;
     }
 }
 
 #[tauri::command]
 pub async fn hard_drop() {
     if let Some(channel) = CHANNEL.get() {
-        channel
+        let _ = channel
             .lock()
             .await
             .send(FirstLevelCommands::HardDrop)
-            .await
-            .unwrap();
+            .await;
     }
 }
 
 #[tauri::command]
 pub async fn left_move() {
     if let Some(channel) = CHANNEL.get() {
-        channel
+        let _ = channel
             .lock()
             .await
             .send(FirstLevelCommands::LeftMove)
-            .await
-            .unwrap();
+            .await;
     }
 }
 
@@ -87,36 +82,33 @@ pub async fn retry_game() {
 #[tauri::command]
 pub async fn right_move() {
     if let Some(channel) = CHANNEL.get() {
-        channel
+        let _ = channel
             .lock()
             .await
             .send(FirstLevelCommands::RightMove)
-            .await
-            .unwrap();
+            .await;
     }
 }
 
 #[tauri::command]
 pub async fn save_piece() {
     if let Some(channel) = CHANNEL.get() {
-        channel
+        let _ = channel
             .lock()
             .await
             .send(FirstLevelCommands::SavePiece)
-            .await
-            .unwrap();
+            .await;
     }
 }
 
 #[tauri::command]
 pub async fn soft_drop() {
     if let Some(channel) = CHANNEL.get() {
-        channel
+        let _ = channel
             .lock()
             .await
             .send(FirstLevelCommands::SoftDrop)
-            .await
-            .unwrap();
+            .await;
     }
 }
 
