@@ -12,14 +12,16 @@ use board::{
 use game_options::GameOptions;
 use pieces::Piece;
 use queue::local_queue::LocalQueue;
-use sound::SoundPlayer;
+use sound::{
+    play_line_clear, play_loss, play_piece_drop, play_right_left, play_soft_drop, play_tspin_tetris,
+};
 use tauri::{AppHandle, Emitter};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
 pub mod board;
 mod pieces;
 pub mod queue;
-mod sound;
+pub mod sound;
 mod strategy;
 
 const HELD_PIECE_EMIT: &str = "held_piece_emit";
@@ -63,7 +65,6 @@ pub struct Game {
     piece_lowest_y: i16,
     count_movements_enabled: bool,
     movements_left: u8,
-    //player: SoundPlayer,
 }
 
 impl Game {
@@ -73,7 +74,6 @@ impl Game {
         receiver: Receiver<FirstLevelCommands>,
     ) -> Self {
         Game {
-            //player: SoundPlayer::new(&app),
             app,
             local_board: LocalBoard::new(LocalQueue::default()),
             remote_boards: Vec::new(),
@@ -202,12 +202,12 @@ impl Game {
                     FirstLevelCommands::RightMove => {
                         self.local_board.move_right();
                         self.count_movements();
-                        // self.player.play_right_left().await;
+                        play_right_left(self.app.clone()).await;
                     }
                     FirstLevelCommands::LeftMove => {
                         self.local_board.move_left();
                         self.count_movements();
-                        // self.player.play_right_left().await;
+                        play_right_left(self.app.clone()).await;
                     }
                     FirstLevelCommands::ClockWiseRotation => self.local_board.rotation_clockwise(),
                     FirstLevelCommands::CounterClockWiseRotation => {
@@ -217,11 +217,11 @@ impl Game {
                         self.local_board.hard_drop();
                         self.piece_fixed(&tx_points).await;
                         self.state_emit();
-                        // self.player.play_piece_drop().await;
+                        play_piece_drop(self.app.clone()).await;
                     }
                     FirstLevelCommands::SoftDrop => {
                         self.local_board.soft_drop();
-                        // self.player.play_soft_drop().await
+                        play_soft_drop(self.app.clone()).await;
                     }
                     FirstLevelCommands::SavePiece => {
                         let piece = self.local_board.held_piece();
@@ -280,7 +280,7 @@ impl Game {
             self.run = false;
         } else if game_over {
             self.game_over_emit();
-            // self.player.play_loss().await;
+            play_loss(self.app.clone()).await;
             self.run = false;
         }
         sender.send(self.level).await.unwrap();
@@ -324,12 +324,13 @@ impl Game {
             }
             self.line_emit(pattern);
             self.points_emit();
-            // match pattern {
-            //     ClearLinePattern::TSpinDouble
-            //     | ClearLinePattern::TSpinTriple
-            //     | ClearLinePattern::Tetris => self.player.play_tspin_tetris().await,
-            //     _ => (),
-            // }
+            match pattern {
+                ClearLinePattern::TSpinDouble
+                | ClearLinePattern::TSpinTriple
+                | ClearLinePattern::Tetris => play_tspin_tetris(self.app.clone()).await,
+                ClearLinePattern::None => (),
+                _ => play_line_clear(self.app.clone()).await,
+            }
         }
         self.prev_clear_line_pattern = pattern;
     }

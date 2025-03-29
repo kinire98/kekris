@@ -1,92 +1,75 @@
-use std::{collections::HashMap, fmt::Debug, fs::File, io::BufReader, path::PathBuf};
+use std::{fs::File, io::BufReader};
 
-use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
+use rodio::{Decoder, OutputStream, Sink};
 use tauri::{AppHandle, Manager};
 use tokio::task;
 
-const BASE_DIRECTORY: &str = "sound-fx";
-pub struct SoundPlayer {
-    stream: OutputStream,
-    handle: OutputStreamHandle,
-    paths: HashMap<String, PathBuf>,
-}
-impl Debug for SoundPlayer {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SoundPlayer").finish()
-    }
-}
+const LOSS_SOUND: f32 = 1.0;
+const RIGHT_LEFT_SOUND: f32 = 0.1;
+const SOFT_DROP_SOUND: f32 = 5.0;
+const TSPIN_SOUND: f32 = 2.0;
+const PIECE_DROP_SOUND: f32 = 1.5;
+const LINE_CLEAR_SOUND: f32 = 1.0;
 
-impl SoundPlayer {
-    pub fn new(handle: &AppHandle) -> Self {
-        let mut paths = HashMap::new();
-        paths.insert(
-            "loss.mp3".to_string(),
-            handle
-                .path()
-                .resolve("loss.mp3", tauri::path::BaseDirectory::Resource)
-                .unwrap(),
-        );
-        paths.insert(
-            "move-right-left.mp3".to_string(),
-            handle
-                .path()
-                .resolve("move-right-left.mp3", tauri::path::BaseDirectory::Resource)
-                .unwrap(),
-        );
-        paths.insert(
-            "soft-drop.mp3".to_string(),
-            handle
-                .path()
-                .resolve("soft-drop.mp3", tauri::path::BaseDirectory::Resource)
-                .unwrap(),
-        );
-        paths.insert(
-            "t-spin-tetris.mp3".to_string(),
-            handle
-                .path()
-                .resolve("t-spin-tetris.mp3", tauri::path::BaseDirectory::Resource)
-                .unwrap(),
-        );
-        paths.insert(
-            "piece-drop.mp3".to_string(),
-            handle
-                .path()
-                .resolve("piece-drop.mp3", tauri::path::BaseDirectory::Resource)
-                .unwrap(),
-        );
-        let (stream, handle) = OutputStream::try_default().unwrap();
-        SoundPlayer {
-            stream,
-            handle,
-            paths,
-        }
-    }
-    async fn play_sound(&self, sound: &str) {
-        let handle = self.handle.clone();
-        let sound_path = self.paths.get(&sound.to_string()).unwrap().clone();
+async fn play_sound(sound: String, handle: AppHandle, volume: f32) {
+    tokio::spawn(async move {
+        let path = handle
+            .path()
+            .resolve(sound, tauri::path::BaseDirectory::Resource)
+            .unwrap();
         task::spawn_blocking(move || {
+            let (_stream, handle) = OutputStream::try_default().unwrap();
             let sink = Sink::try_new(&handle).unwrap();
-            let file = BufReader::new(File::open(sound_path).unwrap());
+            sink.set_volume(volume);
+            let file = BufReader::new(File::open(path).unwrap());
             let decoder = Decoder::new(file).unwrap();
             sink.append(decoder);
             sink.sleep_until_end();
         })
         .await
         .unwrap();
-    }
-    pub async fn play_loss(&self) {
-        self.play_sound("loss.mp3").await;
-    }
-    pub async fn play_right_left(&self) {
-        self.play_sound("move-right-left.mp3").await;
-    }
-    pub async fn play_soft_drop(&self) {
-        self.play_sound("soft-drop.mp3").await;
-    }
-    pub async fn play_tspin_tetris(&self) {
-        self.play_sound("t-spin-tetris.mp3").await;
-    }
-    pub async fn play_piece_drop(&self) {
-        self.play_sound("piece-drop.mp3").await;
-    }
+    });
+}
+pub async fn play_loss(handle: AppHandle) {
+    // play_sound("assets/sound-fx/loss.mp3".to_string(), handle, LOSS_SOUND).await;
+}
+pub async fn play_right_left(handle: AppHandle) {
+    // play_sound(
+    //     "assets/sound-fx/move-right-left.wav".to_string(),
+    //     handle,
+    //     RIGHT_LEFT_SOUND,
+    // )
+    // .await;
+}
+pub async fn play_soft_drop(handle: AppHandle) {
+    // play_sound(
+    //     "assets/sound-fx/soft-drop.wav".to_string(),
+    //     handle,
+    //     SOFT_DROP_SOUND,
+    // )
+    // .await;
+}
+pub async fn play_tspin_tetris(handle: AppHandle) {
+    // play_sound(
+    //     "assets/sound-fx/t-spin-tetris.mp3".to_string(),
+    //     handle,
+    //     TSPIN_SOUND,
+    // )
+    // .await;
+}
+pub async fn play_piece_drop(handle: AppHandle) {
+    // play_sound(
+    //     "assets/sound-fx/piece-drop.wav".to_string(),
+    //     handle,
+    //     PIECE_DROP_SOUND,
+    // )
+    // .await;
+}
+pub async fn play_line_clear(handle: AppHandle) {
+    // play_sound(
+    //     "assets/sound-fx/line-clear.wav".to_string(),
+    //     handle,
+    //     LINE_CLEAR_SOUND,
+    // )
+    // .await;
 }
