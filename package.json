@@ -1,24 +1,26 @@
 {
   "name": "kekris",
+  "private": true,
+  "version": "0.1.0",
   "type": "module",
-  "version": "0.0.1",
   "scripts": {
-    "dev": "astro dev",
-    "start": "astro dev",
-    "build": "astro check && astro build",
-    "preview": "astro preview",
-    "astro": "astro",
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
     "tauri": "tauri"
   },
   "dependencies": {
-    "@astrojs/check": "^0.9.4",
-    "@astrojs/solid-js": "^5.0.6",
-    "@playform/compress": "^0.0.3",
-    "@playform/inline": "^0.0.2",
-    "@tauri-apps/api": ">=2.0.0-beta.0",
-    "@tauri-apps/cli": ">=2.0.0-beta.0",
-    "astro": "^5.5.5",
-    "solid-js": "^1.8.16",
-    "typescript": "^5.4.5"
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-opener": "^2",
+    "pinia": "^3.0.1",
+    "vue": "^3.5.13",
+    "vue-router": "4"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "typescript": "~5.6.2",
+    "vite": "^6.0.3",
+    "vue-tsc": "^2.1.10"
   }
 }

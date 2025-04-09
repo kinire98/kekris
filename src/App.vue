@@ -1,20 +1,10 @@
----
 
----
+<template>
+	<div id="bgc"></div>
+	<RouterView />
+</template>
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
-	</head>
-	<body>
-		<div id="bgc"></div>
-		<slot />
-	</body>
-</html>
-
-<style is:global>
+<style>
 	@font-face {
 		font-family: "audiowide";
 		src: url("/fonts/Audiowide-Regular.ttf");
@@ -44,6 +34,7 @@
 		min-width: 100%;
 		color: var(--white-constrast);
 		background-color: var(--black-constrast);
+		overflow: hidden;
 	}
 	#bgc {
 		position: absolute;
@@ -58,3 +49,10 @@
 		text-align: center;
 	}
 </style>
+<script>
+
+import forbidBack from "./helpers/forbidBack";
+forbidBack();
+
+
+</script>

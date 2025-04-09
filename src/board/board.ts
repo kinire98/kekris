@@ -9,7 +9,7 @@ import {
   getGhostColor
 } from "./colors";
 import { invoke } from "@tauri-apps/api/core";
-import type { GameOptions } from "../types";
+import type { GameOptions } from "../types/GameOptions";
 import { gameWonEffect, lineClearedEffect, lostEffect, pieceFixedEffect } from "./effects";
 import type { ClearLinePattern } from "../types/ClearLinePattern";
 

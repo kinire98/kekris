@@ -1,8 +1,4 @@
----
-import Layout from "../layouts/Layout.astro";
----
-
-<Layout>
+<template>
   <div id="board">
     <div id="visible">
       <div id="left">
@@ -20,7 +16,8 @@ import Layout from "../layouts/Layout.astro";
     </div>
     <canvas height="760" width="380" id="buffer"></canvas>
   </div>
-<style>
+</template>
+<style scoped>
   .bgc {
     border-inline: 1px solid #909090;
     border-bottom: 1px solid #909090;
@@ -125,21 +122,20 @@ import Layout from "../layouts/Layout.astro";
     }
   }
 </style>
-
-<script>
-  import forbidBack from "../helpers/forbidBack";
+<script lang="ts">
   import startDraw from "../board/board";
   import manageInput from "../controls/keyboard";
   import startHeld from "../board/held_piece";
   import startQueue from "../board/queue";
-  document.addEventListener("DOMContentLoaded", () => {
-    forbidBack();
-    startDraw(
-      document.getElementById("main")! as HTMLCanvasElement,
-      document.getElementById("buffer")! as HTMLCanvasElement,
-    );
-    startHeld(document.getElementById("held")! as HTMLCanvasElement);
-    startQueue(document.getElementById("next")! as HTMLCanvasElement);
-    manageInput();
-  });
+  export default {
+    mounted() {
+      startDraw(
+        document.getElementById("main")! as HTMLCanvasElement,
+        document.getElementById("buffer")! as HTMLCanvasElement
+      );
+      startHeld(document.getElementById("held")! as HTMLCanvasElement);
+      startQueue(document.getElementById("next")! as HTMLCanvasElement);
+      manageInput();
+    }
+  }
 </script>
