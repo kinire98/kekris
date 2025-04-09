@@ -18,7 +18,7 @@ export async function lostEffect() {
   setTimeout(() => {
     $bgc.style.backgroundImage = `radial-gradient(transparent, #222831)`;
     const $a = document.createElement("a");
-    $a.href = "/";
+    $a.href = "/main";
     $a.style.display = "none";
     document.body.append($a);
     $a.click();
