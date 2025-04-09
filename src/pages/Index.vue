@@ -3,19 +3,14 @@
     <img src="/logo-drop-shadow.png" alt="" />
     <h2>Click anywhere</h2>
   </div>
-  <Dialog
-    v-model:visible="visible"
-    modal
-    header="Select username"
-    closable="false"
-    @update:visible="onDialogChange"
-  >
-    <InputText type="text" v-model="value" />
+  <div id="front"></div>
+  <Dialog v-model:visible="visible" modal header="Select username">
+    <InputText type="text" v-model="value" :invalid="!value" />
     <Button
       label="Confirm"
       variant="outlined"
       raised
-      @click="visible = false"
+      @click="onConfirmed"
     ></Button>
   </Dialog>
 </template>
@@ -30,6 +25,14 @@ div {
   * {
     margin-block: 5rem;
   }
+}
+#front {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
 }
 h2 {
   animation: opa 2s ease-in infinite;
@@ -59,6 +62,9 @@ button:hover {
   color: var(--main-contrast) !important;
   background-color: var(--main-color) !important;
 }
+.p-inputtext {
+  border: 1px solid var(--main-color);
+}
 </style>
 
 <script lang="ts">
@@ -75,25 +81,23 @@ export default {
   methods: {
     changeRouteChecking() {
       let username = getUsername();
-      if (username == null) {
+      if (username == null || username.length == 0) {
         this.visible = true;
       } else {
         this.$router.push("/main");
       }
     },
-    onDialogChange(visible: boolean) {
-      if (visible) {
-        return;
+    onConfirmed() {
+      if (this.value.length > 0) {
+        setUsername(this.value);
+        this.$router.push("/main");
       }
-      setUsername(this.value);
-      this.$router.push("/main");
     },
   },
   mounted() {
-    document.body.addEventListener("click", this.changeRouteChecking);
-  },
-  beforeDestroy() {
-    document.body.removeEventListener("click", this.changeRouteChecking);
+    document
+      .getElementById("front")!
+      .addEventListener("click", this.changeRouteChecking);
   },
 };
 </script>

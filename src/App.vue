@@ -35,6 +35,14 @@ body {
   background-color: var(--black-constrast);
   overflow: hidden;
 }
+* {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
 #bgc {
   position: absolute;
   top: 0;

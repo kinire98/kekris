@@ -159,7 +159,6 @@ function getColor(piece: string): string {
     return getSPieceColor();
   else if (piece == "Z")
     return getZPieceColor();
-  console.log(piece);
   throw new Error("Invalid Value");
 }
 function getDarkColor(piece: string): string {
