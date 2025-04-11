@@ -14,8 +14,14 @@ declare module 'vue' {
     Index: typeof import('./src/pages/Index.vue')['default']
     InputText: typeof import('primevue/inputtext')['default']
     Main: typeof import('./src/pages/Main.vue')['default']
+    MenuBackLayout: typeof import('./src/layouts/MenuBackLayout.vue')['default']
+    MenuButton: typeof import('./src/components/MenuButton.vue')['default']
     MenuLayout: typeof import('./src/layouts/MenuLayout.vue')['default']
+    Multiplayer: typeof import('./src/pages/Multiplayer.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    Settings: typeof import('./src/pages/Settings.vue')['default']
+    Singleplayer: typeof import('./src/pages/Singleplayer.vue')['default']
+    Toast: typeof import('primevue/toast')['default']
   }
 }

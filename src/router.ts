@@ -2,11 +2,17 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import Index from './pages/Index.vue'
 import Board from "./pages/Board.vue";
 import Main from "./pages/Main.vue";
+import Multiplayer from './pages/Multiplayer.vue';
+import Singleplayer from './pages/Singleplayer.vue';
+import Settings from './pages/Settings.vue';
 
 const routes = [
     { path: '/', component: Index },
     { path: '/board', component: Board },
     { path: '/main', component: Main },
+    { path: '/multiplayer', component: Multiplayer },
+    { path: '/singleplayer', component: Singleplayer },
+    { path: '/settings', component: Settings },
 ]
 
 export const router = createRouter({

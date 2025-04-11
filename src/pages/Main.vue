@@ -1,9 +1,10 @@
 <template>
   <MenuLayout>
+    <Toast class="not-yet-implemented" position="bottom-right" />
     <div>
-      <Button label="Single player" variant="outlined" raised></Button>
-      <Button label="Multiplayer" variant="outlined" raised></Button>
-      <Button label="Settings" variant="outlined" raised></Button>
+      <MenuButton label="Single player" path="/singleplayer" />
+      <MenuButton label="Multiplayer" path="/multiplayer" />
+      <MenuButton label="Settings" path="/settings" />
     </div>
   </MenuLayout>
 </template>
@@ -16,28 +17,23 @@ div {
   height: 100vh;
   width: 100vw;
 }
-button {
-  width: 45vw;
-  height: 150px;
-  border-color: var(--main-color);
-  color: var(--main-color);
-  margin-block: 50px;
-  font-size: 25px;
-  transition: all 0.3s;
-  display: flex;
-  align-items: center;
-  justify-content: start;
-  padding-inline-start: 5vw;
-}
-button:hover {
-  width: 50vw;
-  border-color: var(--main-contrast) !important;
-  color: var(--main-contrast) !important;
-  background-color: var(--main-color) !important;
-}
 </style>
 <script lang="ts">
-import Button from "primevue/button";
 import MenuLayout from "../layouts/MenuLayout.vue";
-export default {};
+import MenuButton from "../components/MenuButton.vue";
+import { Toast } from "primevue";
+import { useToast } from "primevue";
+export default {
+  beforeRouteLeave(to, _from, next) {
+    if (to.path === "/multiplayer") {
+      const toast = useToast();
+      toast.add({
+        severity: "contrast",
+        summary: "Multiplayer soon available",
+        life: 2500,
+      });
+      next(false);
+    }
+  },
+};
 </script>
