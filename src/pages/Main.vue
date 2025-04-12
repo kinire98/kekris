@@ -1,25 +1,13 @@
 <template>
-  <MenuLayout>
+  <MenuBackLayout back="false">
     <Toast class="not-yet-implemented" position="bottom-right" />
-    <div>
-      <MenuButton label="Single player" path="/singleplayer" />
-      <MenuButton label="Multiplayer" path="/multiplayer" />
-      <MenuButton label="Settings" path="/settings" />
-    </div>
-  </MenuLayout>
+    <MenuButton label="Single player" path="/singleplayer" />
+    <MenuButton label="Multiplayer" path="/multiplayer" />
+    <MenuButton label="Settings" path="/settings" />
+  </MenuBackLayout>
 </template>
-<style scoped>
-div {
-  display: flex;
-  align-items: end;
-  justify-content: center;
-  flex-direction: column;
-  height: 100vh;
-  width: 100vw;
-}
-</style>
 <script lang="ts">
-import MenuLayout from "../layouts/MenuLayout.vue";
+import MenuBackLayout from "../layouts/MenuBackLayout.vue";
 import MenuButton from "../components/MenuButton.vue";
 import { Toast } from "primevue";
 import { useToast } from "primevue";
@@ -34,6 +22,7 @@ export default {
       });
       next(false);
     }
+    next(true);
   },
 };
 </script>

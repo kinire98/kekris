@@ -1,13 +1,28 @@
 <template>
   <div id="holder">
     <div>
-      <a href="https://kinire98.github.io/kekris/">
-        <img src="/logo-drop-shadow.png" alt="" class="logo" />
+      <a href="https://kinire98.github.io/kekris/" target="_blank">
+        <img src="/logo-drop-shadow.png" alt="App logo" class="logo" />
       </a>
     </div>
-    <slot></slot>
+    <div id="buttons-div">
+      <slot></slot>
+    </div>
   </div>
-  <Button label="<-" id="back" variant="outlined" raised @click="goBack" />
+  <div id="top-bar">
+    <div id="top-left-bar">
+      <Button
+        label="<-"
+        id="back"
+        variant="outlined"
+        raised
+        @click="goBack"
+        v-if="props.back == true"
+      />
+      <h1 id="menu-title">{{ props.title }}</h1>
+    </div>
+    <Profile id="profile" />
+  </div>
 </template>
 <style scoped>
 div#holder {
@@ -22,14 +37,13 @@ div#holder {
   align-items: center;
   justify-content: center;
   width: 100%;
+  z-index: 999;
 }
 #holder > div > a {
   cursor: pointer;
 }
+
 #back {
-  position: absolute;
-  top: 2vh;
-  left: 3vw;
   width: 5vw;
   height: 50px;
   border-color: var(--main-color);
@@ -46,7 +60,38 @@ div#holder {
   color: var(--main-contrast) !important;
   background-color: var(--main-color) !important;
 }
+div#buttons-div {
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+}
+#top-bar {
+  position: absolute;
+  top: 0;
+  width: 100vw;
+  height: 15vh;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 5vw;
+  padding-right: 15vw;
+}
+
+#menu-title {
+  margin-left: 5vw;
+}
+#top-left-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 </style>
+<script setup lang="ts">
+const props = defineProps({ title: String, back: Boolean });
+</script>
 <script lang="ts">
 import Button from "primevue/button";
 export default {

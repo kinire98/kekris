@@ -8,6 +8,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    BackProfilePage: typeof import('./src/layouts/BackProfilePage.vue')['default']
     Board: typeof import('./src/pages/Board.vue')['default']
     Button: typeof import('primevue/button')['default']
     Dialog: typeof import('primevue/dialog')['default']
@@ -18,6 +19,8 @@ declare module 'vue' {
     MenuButton: typeof import('./src/components/MenuButton.vue')['default']
     MenuLayout: typeof import('./src/layouts/MenuLayout.vue')['default']
     Multiplayer: typeof import('./src/pages/Multiplayer.vue')['default']
+    Profile: typeof import('./src/components/Profile.vue')['default']
+    ProfilePage: typeof import('./src/pages/ProfilePage.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     Settings: typeof import('./src/pages/Settings.vue')['default']

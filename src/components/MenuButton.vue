@@ -7,7 +7,7 @@
 .menu-button {
   width: 45vw;
   height: 150px;
-  border-color: var(--main-color);
+  border: 2.5px solid var(--main-color);
   color: var(--main-color);
   margin-block: 50px;
   font-size: 25px;

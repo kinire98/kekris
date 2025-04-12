@@ -58,5 +58,8 @@ h1 {
 </style>
 <script>
 import forbidBack from "./helpers/forbidBack";
+import forbidReload from "./helpers/forbidReload";
+
 forbidBack();
+forbidReload();
 </script>

@@ -5,6 +5,7 @@ import Main from "./pages/Main.vue";
 import Multiplayer from './pages/Multiplayer.vue';
 import Singleplayer from './pages/Singleplayer.vue';
 import Settings from './pages/Settings.vue';
+import ProfilePage from './pages/ProfilePage.vue';
 
 const routes = [
     { path: '/', component: Index },
@@ -13,6 +14,7 @@ const routes = [
     { path: '/multiplayer', component: Multiplayer },
     { path: '/singleplayer', component: Singleplayer },
     { path: '/settings', component: Settings },
+    { path: '/profile', component: ProfilePage },
 ]
 
 export const router = createRouter({
