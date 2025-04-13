@@ -1,38 +1,57 @@
 <template>
-  <div id="holder">
-    <div>
-      <a href="https://kinire98.github.io/kekris/" target="_blank">
-        <img src="/logo-drop-shadow.png" alt="App logo" class="logo" />
-      </a>
+  <div id="wrapper">
+    <div id="top-bar">
+      <div id="top-left-bar">
+        <Button
+          label="<-"
+          id="back"
+          variant="outlined"
+          raised
+          @click="goBack"
+          v-if="props.back == true"
+        />
+        <h1 id="menu-title">{{ props.title }}</h1>
+      </div>
+      <Profile id="profile" />
     </div>
-    <div id="buttons-div">
-      <slot></slot>
+    <div id="holder">
+      <div id="img-div">
+        <a href="https://kinire98.github.io/kekris/" target="_blank">
+          <img
+            src="/logo-drop-shadow.png"
+            :alt="$t('alts.logo')"
+            class="logo"
+          />
+        </a>
+      </div>
+      <div id="buttons-div">
+        <slot></slot>
+      </div>
     </div>
-  </div>
-  <div id="top-bar">
-    <div id="top-left-bar">
-      <Button
-        label="<-"
-        id="back"
-        variant="outlined"
-        raised
-        @click="goBack"
-        v-if="props.back == true"
-      />
-      <h1 id="menu-title">{{ props.title }}</h1>
-    </div>
-    <Profile id="profile" />
   </div>
 </template>
 <style scoped>
+#wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  flex-direction: column;
+  z-index: 2;
+}
+img {
+  transition: all 0.3s;
+}
+img:hover {
+  transform: scale(1.1);
+}
 div#holder {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: row;
-  height: 100vh;
+  height: 75vh;
 }
-#holder > div {
+#holder > #img-div {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -62,22 +81,19 @@ div#holder {
 }
 div#buttons-div {
   display: flex;
-  align-items: end;
+  align-items: center;
   justify-content: center;
   flex-direction: column;
-  height: 100vh;
   width: 100vw;
 }
 #top-bar {
-  position: absolute;
-  top: 0;
   width: 100vw;
   height: 15vh;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding-left: 5vw;
-  padding-right: 15vw;
+  padding-right: 5vw;
 }
 
 #menu-title {
@@ -87,13 +103,16 @@ div#buttons-div {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 25vw !important;
 }
 </style>
 <script setup lang="ts">
 const props = defineProps({ title: String, back: Boolean });
+const t = useI18n();
 </script>
 <script lang="ts">
 import Button from "primevue/button";
+import { useI18n } from "vue-i18n";
 export default {
   methods: {
     goBack() {

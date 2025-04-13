@@ -1,0 +1,35 @@
+{
+    "ui": {
+        "main": {
+            "singleplayer": "Un jugador",
+            "singleplayer-desc": "Supera tus propios récords, practica o relájate",
+            "multiplayer": "Multijugador",
+            "multiplayer-desc": "Compite con tus amigos",
+            "settings": "Ajustes",
+            "settings-desc": "Personaliza tu experiencia"
+        },
+        "index": {
+            "click": "Haz click en cualquier lugar"
+        },
+        "singleplayer": {
+            "singleplayer": "Un jugador",
+            "classic": "Clásica",
+            "lines": "40 líneas",
+            "blitz": "Relámpago",
+            "classic-desc": "Experiencia clásica. Aguanta todo lo que puedas",
+            "lines-desc": "Una batalla contra el reloj. Completa 40 líneas lo más rápido que puedas",
+            "blitz-desc": "2 minutos. Consigue tantos puntos cómo puedas"
+        },
+        "multiplayer": {
+            "multiplayer": "Multijugador",
+            "soon": "Multijugador pronto disponible"
+        },
+        "settings": {
+            "settings": "Ajustes"
+        },
+        "username": {
+            "select": "Seleccionar nombre de usuario",
+            "confirm": "Confirmar"
+        }
+    }
+}

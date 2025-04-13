@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getRepeatInterval, getStartRepeatInterval } from "./interval";
 import { hardDropEffect, leftRightEffect } from "../board/effects";
-import { getClockwiseCode, getCounterClockwiseCode, getForfeitCode, getFullRotationCode, getHardDropCode, getLeftMoveCode, getPauseCode, getRetryCode, getRigthMoveCode, getSavePieceCode, getSoftDropCode, getTargetingEliminationsCode, getTargetingEvenCode, getTargetingPaybackCode, getTargetingRandomCode } from "./keycodes";
+import { getClockwiseCode, getCounterClockwiseCode, getForfeitCode, getFullRotationCode, getHardDropCode, getLeftMoveCode, getRetryCode, getRigthMoveCode, getSavePieceCode, getSoftDropCode, getTargetingEliminationsCode, getTargetingEvenCode, getTargetingPaybackCode, getTargetingRandomCode } from "./keycodes";
 
 export default function manageInputListeners() {
   // ! Take out to another file
@@ -91,9 +91,6 @@ function manageInput(keyCode: string) {
     case getRetryCode():
       retryGame();
       break;
-    case getPauseCode():
-      pauseGame();
-      break;
   }
 }
 
@@ -154,7 +151,4 @@ async function targetingRandom() {
 
 async function targetingPayback() {
   await invoke("targeting_strategy_payback");
-}
-async function pauseGame() {
-  await invoke("pause_game");
 }

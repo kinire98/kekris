@@ -1,6 +1,6 @@
 <template>
   <div @click="onImageClick">
-    <img src="/defuser.png" alt="User image" />
+    <img src="/defuser.png" :alt="$t('alts.user')" />
   </div>
 </template>
 
@@ -8,8 +8,6 @@
 div {
   cursor: pointer;
   transition: all 0.3s;
-  margin-left: 55vw;
-  z-index: 9999;
 }
 div:hover {
   transform: scale(1.1);
@@ -22,11 +20,17 @@ img {
 </style>
 
 <script>
+import { useI18n } from "vue-i18n";
+
 export default {
   methods: {
     onImageClick() {
       this.$router.push("/profile");
     },
+  },
+  setup() {
+    const t = useI18n();
+    return t;
   },
 };
 </script>

@@ -1,13 +1,13 @@
 <template>
-  <div @click="">
+  <div @click="" id="logo">
     <img src="/logo-drop-shadow.png" alt="" />
-    <h2>Click anywhere</h2>
+    <h2>{{ $t("ui.index.click") }}</h2>
   </div>
   <div id="front"></div>
-  <Dialog v-model:visible="visible" modal header="Select username">
+  <Dialog v-model:visible="visible" modal :header="$t('ui.username.select')">
     <InputText type="text" v-model="value" :invalid="!value" />
     <Button
-      label="Confirm"
+      :label="$t('ui.username.confirm')"
       variant="outlined"
       raised
       @click="onConfirmed"
@@ -15,11 +15,11 @@
   </Dialog>
 </template>
 <style scoped>
-div {
+#logo {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 85vh;
+  height: 95vh;
   width: 100vw;
   flex-direction: column;
   * {
@@ -48,21 +48,25 @@ h2 {
     opacity: 1;
   }
 }
-button {
-  border-color: var(--main-color);
-  color: var(--main-color);
-  margin-block: 50px;
+.p-button-outlined {
+  border: 2.5px solid var(--main-color) !important;
+  color: var(--main-color) !important;
+  margin-block: 10px;
   transition: all 0.3s;
   display: flex;
   align-items: center;
   justify-content: start;
 }
-button:hover {
+.p-button-outlined:hover {
   border-color: var(--main-contrast) !important;
   color: var(--main-contrast) !important;
   background-color: var(--main-color) !important;
 }
 .p-inputtext {
+  border: 1px solid var(--transparent-main-color);
+  margin-bottom: 5px;
+}
+.p-inputtext:enabled:focus {
   border: 1px solid var(--main-color);
 }
 </style>
@@ -73,6 +77,7 @@ import Dialog from "primevue/dialog";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import { getUsername, setUsername } from "../helpers/username";
+import { useI18n } from "vue-i18n";
 
 export default {
   data() {
@@ -98,6 +103,10 @@ export default {
     document
       .getElementById("front")!
       .addEventListener("click", this.changeRouteChecking);
+  },
+  setup() {
+    const t = useI18n();
+    return { t };
   },
 };
 </script>

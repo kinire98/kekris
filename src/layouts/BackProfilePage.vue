@@ -10,15 +10,40 @@
           @click="goBack"
           v-if="props.back == true"
         />
-        <h1 id="menu-title">{{ props.title }}</h1>
+        <h1 id="menu-title" @click="showChangeUserNameDialog">
+          {{ getUsername() }}
+        </h1>
       </div>
     </div>
     <div>
       <slot></slot>
     </div>
   </div>
+  <Dialog v-model:visible="visible" modal header="Select username">
+    <InputText
+      type="text"
+      v-model="userNameValue"
+      :invalid="userNameValue.length === 0"
+    />
+    <br />
+    <Button
+      label="Confirm"
+      variant="outlined"
+      raised
+      @click="onDialogClick"
+      id="dialog-button"
+    ></Button>
+  </Dialog>
 </template>
 <style scoped>
+h1 {
+  color: var(--white-contrast);
+  cursor: pointer;
+  transition: all 0.1s;
+}
+h1:hover {
+  transform: scale(1.1);
+}
 #holder-top {
   display: flex;
   align-items: center;
@@ -60,16 +85,56 @@
   color: var(--main-contrast) !important;
   background-color: var(--main-color) !important;
 }
+.p-button-outlined {
+  border: 2.5px solid var(--main-color) !important;
+  color: var(--main-color) !important;
+  margin-block: 10px;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: start;
+}
+.p-button-outlined:hover {
+  border-color: var(--main-contrast) !important;
+  color: var(--main-contrast) !important;
+  background-color: var(--main-color) !important;
+}
+.p-inputtext {
+  border: 1px solid var(--transparent-main-color);
+  margin-bottom: 5px;
+}
+.p-inputtext:enabled:focus {
+  border: 1px solid var(--main-color);
+}
 </style>
 <script setup lang="ts">
 const props = defineProps({ title: String, back: Boolean });
 </script>
 <script lang="ts">
 import Button from "primevue/button";
+
+import Dialog from "primevue/dialog";
+
+import InputText from "primevue/inputtext";
+import { getUsername, setUsername } from "../helpers/username";
 export default {
+  data() {
+    return { visible: false, userNameValue: getUsername()! };
+  },
   methods: {
     goBack() {
       this.$router.back();
+    },
+    showChangeUserNameDialog() {
+      this.visible = true;
+      console.log(this.userNameValue);
+    },
+    onDialogClick() {
+      console.log("here");
+      if (this.userNameValue != null && this.userNameValue.length != 0) {
+        this.visible = false;
+        setUsername(this.userNameValue);
+      }
     },
   },
 };

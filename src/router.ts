@@ -9,12 +9,14 @@ import ProfilePage from './pages/ProfilePage.vue';
 
 const routes = [
     { path: '/', component: Index },
-    { path: '/board', component: Board },
     { path: '/main', component: Main },
     { path: '/multiplayer', component: Multiplayer },
     { path: '/singleplayer', component: Singleplayer },
     { path: '/settings', component: Settings },
     { path: '/profile', component: ProfilePage },
+    { path: '/classic', component: Board },
+    { path: '/lines', component: Board },
+    { path: '/blitz', component: Board },
 ]
 
 export const router = createRouter({

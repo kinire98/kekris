@@ -51,6 +51,10 @@ body {
   right: 0;
   background-image: radial-gradient(transparent, #222831);
   transition: all 0.3s;
+  z-index: 0 !important;
+}
+* {
+  z-index: 2 !important;
 }
 h1 {
   text-align: center;

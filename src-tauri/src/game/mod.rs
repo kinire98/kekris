@@ -5,9 +5,9 @@ use std::{
 };
 
 use board::{
+    Board,
     local_board::{ClearLinePattern, LocalBoard},
     remote_board::RemoteBoard,
-    Board,
 };
 use game_options::GameOptions;
 use pieces::Piece;
@@ -59,6 +59,7 @@ pub struct Game {
     prev_clear_line_pattern: ClearLinePattern,
     level: u16,
     line_clears: u16,
+    real_line_clears: u16,
     first_level_commands: Receiver<FirstLevelCommands>,
     run: bool,
     last_piece: Piece,
@@ -89,6 +90,7 @@ impl Game {
             prev_clear_line_pattern: ClearLinePattern::None,
             level: 1,
             line_clears: 0,
+            real_line_clears: 0,
             first_level_commands: receiver,
             run: true,
             last_piece: Piece::Ghost,
@@ -166,34 +168,13 @@ impl Game {
         self.game_started = true;
         while self.first_level_commands.try_recv().is_ok() {} // Empty possible orders given before start
         while self.run {
-            if self.local_board.piece_y() > self.piece_lowest_y {
-                self.piece_lowest_y = self.local_board.piece_y();
-            }
-            if self.movements_left == 0 && self.count_movements_enabled {
-                self.local_board.hard_drop();
-                self.state_emit();
-                self.piece_fixed(&tx_points).await;
-            }
-            while let Ok(y) = rx_extended_lock.try_recv() {
-                if y >= self.piece_lowest_y && self.count_movements_enabled {
-                    self.local_board.hard_drop();
-                    self.state_emit();
-                    self.piece_fixed(&tx_points).await;
-                }
-            }
-            if self.local_board.piece_at_bottom() {
-                self.count_movements_enabled = true;
-                self.movements_left = MOVEMENTS_LEFT_RESET;
-                self.piece_lowest_y = self.local_board.piece_y();
-                Self::extended_lock_down(tx_extended_lock.clone(), self.piece_lowest_y).await;
-            }
-            if rx.try_recv().is_ok() && !self.count_movements_enabled {
-                self.last_piece = self.local_board.cur_piece();
-                if self.local_board.next_tick() {
-                    self.piece_fixed(&tx_points).await;
-                }
-                self.state_emit();
-            }
+            self.critical_checks(
+                &tx_points,
+                &mut rx_extended_lock,
+                tx_extended_lock.clone(),
+                &mut rx,
+            )
+            .await;
             while let Ok(command) = self.first_level_commands.try_recv() {
                 if !self.game_started {
                     continue;
@@ -234,8 +215,51 @@ impl Game {
                     FirstLevelCommands::FullRotation => self.local_board.rotation_full(),
                 }
                 self.state_emit();
+                self.critical_checks(
+                    &tx_points,
+                    &mut rx_extended_lock,
+                    tx_extended_lock.clone(),
+                    &mut rx,
+                )
+                .await;
             }
             tokio::time::sleep(Duration::from_micros(16_666)).await;
+        }
+    }
+    async fn critical_checks(
+        &mut self,
+        tx_points: &Sender<u16>,
+        rx_extended_lock: &mut Receiver<i16>,
+        tx_extended_lock: Sender<i16>,
+        rx: &mut Receiver<bool>,
+    ) {
+        if self.local_board.piece_y() > self.piece_lowest_y {
+            self.piece_lowest_y = self.local_board.piece_y();
+        }
+        if self.movements_left == 0 && self.count_movements_enabled {
+            self.local_board.hard_drop();
+            self.state_emit();
+            self.piece_fixed(&tx_points).await;
+        }
+        while let Ok(y) = rx_extended_lock.try_recv() {
+            if y >= self.piece_lowest_y && self.count_movements_enabled {
+                self.local_board.hard_drop();
+                self.state_emit();
+                self.piece_fixed(&tx_points).await;
+            }
+        }
+        if self.local_board.piece_at_bottom() {
+            self.count_movements_enabled = true;
+            self.movements_left = MOVEMENTS_LEFT_RESET;
+            self.piece_lowest_y = self.local_board.piece_y();
+            Self::extended_lock_down(tx_extended_lock.clone(), self.piece_lowest_y).await;
+        }
+        if rx.try_recv().is_ok() && !self.count_movements_enabled {
+            self.last_piece = self.local_board.cur_piece();
+            if self.local_board.next_tick() {
+                self.piece_fixed(tx_points).await;
+            }
+            self.state_emit();
         }
     }
     fn count_movements(&mut self) {
@@ -244,7 +268,7 @@ impl Game {
         }
     }
     async fn tick_loop(sender: Sender<bool>, mut receiver: Receiver<u16>) {
-        //  This thread will die, it's fine
+        // !  This thread shouldn't, it's not fine if it dies
         tokio::spawn(async move {
             let mut level = 1;
             loop {
@@ -325,8 +349,11 @@ impl Game {
                 self.level += 1;
                 self.line_clears = 0;
             }
-            self.line_emit(pattern);
-            self.points_emit();
+            if self.normal || self.lines_40 {
+                self.line_emit(pattern);
+            } else {
+                self.points_emit();
+            }
             match pattern {
                 ClearLinePattern::TSpinDouble
                 | ClearLinePattern::TSpinTriple
@@ -397,6 +424,19 @@ impl Game {
                 ClearLinePattern::MiniTSpinSingle => 1,
             };
         }
+        self.real_line_clears += match pattern {
+            ClearLinePattern::None => 0,
+            ClearLinePattern::Single => 1,
+            ClearLinePattern::Double => 2,
+            ClearLinePattern::Triple => 3,
+            ClearLinePattern::Tetris => 4,
+            ClearLinePattern::TSpin => 0,
+            ClearLinePattern::TSpinSingle => 1,
+            ClearLinePattern::TSpinDouble => 2,
+            ClearLinePattern::TSpinTriple => 3,
+            ClearLinePattern::MiniTSpin => 0,
+            ClearLinePattern::MiniTSpinSingle => 1,
+        };
     }
 
     fn emit_held_piece(&self) {
@@ -424,12 +464,12 @@ impl Game {
     }
     fn line_emit(&self, pattern: ClearLinePattern) {
         self.app.emit(LINE_CLEARED_EMIT, pattern).unwrap();
-        self.app
-            .emit(
-                LINE_CLEARED_INFO_EMIT,
-                format!("{}/{}", self.line_clears, self.level * 5),
-            )
-            .unwrap();
+        let payload = if self.lines_40 {
+            format!("{}/{}", self.real_line_clears, 40)
+        } else {
+            format!("{}/{}", self.line_clears, self.level * 5)
+        };
+        self.app.emit(LINE_CLEARED_INFO_EMIT, payload).unwrap();
     }
     fn piece_fixed_emit(&self) {
         self.app.emit(PIECE_FIXED_EMIT, self.last_piece).unwrap();

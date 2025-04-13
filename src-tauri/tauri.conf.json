@@ -9,7 +9,8 @@
     "beforeBuildCommand": "pnpm build",
     "frontendDist": "../dist"
   },
-  "app": {"windows": [
+  "app": {
+    "windows": [
       {
         "title": "main",
         "width": 800,
@@ -24,12 +25,46 @@
       "capabilities": [
         {
           "identifier": "listen_to_events",
-          "windows": ["main"],
+          "windows": [
+            "main"
+          ],
           "permissions": [
             "core:event:default",
             "core:event:allow-listen"
           ],
-          "platforms": ["macOS", "windows", "linux"]
+          "platforms": [
+            "macOS",
+            "windows",
+            "linux"
+          ]
+        },
+        {
+          "identifier": "shell:allow-execute",
+          "windows": [
+            "main"
+          ],
+          "allow": [
+            {
+              "name": "exec-sh",
+              "cmd": "sh",
+              "args": [
+                "-c",
+                {
+                  "validator": "\\S+"
+                }
+              ],
+              "sidecar": false
+            }
+          ],
+          "permissions": [
+            "shell:allow-open",
+            "shell:allow-execute"
+          ],
+          "platforms": [
+            "macOS",
+            "windows",
+            "linux"
+          ]
         }
       ]
     }
@@ -48,5 +83,4 @@
       "./assets"
     ]
   }
-
 }

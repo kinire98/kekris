@@ -2,11 +2,11 @@ use std::sync::Arc;
 
 use tauri::AppHandle;
 use tokio::sync::{
-    mpsc::{self, Sender},
     Mutex, OnceCell,
+    mpsc::{self, Sender},
 };
 
-use crate::game::{game_options::GameOptions, FirstLevelCommands, Game};
+use crate::game::{FirstLevelCommands, Game, game_options::GameOptions};
 
 static CHANNEL: OnceCell<Arc<Mutex<Sender<FirstLevelCommands>>>> = OnceCell::const_new();
 

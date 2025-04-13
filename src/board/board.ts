@@ -47,26 +47,25 @@ const lineClearedInfoEmit = "line_cleared_info";
 let mainCanvas: HTMLCanvasElement;
 let bufferCanvas: HTMLCanvasElement;
 
-export default function startDraw(canvas: HTMLCanvasElement, secondCanvas: HTMLCanvasElement) {
+export default function startDraw(canvas: HTMLCanvasElement, secondCanvas: HTMLCanvasElement, options: GameOptions) {
   const ctx: CanvasRenderingContext2D = canvas.getContext("2d")!;
   mainCanvas = canvas;
   bufferCanvas = secondCanvas;
   drawLines(ctx);
   startBoardChangeEventListener();
-  let options: GameOptions = {
-    number_of_players: 1,
-    lines_40: false,
-    normal: true,
-    blitz: false
-  };
   invoke("start_game", {
     options: options
   });
+  console.log(options);
   gameLost();
   lineCleared();
   pieceFixedEvent();
   gameWon();
-  lineClearedInfo();
+  if (options.normal || options.lines_40) {
+    lineClearedInfo();
+  } else {
+    pointsInfo();
+  }
 }
 function drawBufferBoard(board: string) {
   const ctx: CanvasRenderingContext2D = bufferCanvas.getContext("2d")!;
@@ -253,6 +252,12 @@ async function gameWon() {
 async function lineClearedInfo() {
   await listen(lineClearedInfoEmit, (e) => {
     const $lines = document.getElementById("write-lines") as HTMLElement;
-    $lines.innerHTML = e.payload as string;
+    $lines.innerText = e.payload as string;
+  })
+}
+async function pointsInfo() {
+  await listen(pointsEmit, (e) => {
+    const $points = document.getElementById("write-lines") as HTMLElement;
+    $points.innerText = e.payload as string;
   })
 }
