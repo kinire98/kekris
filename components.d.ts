@@ -8,12 +8,15 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    Appeareance: typeof import('./src/pages/Appeareance.vue')['default']
     BackProfilePage: typeof import('./src/layouts/BackProfilePage.vue')['default']
     Board: typeof import('./src/pages/Board.vue')['default']
     Button: typeof import('primevue/button')['default']
+    Controls: typeof import('./src/pages/Controls.vue')['default']
     Dialog: typeof import('primevue/dialog')['default']
     Index: typeof import('./src/pages/Index.vue')['default']
     InputText: typeof import('primevue/inputtext')['default']
+    Language: typeof import('./src/pages/Language.vue')['default']
     Main: typeof import('./src/pages/Main.vue')['default']
     MenuBackLayout: typeof import('./src/layouts/MenuBackLayout.vue')['default']
     MenuButton: typeof import('./src/components/MenuButton.vue')['default']
@@ -23,6 +26,7 @@ declare module 'vue' {
     ProfilePage: typeof import('./src/pages/ProfilePage.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SelectKeyCode: typeof import('./src/components/SelectKeyCode.vue')['default']
     Settings: typeof import('./src/pages/Settings.vue')['default']
     Singleplayer: typeof import('./src/pages/Singleplayer.vue')['default']
     Toast: typeof import('primevue/toast')['default']

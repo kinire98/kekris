@@ -25,11 +25,47 @@
             "soon": "Multijugador pronto disponible"
         },
         "settings": {
-            "settings": "Ajustes"
+            "settings": "Ajustes",
+            "controls": "Controles",
+            "controls-desc": "Personaliza los controles del juego a los que prefieras",
+            "appeareance": "Apariencia",
+            "appeareance-desc": "Selecciona tu apariencia de tablero favorita",
+            "language": "Idioma",
+            "language-desc": "Cambia tu idioma"
         },
         "username": {
-            "select": "Seleccionar nombre de usuario",
+            "select": "Escribir nombre de usuario",
             "confirm": "Confirmar"
+        },
+        "language": {
+            "language": "Idioma"
+        },
+        "controls": {
+            "controls": "Controles",
+            "change": "Presiona cualquier tecla o botón",
+            "change-footer": "Haz click en la X para cancelar la asignación",
+            "right": "Mover a la derecha",
+            "left": "Mover a la izquierda",
+            "hard-drop": "Caída fuerte",
+            "soft-drop": "Caída suave",
+            "keys": {
+                "ArrowRight": "Flecha derecha",
+                "ArrowLeft": "Flecha izquierda",
+                "ArrowDown": "Flecha abajo",
+                "ArrowUp": "Flecha arriba",
+                "space": "Espacio",
+                "Backspace": "Retroceso",
+                "Delete": "Suprimir",
+                "Home": "Inicio",
+                "End": "Fin",
+                "PageUp": "Avance página",
+                "PageDown": "Retroceso página",
+                "Shift": "Mayúsculas",
+                "CapsLock": "Bloqueo mayúsculas"
+            }
+        },
+        "appeareance": {
+            "appeareance": "Apariencia"
         }
     }
 }

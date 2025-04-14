@@ -1,30 +1,30 @@
-const hardDropCodeKey = "hardDrop";
+export const hardDropCodeKey = "hardDrop";
+export const softDropCodeKey = "softDrop";
+export const leftMoveCodeKey = "leftMove";
+export const rightMoveCodeKey = "rightMove";
+export const savePieceCodeKey = "savePiece";
+export const counterClockwiseCodeKey = "counterClockwise";
+export const clockwiseCodeKey = "clockwise";
+export const fullRotationCodeKey = "full";
+export const randomCodeKey = "random";
+export const evenCodeKey = "even";
+export const eliminationCodeKey = "eliminations";
+export const paybackCodeKey = "payback";
+export const forfeitCodeKey = "forfeit";
+export const retryCodeKey = "retry";
 const hardDropCodeDefault = "ArrowDown";
-const softDropCodeKey = "softDrop";
 const softDropCodeDefault = " ";
-const leftMoveCodeKey = "leftMove";
 const leftMoveCodeDefault = "ArrowLeft";
-const rightMoveCodeKey = "rightMove";
 const rightMoveCodeDefault = "ArrowRight";
-const savePieceCodeKey = "savePiece";
 const savePieceCodeDefault = "Shift";
-const counterClockwiseCodeKey = "counterClockwise";
 const counterClockwiseCodeDefault = "a";
-const clockwiseCodeKey = "clockwise";
 const clockwiseCodeDefault = "d";
-const fullRotationCodeKey = "full";
 const fullRotationCodeDefault = "s";
-const randomCodeKey = "random";
 const randomCodeDefault = "1";
-const evenCodeKey = "even";
 const evenCodeDefault = "2";
-const eliminationCodeKey = "eliminations";
 const eliminationCodeDefault = "3";
-const paybackCodeKey = "payback";
 const paybackCodeDefault = "4";
-const forfeitCodeKey = "forfeit";
 const forfeitCodeDefault = "Escape";
-const retryCodeKey = "retry";
 const retryCodeDefault = "p";
 
 
@@ -55,7 +55,7 @@ export function getSoftDropCode(): string {
 export function getLeftMoveCode(): string {
   return check(leftMoveCode, leftMoveCodeKey, leftMoveCodeDefault);
 }
-export function getRigthMoveCode(): string {
+export function getRightMoveCode(): string {
   return check(rightMoveCode, rightMoveCodeKey, rightMoveCodeDefault);
 }
 export function getSavePieceCode(): string {

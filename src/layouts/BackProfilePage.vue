@@ -19,7 +19,7 @@
       <slot></slot>
     </div>
   </div>
-  <Dialog v-model:visible="visible" modal header="Select username">
+  <Dialog v-model:visible="visible" modal :header="$t('ui.username.select')">
     <InputText
       type="text"
       v-model="userNameValue"
@@ -27,7 +27,7 @@
     />
     <br />
     <Button
-      label="Confirm"
+      :label="$t('ui.username.confirm')"
       variant="outlined"
       raised
       @click="onDialogClick"
@@ -109,6 +109,7 @@ h1:hover {
 </style>
 <script setup lang="ts">
 const props = defineProps({ title: String, back: Boolean });
+const t = useI18n();
 </script>
 <script lang="ts">
 import Button from "primevue/button";
@@ -117,6 +118,7 @@ import Dialog from "primevue/dialog";
 
 import InputText from "primevue/inputtext";
 import { getUsername, setUsername } from "../helpers/username";
+import { useI18n } from "vue-i18n";
 export default {
   data() {
     return { visible: false, userNameValue: getUsername()! };

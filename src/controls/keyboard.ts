@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getRepeatInterval, getStartRepeatInterval } from "./interval";
 import { hardDropEffect, leftRightEffect } from "../board/effects";
-import { getClockwiseCode, getCounterClockwiseCode, getForfeitCode, getFullRotationCode, getHardDropCode, getLeftMoveCode, getRetryCode, getRigthMoveCode, getSavePieceCode, getSoftDropCode, getTargetingEliminationsCode, getTargetingEvenCode, getTargetingPaybackCode, getTargetingRandomCode } from "./keycodes";
+import { getClockwiseCode, getCounterClockwiseCode, getForfeitCode, getFullRotationCode, getHardDropCode, getLeftMoveCode, getRetryCode, getRightMoveCode, getSavePieceCode, getSoftDropCode, getTargetingEliminationsCode, getTargetingEvenCode, getTargetingPaybackCode, getTargetingRandomCode } from "./keycodes";
 
 const customRepeatInterval = getRepeatInterval(); // Customize this value (in milliseconds)
 const customStartRepeatInteval = getStartRepeatInterval();
@@ -25,7 +25,7 @@ export function removeInputListeners() {
 // Handle keyup event
 function keyUp(event: KeyboardEvent) {
   if (pressedSet.has(event.key)) pressedSet.delete(event.key);
-  if (event.key != getLeftMoveCode() && event.key != getRigthMoveCode() && event.key != getSoftDropCode()) return;
+  if (event.key != getLeftMoveCode() && event.key != getRightMoveCode() && event.key != getSoftDropCode()) return;
   if (keySet.has(event.key)) keySet.delete(event.key);
   if (keyIntervals[event.key]) {
     clearInterval(keyIntervals[event.key]);
@@ -40,7 +40,7 @@ function keyDown(event: KeyboardEvent) {
 
   // Set up a custom interval for repeated actions
 
-  if (event.key != getLeftMoveCode() && event.key != getRigthMoveCode() && event.key != getSoftDropCode()) {
+  if (event.key != getLeftMoveCode() && event.key != getRightMoveCode() && event.key != getSoftDropCode()) {
     pressedSet.add(event.key);
     return;
   }
@@ -63,7 +63,7 @@ function manageInput(keyCode: string) {
     case getLeftMoveCode():
       leftMove();
       break;
-    case getRigthMoveCode():
+    case getRightMoveCode():
       rightMove();
       break;
     case getSavePieceCode():

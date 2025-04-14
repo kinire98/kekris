@@ -25,11 +25,47 @@
             "soon": "Multiplayer soon available"
         },
         "settings": {
-            "settings": "Settings"
+            "settings": "Settings",
+            "controls": "Controls",
+            "controls-desc": "Customize the game controls to the ones that suit you the best",
+            "appeareance": "Appeareance",
+            "appeareance-desc": "Select your preferred board appeareance",
+            "language": "Language",
+            "language-desc": "Change your language"
         },
         "username": {
             "select": "Select username",
             "confirm": "Confirm"
+        },
+        "language": {
+            "language": "Language"
+        },
+        "controls": {
+            "controls": "Controls",
+            "change": "Press the key or button",
+            "change-footer": "Click on the X to cancel the keybind change",
+            "right": "Move right",
+            "left": "Move left",
+            "hard-drop": "Hard drop",
+            "soft-drop": "Soft drop",
+            "keys": {
+                "ArrowRight": "Arrow right",
+                "ArrowLeft": "Arrow left",
+                "ArrowDown": "Arrow down",
+                "ArrowUp": "Arrow up",
+                "space": "Space",
+                "Delete": "Delete",
+                "Home": "Home",
+                "End": "End",
+                "PageUp": "Page up",
+                "PageDown": "Page down",
+                "Backspace": "Backspace",
+                "Shift": "Shift",
+                "CapsLock": "Caps lock"
+            }
+        },
+        "appeareance": {
+            "appeareance": "Appeareance"
         }
     }
 }

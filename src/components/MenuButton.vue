@@ -35,6 +35,7 @@ h3 {
   display: flex;
   align-items: center;
   justify-content: start;
+  cursor: pointer !important;
   /* padding-inline-start: 5vw; */
 }
 .menu-button:hover {
