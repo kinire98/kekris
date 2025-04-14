@@ -1,37 +1,43 @@
 <template>
-  <div id="board">
-    <div id="visible">
-      <div id="left">
-        <canvas height="100" width="150" id="held" class="bgc top"></canvas>
-        <div id="left-bottom">
-          <p id="pattern"></p>
-          <div id="lines-div">
-            <p>
-              {{
-                $route.path.substring(1) === "blitz"
-                  ? $t("board.points")
-                  : $t("board.lines")
-              }}
-            </p>
-            <p id="write-lines">
-              {{
-                $route.path.substring(1) === "classic"
-                  ? "0/5"
-                  : $route.path.substring(1) === "lines"
-                  ? "0/40"
-                  : "0"
-              }}
-            </p>
+  <div id="wrap">
+    <div id="board">
+      <div id="visible">
+        <div id="left">
+          <canvas height="100" width="150" id="held" class="bgc top"></canvas>
+          <div id="left-bottom">
+            <p id="pattern"></p>
+            <div id="lines-div">
+              <p>
+                {{
+                  $route.path.substring(1) === "blitz"
+                    ? $t("board.points")
+                    : $t("board.lines")
+                }}
+              </p>
+              <p id="write-lines">
+                {{
+                  $route.path.substring(1) === "classic"
+                    ? "0/5"
+                    : $route.path.substring(1) === "lines"
+                    ? "0/40"
+                    : "0"
+                }}
+              </p>
+            </div>
           </div>
         </div>
+        <canvas height="760" width="380" id="main" class="bgc"></canvas>
+        <canvas height="480" width="150" id="next" class="bgc top"></canvas>
       </div>
-      <canvas height="760" width="380" id="main" class="bgc"></canvas>
-      <canvas height="480" width="150" id="next" class="bgc top"></canvas>
+      <canvas height="760" width="380" id="buffer"></canvas>
     </div>
-    <canvas height="760" width="380" id="buffer"></canvas>
+    <div id="timer" v-if="$route.path.substring(1) !== 'classic'"></div>
   </div>
 </template>
 <style scoped>
+#wrap {
+  transition: all 3s;
+}
 .bgc {
   border-inline: 1px solid #909090;
   border-bottom: 1px solid #909090;
@@ -135,6 +141,12 @@
     transform: translateY(1024px) rotate(-15deg);
   }
 }
+.won {
+  position: relative;
+  top: -37.5vh;
+  opacity: 0;
+  transform: scale(2);
+}
 </style>
 <script lang="ts">
 import startDraw from "../board/board";
@@ -143,7 +155,6 @@ import startHeld from "../board/held_piece";
 import startQueue from "../board/queue";
 import { GameOptions } from "../types/GameOptions";
 import { useI18n } from "vue-i18n";
-import { useRoute } from "vue-router";
 export default {
   mounted() {
     let name = this.$route.path;

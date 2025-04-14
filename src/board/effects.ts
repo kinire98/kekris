@@ -1,4 +1,5 @@
 import { ClearLinePattern } from "../types/ClearLinePattern";
+import { router } from '../router';
 
 const substituteTetrisValue = "Quad";
 const pixelsOffset = 5;
@@ -16,12 +17,8 @@ export async function lostEffect() {
   $bgc.style.backgroundImage = `radial-gradient(transparent, #ff000066)`;
   $board.classList.add("drop");
   setTimeout(() => {
-    $bgc.style.backgroundImage = `radial-gradient(transparent, #222831)`;
-    const $a = document.createElement("a");
-    $a.href = "/main";
-    $a.style.display = "none";
-    document.body.append($a);
-    $a.click();
+    router.push("/main");
+    $bgc.style.backgroundImage = `radial-gradient(transparent, var(--main-color-transparent))`;
   }, 1500);
 }
 
@@ -50,7 +47,11 @@ export function pieceFixedEffect() {
 }
 
 export function gameWonEffect() {
-
+  const $board = document.getElementById("wrap")! as HTMLElement;
+  $board.classList.add("won");
+  setTimeout(() => {
+    router.push("/main");
+  }, 1500);
 }
 
 export function leftRightEffect() {

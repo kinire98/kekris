@@ -1,11 +1,11 @@
 use std::{cmp::Ordering, ops::Range};
 
-use moving_piece::{moving_piece_t::MovingPieceT, MovingPiece, Orientation};
+use moving_piece::{MovingPiece, Orientation, moving_piece_t::MovingPieceT};
 use serde::{Deserialize, Serialize};
 
 use crate::game::{pieces::Piece, queue::Queue, strategy::Strategy};
 
-use super::{cell::Cell, danger_level::DangerLevel, Board};
+use super::{Board, cell::Cell, danger_level::DangerLevel};
 
 mod moving_piece;
 
@@ -139,46 +139,48 @@ impl LocalBoard {
             rotation_variation: 0,
         }
     }
-    pub fn move_right(&mut self) {
+    pub fn move_right(&mut self) -> bool {
         let sides = self.cur_piece.get_right_facing_sides();
         for (x, y) in sides {
             if x == BOARD_WIDTH - 1 {
-                return;
+                return false;
             }
             if y >= 0 {
                 match self.get_cell_from_main_board(x + 1, y) {
                     Cell::Empty => continue,
-                    Cell::Full(_) => return,
+                    Cell::Full(_) => return false,
                 }
             } else {
                 match self.get_cell_from_buffer_board(x + 1, y) {
                     Cell::Empty => continue,
-                    Cell::Full(_) => return,
+                    Cell::Full(_) => return false,
                 }
             }
         }
         self.cur_piece.move_right();
+        true
     }
 
-    pub fn move_left(&mut self) {
+    pub fn move_left(&mut self) -> bool {
         let sides = self.cur_piece.get_left_facing_sides();
         for (x, y) in sides {
             if x == 0 {
-                return;
+                return false;
             }
             if y >= 0 {
                 match self.get_cell_from_main_board(x - 1, y) {
                     Cell::Empty => continue,
-                    Cell::Full(_) => return,
+                    Cell::Full(_) => return false,
                 }
             } else {
                 match self.get_cell_from_buffer_board(x - 1, y) {
                     Cell::Empty => continue,
-                    Cell::Full(_) => return,
+                    Cell::Full(_) => return false,
                 }
             }
         }
         self.cur_piece.move_left();
+        true
     }
 
     pub fn rotation_clockwise(&mut self) {
@@ -252,7 +254,7 @@ impl LocalBoard {
     }
 
     pub fn piece_at_bottom(&mut self) -> bool {
-        return self.push_down(false);
+        self.push_down(false)
     }
     pub fn soft_drop(&mut self) {
         let _ = self.push_down(true);
@@ -407,11 +409,7 @@ impl LocalBoard {
                 pieces_cleared = 0;
             }
         }
-        if lines[0] == -128 {
-            None
-        } else {
-            Some(lines)
-        }
+        if lines[0] == -128 { None } else { Some(lines) }
     }
     fn clear_line(&mut self, y: i16) {
         (-BOARD_HEIGHT..=y).rev().for_each(|y| {

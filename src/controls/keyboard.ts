@@ -3,47 +3,55 @@ import { getRepeatInterval, getStartRepeatInterval } from "./interval";
 import { hardDropEffect, leftRightEffect } from "../board/effects";
 import { getClockwiseCode, getCounterClockwiseCode, getForfeitCode, getFullRotationCode, getHardDropCode, getLeftMoveCode, getRetryCode, getRigthMoveCode, getSavePieceCode, getSoftDropCode, getTargetingEliminationsCode, getTargetingEvenCode, getTargetingPaybackCode, getTargetingRandomCode } from "./keycodes";
 
+const customRepeatInterval = getRepeatInterval(); // Customize this value (in milliseconds)
+const customStartRepeatInteval = getStartRepeatInterval();
+let keyIntervals: Record<string, NodeJS.Timeout> = {}; // Tracks active intervals for keys
+const keySet = new Set<string>();
+const pressedSet = new Set<string>();
 export default function manageInputListeners() {
-  // ! Take out to another file
-  const customRepeatInterval = getRepeatInterval(); // Customize this value (in milliseconds)
-  const customStartRepeatInteval = getStartRepeatInterval();
-  const keyIntervals: Record<string, NodeJS.Timeout> = {}; // Tracks active intervals for keys
-  const keySet = new Set<string>();
-  const pressedSet = new Set<string>();
-
+  keyIntervals = {};
+  keySet.clear();
+  pressedSet.clear();
   // Handle keydown event
-  document.addEventListener("keydown", (event: KeyboardEvent) => {
-    if (keyIntervals[event.key]) return;
-    if (pressedSet.has(event.key)) return;
-    // Trigger the action immediately
-    manageInput(event.key);
+  document.addEventListener("keydown", keyDown);
 
-    // Set up a custom interval for repeated actions
+  document.addEventListener("keyup", keyUp);
+}
 
-    if (event.key != getLeftMoveCode() && event.key != getRigthMoveCode() && event.key != getSoftDropCode()) {
-      pressedSet.add(event.key);
-      return;
+export function removeInputListeners() {
+  document.removeEventListener("keyup", keyUp);
+  document.removeEventListener("keydown", keyDown);
+}
+// Handle keyup event
+function keyUp(event: KeyboardEvent) {
+  if (pressedSet.has(event.key)) pressedSet.delete(event.key);
+  if (event.key != getLeftMoveCode() && event.key != getRigthMoveCode() && event.key != getSoftDropCode()) return;
+  if (keySet.has(event.key)) keySet.delete(event.key);
+  if (keyIntervals[event.key]) {
+    clearInterval(keyIntervals[event.key]);
+    delete keyIntervals[event.key];
+  }
+}
+function keyDown(event: KeyboardEvent) {
+  if (keyIntervals[event.key]) return;
+  if (pressedSet.has(event.key)) return;
+  // Trigger the action immediately
+  manageInput(event.key);
+
+  // Set up a custom interval for repeated actions
+
+  if (event.key != getLeftMoveCode() && event.key != getRigthMoveCode() && event.key != getSoftDropCode()) {
+    pressedSet.add(event.key);
+    return;
+  }
+  keySet.add(event.key);
+  setTimeout(() => {
+    if (keySet.has(event.key)) {
+      keyIntervals[event.key] = setInterval(() => {
+        manageInput(event.key);
+      }, customRepeatInterval);
     }
-    keySet.add(event.key);
-    setTimeout(() => {
-      if (keySet.has(event.key)) {
-        keyIntervals[event.key] = setInterval(() => {
-          manageInput(event.key);
-        }, customRepeatInterval);
-      }
-    }, customStartRepeatInteval);
-  });
-
-  // Handle keyup event
-  document.addEventListener("keyup", (event: KeyboardEvent) => {
-    if (pressedSet.has(event.key)) pressedSet.delete(event.key);
-    if (event.key != getLeftMoveCode() && event.key != getRigthMoveCode() && event.key != getSoftDropCode()) return;
-    if (keySet.has(event.key)) keySet.delete(event.key);
-    if (keyIntervals[event.key]) {
-      clearInterval(keyIntervals[event.key]);
-      delete keyIntervals[event.key];
-    }
-  });
+  }, customStartRepeatInteval);
 }
 
 

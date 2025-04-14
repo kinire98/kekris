@@ -35,6 +35,7 @@ const PIECE_FIXED_EMIT: &str = "piece_fixed";
 const POINTS_EMIT: &str = "points";
 const GAME_OVER_EMIT: &str = "game_over";
 const GAME_WON_EMIT: &str = "game_won";
+const TIME_EMIT: &str = "time_emit";
 const NUMBER_OF_PIECES_IN_QUEUE_TO_EMIT: u128 = 5;
 
 const BUFFER_STATE_FOR_NUMBERS: &str = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE";
@@ -181,14 +182,16 @@ impl Game {
                 }
                 match command {
                     FirstLevelCommands::RightMove => {
-                        self.local_board.move_right();
-                        self.count_movements();
-                        play_right_left(self.app.clone()).await;
+                        if self.local_board.move_right() {
+                            self.count_movements();
+                            play_right_left(self.app.clone()).await;
+                        }
                     }
                     FirstLevelCommands::LeftMove => {
-                        self.local_board.move_left();
-                        self.count_movements();
-                        play_right_left(self.app.clone()).await;
+                        if self.local_board.move_left() {
+                            self.count_movements();
+                            play_right_left(self.app.clone()).await;
+                        }
                     }
                     FirstLevelCommands::ClockWiseRotation => self.local_board.rotation_clockwise(),
                     FirstLevelCommands::CounterClockWiseRotation => {
@@ -482,6 +485,22 @@ impl Game {
     }
     fn game_over_emit(&self) {
         self.app.emit(GAME_OVER_EMIT, true).unwrap();
+    }
+    fn time_emit(&self) {
+        let now_secs = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards 🗿🤙")
+            .as_secs();
+        let total_secs = now_secs - self.start_time;
+        let seconds = total_secs % 60;
+        let minutes = (total_secs / 60) % 60;
+        let hours = total_secs / 3600;
+        self.app
+            .emit(
+                TIME_EMIT,
+                format!("{:02}:{:02}:{:02}", hours, minutes, seconds),
+            )
+            .unwrap();
     }
 }
 #[derive(Debug)]

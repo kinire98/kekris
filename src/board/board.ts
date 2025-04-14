@@ -12,7 +12,8 @@ import { invoke } from "@tauri-apps/api/core";
 import type { GameOptions } from "../types/GameOptions";
 import { gameWonEffect, lineClearedEffect, lostEffect, pieceFixedEffect } from "./effects";
 import type { ClearLinePattern } from "../types/ClearLinePattern";
-
+import { removeInputListeners } from "../controls/keyboard";
+import { UnlistenFn } from "@tauri-apps/api/event";
 
 const canvasHeight = 760;
 const canvasWidth = 380;
@@ -33,6 +34,9 @@ const pointsEmit = "points";
 const gameOverEmit = "game_over";
 const gameWonEmit = "game_won";
 const lineClearedInfoEmit = "line_cleared_info";
+const timeEmit = "time_emit";
+
+const unlisteners: UnlistenFn[] = [];
 // E -> Empty
 // C -> Clear
 // G -> Ghost
@@ -56,7 +60,6 @@ export default function startDraw(canvas: HTMLCanvasElement, secondCanvas: HTMLC
   invoke("start_game", {
     options: options
   });
-  console.log(options);
   gameLost();
   lineCleared();
   pieceFixedEvent();
@@ -65,6 +68,9 @@ export default function startDraw(canvas: HTMLCanvasElement, secondCanvas: HTMLC
     lineClearedInfo();
   } else {
     pointsInfo();
+  }
+  if (!options.normal) {
+    timer();
   }
 }
 function drawBufferBoard(board: string) {
@@ -226,38 +232,54 @@ function drawBoard(board: string) {
 
 
 async function gameLost() {
-  await listen(gameOverEmit, () => {
+  unlisteners.push(await listen(gameOverEmit, () => {
     lostEffect();
-  });
+    removeInputListeners();
+    unlisteners.forEach(el => {
+      el()
+    });
+    unlisteners.length = 0;
+  }));
 }
 
 async function lineCleared() {
-  await listen(lineClearedEmit, (e) => {
+  unlisteners.push(await listen(lineClearedEmit, (e) => {
     lineClearedEffect(e.payload as ClearLinePattern);
-  });
+  }));
 }
 
 async function pieceFixedEvent() {
-  await listen(pieceFixed, () => {
+  unlisteners.push(await listen(pieceFixed, () => {
     pieceFixedEffect();
-  });
+  }));
 }
 
 async function gameWon() {
-  await listen(gameWonEmit, () => {
+  unlisteners.push(await listen(gameWonEmit, () => {
     gameWonEffect();
-  });
+    removeInputListeners();
+    unlisteners.forEach(el => {
+      el()
+    });
+    unlisteners.length = 0;
+  }));
 }
 
 async function lineClearedInfo() {
-  await listen(lineClearedInfoEmit, (e) => {
+  unlisteners.push(await listen(lineClearedInfoEmit, (e) => {
     const $lines = document.getElementById("write-lines") as HTMLElement;
     $lines.innerText = e.payload as string;
-  })
+  }));
 }
 async function pointsInfo() {
-  await listen(pointsEmit, (e) => {
+  unlisteners.push(await listen(pointsEmit, (e) => {
     const $points = document.getElementById("write-lines") as HTMLElement;
     $points.innerText = e.payload as string;
-  })
+  }));
+}
+async function timer() {
+  unlisteners.push(await listen(timeEmit, (e) => {
+    const $points = document.getElementById("timer")! as HTMLElement;
+    $points.innerText = e.payload as string;
+  }));
 }
