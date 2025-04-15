@@ -1,6 +1,7 @@
 use std::{
     fmt::Debug,
     ops::Range,
+    option,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
@@ -49,6 +50,7 @@ const MOVEMENTS_LEFT_RESET: u8 = 15;
 #[derive(Debug)]
 pub struct Game {
     app: AppHandle,
+    number_of_players: u8,
     local_board: LocalBoard,
     remote_boards: Vec<RemoteBoard>,
     normal: bool,
@@ -61,6 +63,7 @@ pub struct Game {
     level: u16,
     line_clears: u16,
     real_line_clears: u16,
+    game_control: Receiver<GameControl>,
     first_level_commands: Receiver<FirstLevelCommands>,
     run: bool,
     last_piece: Piece,
@@ -74,9 +77,11 @@ impl Game {
         options: GameOptions,
         app: AppHandle,
         receiver: Receiver<FirstLevelCommands>,
+        game_control_receiver: Receiver<GameControl>,
     ) -> Self {
         Game {
             app,
+            number_of_players: options.number_of_players(),
             local_board: LocalBoard::new(LocalQueue::default()),
             remote_boards: Vec::new(),
             normal: options.is_normal(),
@@ -93,6 +98,7 @@ impl Game {
             line_clears: 0,
             real_line_clears: 0,
             first_level_commands: receiver,
+            game_control: game_control_receiver,
             run: true,
             last_piece: Piece::Ghost,
             piece_lowest_y: -20,
@@ -131,34 +137,6 @@ impl Game {
         self.game_loop().await;
     }
 
-    pub fn forfeit_game(&self) {
-        todo!()
-    }
-
-    pub fn retry_game(&self) {
-        todo!()
-    }
-
-    pub fn targeting_strategy_elimination(&mut self) {
-        todo!()
-    }
-
-    pub fn targeting_strategy_even(&mut self) {
-        todo!()
-    }
-
-    pub fn targeting_strategy_random(&mut self) {
-        todo!()
-    }
-
-    pub fn targeting_strategy_payback(&mut self) {
-        todo!()
-    }
-
-    pub fn save_piece(&mut self) {
-        todo!()
-    }
-
     async fn game_loop(&mut self) {
         let (tx, mut rx) = mpsc::channel(32);
         let (tx_points, rx_points) = mpsc::channel(32);
@@ -167,6 +145,12 @@ impl Game {
         self.queue_emit();
         self.state_emit();
         self.game_started = true;
+        let mut forfeited = false;
+        self.start_time = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards 🗿🤙")
+            .as_secs();
+        let mut prev_time = self.start_time;
         while self.first_level_commands.try_recv().is_ok() {} // Empty possible orders given before start
         while self.run {
             self.critical_checks(
@@ -176,57 +160,43 @@ impl Game {
                 &mut rx,
             )
             .await;
-            while let Ok(command) = self.first_level_commands.try_recv() {
-                if !self.game_started {
-                    continue;
+            while let Ok(control) = self.game_control.try_recv() {
+                match control {
+                    GameControl::Forfeit => {
+                        forfeited = true;
+                        self.run = false;
+                    }
+                    GameControl::Retry => {
+                        if self.number_of_players == 1 {
+                            self.run = false;
+                        }
+                    }
                 }
-                match command {
-                    FirstLevelCommands::RightMove => {
-                        if self.local_board.move_right() {
-                            self.count_movements();
-                            play_right_left(self.app.clone()).await;
-                        }
-                    }
-                    FirstLevelCommands::LeftMove => {
-                        if self.local_board.move_left() {
-                            self.count_movements();
-                            play_right_left(self.app.clone()).await;
-                        }
-                    }
-                    FirstLevelCommands::ClockWiseRotation => self.local_board.rotation_clockwise(),
-                    FirstLevelCommands::CounterClockWiseRotation => {
-                        self.local_board.rotation_counterclockwise()
-                    }
-                    FirstLevelCommands::HardDrop => {
-                        self.local_board.hard_drop();
-                        self.piece_fixed(&tx_points).await;
-                        self.state_emit();
-                        play_piece_drop(self.app.clone()).await;
-                    }
-                    FirstLevelCommands::SoftDrop => {
-                        self.local_board.soft_drop();
-                        play_soft_drop(self.app.clone()).await;
-                    }
-                    FirstLevelCommands::SavePiece => {
-                        let piece = self.local_board.held_piece();
-                        self.local_board.save_piece();
-                        if piece != self.local_board.held_piece() {
-                            self.emit_held_piece();
-                            self.queue_emit();
-                        }
-                    }
-                    FirstLevelCommands::FullRotation => self.local_board.rotation_full(),
-                }
-                self.state_emit();
-                self.critical_checks(
-                    &tx_points,
-                    &mut rx_extended_lock,
-                    tx_extended_lock.clone(),
-                    &mut rx,
-                )
-                .await;
             }
-            tokio::time::sleep(Duration::from_micros(16_666)).await;
+            self.first_level_checks(
+                &tx_points,
+                &mut rx_extended_lock,
+                tx_extended_lock.clone(),
+                &mut rx,
+            )
+            .await;
+
+            tokio::time::sleep(Duration::from_micros(8_333)).await;
+            let cur_time = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("Time went backwards 🗿🤙")
+                .as_secs();
+            if cur_time > prev_time {
+                prev_time = cur_time;
+                self.time_emit(cur_time);
+                if self.blitz && self.local_board.game_won(self.get_win_condition()) {
+                    self.game_won_emit();
+                    self.run = false;
+                }
+            }
+        }
+        if forfeited {
+            self.game_over_emit();
         }
     }
     async fn critical_checks(
@@ -265,13 +235,66 @@ impl Game {
             self.state_emit();
         }
     }
+    async fn first_level_checks(
+        &mut self,
+        tx_points: &Sender<u16>,
+        rx_extended_lock: &mut Receiver<i16>,
+        tx_extended_lock: Sender<i16>,
+        rx: &mut Receiver<bool>,
+    ) {
+        while let Ok(command) = self.first_level_commands.try_recv() {
+            if !self.game_started {
+                continue;
+            }
+            match command {
+                FirstLevelCommands::RightMove => {
+                    if self.local_board.move_right() {
+                        self.count_movements();
+                        play_right_left(self.app.clone()).await;
+                    }
+                }
+                FirstLevelCommands::LeftMove => {
+                    if self.local_board.move_left() {
+                        self.count_movements();
+                        play_right_left(self.app.clone()).await;
+                    }
+                }
+                FirstLevelCommands::ClockWiseRotation => self.local_board.rotation_clockwise(),
+                FirstLevelCommands::CounterClockWiseRotation => {
+                    self.local_board.rotation_counterclockwise()
+                }
+                FirstLevelCommands::HardDrop => {
+                    self.local_board.hard_drop();
+                    self.piece_fixed(&tx_points).await;
+                    self.state_emit();
+                    play_piece_drop(self.app.clone()).await;
+                }
+                FirstLevelCommands::SoftDrop => {
+                    self.local_board.soft_drop();
+                    play_soft_drop(self.app.clone()).await;
+                }
+                FirstLevelCommands::SavePiece => {
+                    let piece = self.local_board.held_piece();
+                    self.local_board.save_piece();
+                    if piece != self.local_board.held_piece() {
+                        self.emit_held_piece();
+                        self.queue_emit();
+                    }
+                }
+                FirstLevelCommands::FullRotation => self.local_board.rotation_full(),
+            }
+            self.state_emit();
+            self.critical_checks(&tx_points, rx_extended_lock, tx_extended_lock.clone(), rx)
+                .await;
+        }
+    }
     fn count_movements(&mut self) {
         if self.count_movements_enabled {
             self.movements_left -= 1;
         }
     }
     async fn tick_loop(sender: Sender<bool>, mut receiver: Receiver<u16>) {
-        // !  This thread shouldn't, it's not fine if it dies
+        // !  This thread shouldn't abruptly die, it's not fine if it dies
         tokio::spawn(async move {
             let mut level = 1;
             loop {
@@ -486,11 +509,7 @@ impl Game {
     fn game_over_emit(&self) {
         self.app.emit(GAME_OVER_EMIT, true).unwrap();
     }
-    fn time_emit(&self) {
-        let now_secs = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards 🗿🤙")
-            .as_secs();
+    fn time_emit(&self, now_secs: u64) {
         let total_secs = now_secs - self.start_time;
         let seconds = total_secs % 60;
         let minutes = (total_secs / 60) % 60;
@@ -502,6 +521,11 @@ impl Game {
             )
             .unwrap();
     }
+}
+#[derive(Debug)]
+pub enum GameControl {
+    Retry,
+    Forfeit,
 }
 #[derive(Debug)]
 pub enum FirstLevelCommands {

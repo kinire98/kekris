@@ -1,7 +1,18 @@
 <template>
-  <div @click="" id="logo">
+  <div id="logo">
     <img src="/logo-drop-shadow.png" alt="" />
     <h2>{{ $t("ui.index.click") }}</h2>
+  </div>
+  <div id="languages">
+    <select id="languages-select">
+      <option
+        :value="language"
+        @click="changeLocale(language)"
+        v-for="language in availableLocales"
+      >
+        {{ $t("languages." + language) }}
+      </option>
+    </select>
   </div>
   <div id="front"></div>
   <Dialog v-model:visible="visible" modal :header="$t('ui.username.select')">
@@ -15,6 +26,15 @@
   </Dialog>
 </template>
 <style scoped>
+* {
+  cursor: pointer;
+}
+#languages {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  z-index: 3;
+}
 #logo {
   display: flex;
   align-items: center;
@@ -71,42 +91,46 @@ h2 {
 }
 </style>
 
-<script lang="ts">
+<script setup lang="ts">
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 import Dialog from "primevue/dialog";
-
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import { getUsername, setUsername } from "../helpers/username";
-import { useI18n } from "vue-i18n";
 
-export default {
-  data() {
-    return { visible: false, value: "" };
-  },
-  methods: {
-    changeRouteChecking() {
-      let username = getUsername();
-      if (username == null || username.length == 0) {
-        this.visible = true;
-      } else {
-        this.$router.push("/main");
-      }
-    },
-    onConfirmed() {
-      if (this.value.length > 0) {
-        setUsername(this.value);
-        this.$router.push("/main");
-      }
-    },
-  },
-  mounted() {
-    document
-      .getElementById("front")!
-      .addEventListener("click", this.changeRouteChecking);
-  },
-  setup() {
-    const t = useI18n();
-    return { t };
-  },
-};
+const { locale, availableLocales, t } = useI18n();
+
+const visible = ref(false);
+const value = ref("");
+
+const router = useRouter();
+
+function changeLocale(localeString: string) {
+  locale.value = localeString;
+}
+
+function changeRouteChecking() {
+  const username = getUsername();
+  if (!username) {
+    visible.value = true;
+  } else {
+    router.push("/main");
+  }
+}
+
+function onConfirmed() {
+  if (value.value.length > 0) {
+    setUsername(value.value);
+    router.push("/main");
+  }
+}
+
+onMounted(() => {
+  const front = document.getElementById("front");
+  if (front) {
+    front.addEventListener("click", changeRouteChecking);
+  }
+});
 </script>

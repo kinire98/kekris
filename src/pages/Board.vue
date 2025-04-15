@@ -1,6 +1,9 @@
 <template>
   <div id="wrap">
     <div id="board">
+      <div id="timer" v-if="$route.path.substring(1) !== 'classic'">
+        00:00:00
+      </div>
       <div id="visible">
         <div id="left">
           <canvas height="100" width="150" id="held" class="bgc top"></canvas>
@@ -31,7 +34,6 @@
       </div>
       <canvas height="760" width="380" id="buffer"></canvas>
     </div>
-    <div id="timer" v-if="$route.path.substring(1) !== 'classic'"></div>
   </div>
 </template>
 <style scoped>
@@ -50,7 +52,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  top: -37.5vh;
+  top: -380px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -143,9 +145,12 @@
 }
 .won {
   position: relative;
-  top: -37.5vh;
   opacity: 0;
+  top: 400px;
   transform: scale(2);
+}
+#timer {
+  margin-top: 15px;
 }
 </style>
 <script lang="ts">
@@ -201,7 +206,9 @@ export default {
     );
     startHeld(document.getElementById("held")! as HTMLCanvasElement);
     startQueue(document.getElementById("next")! as HTMLCanvasElement);
-    manageInput();
+    setTimeout(() => {
+      manageInput();
+    }, 3001);
   },
   setup() {
     const t = useI18n();

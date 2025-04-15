@@ -14,6 +14,7 @@ import { gameWonEffect, lineClearedEffect, lostEffect, pieceFixedEffect } from "
 import type { ClearLinePattern } from "../types/ClearLinePattern";
 import { removeInputListeners } from "../controls/keyboard";
 import { UnlistenFn } from "@tauri-apps/api/event";
+import { Piece } from "../types/Piece";
 
 const canvasHeight = 760;
 const canvasWidth = 380;
@@ -51,7 +52,9 @@ const unlisteners: UnlistenFn[] = [];
 let mainCanvas: HTMLCanvasElement;
 let bufferCanvas: HTMLCanvasElement;
 
+export let currentGameOptions: GameOptions;
 export default function startDraw(canvas: HTMLCanvasElement, secondCanvas: HTMLCanvasElement, options: GameOptions) {
+  currentGameOptions = options;
   const ctx: CanvasRenderingContext2D = canvas.getContext("2d")!;
   mainCanvas = canvas;
   bufferCanvas = secondCanvas;
@@ -63,13 +66,13 @@ export default function startDraw(canvas: HTMLCanvasElement, secondCanvas: HTMLC
   gameLost();
   lineCleared();
   pieceFixedEvent();
-  gameWon();
   if (options.normal || options.lines_40) {
     lineClearedInfo();
   } else {
     pointsInfo();
   }
   if (!options.normal) {
+    gameWon();
     timer();
   }
 }
@@ -87,27 +90,23 @@ function drawBoardInternal(board: string, ctx: CanvasRenderingContext2D, drawLDi
     drawLines(ctx);
   }
   for (let i = boardSize - 1; i > -1; i--) {
-    const piece: string = board[i]!;
-    if (piece == "E")
+    const piece: Piece = board[i]! as Piece;
+    if (piece == Piece.Empty)
       continue;
     const y = Math.floor(i / columnNumber);
     const x = i % columnNumber;
-    if (piece == "R") {
+    if (piece == Piece.Trash) {
       trashPiece(ctx, x, y);
       continue;
     }
-    if (piece == "G") {
+    if (piece == Piece.Ghost) {
       ghostPiece(ctx, x, y);
       continue;
     }
     const color = getColor(piece);
     const darkColor = getDarkColor(piece);
     ctx.strokeStyle = color;
-    ctx.lineWidth = 8; // central rect
-    //First magic number -> x offset
-    //Second magic number -> y offset
-    //Third magic number -> width
-    //Fourth magic number -> height
+    ctx.lineWidth = 8;
     const widthSecondRing = 5;
     ctx.strokeRect(widthSecondRing + (pieceWidth * x), widthSecondRing + (pieceWidth * y), pieceWidth - (widthSecondRing * 2), pieceHeight - (widthSecondRing * 2));
     ctx.strokeStyle = darkColor;

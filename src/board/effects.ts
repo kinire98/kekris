@@ -54,5 +54,3 @@ export function gameWonEffect() {
   }, 1500);
 }
 
-export function leftRightEffect() {
-}

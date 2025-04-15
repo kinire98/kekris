@@ -129,10 +129,8 @@ export default {
     },
     showChangeUserNameDialog() {
       this.visible = true;
-      console.log(this.userNameValue);
     },
     onDialogClick() {
-      console.log("here");
       if (this.userNameValue != null && this.userNameValue.length != 0) {
         this.visible = false;
         setUsername(this.userNameValue);

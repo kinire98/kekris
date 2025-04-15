@@ -17,6 +17,8 @@ declare module 'vue' {
     Index: typeof import('./src/pages/Index.vue')['default']
     InputText: typeof import('primevue/inputtext')['default']
     Language: typeof import('./src/pages/Language.vue')['default']
+    Language2: typeof import('./src/pages/Language2.vue')['default']
+    Locale: typeof import('./src/components/Locale.vue')['default']
     Main: typeof import('./src/pages/Main.vue')['default']
     MenuBackLayout: typeof import('./src/layouts/MenuBackLayout.vue')['default']
     MenuButton: typeof import('./src/components/MenuButton.vue')['default']

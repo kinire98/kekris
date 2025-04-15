@@ -1,8 +1,6 @@
 <template>
-  <MenuBackLayout
-    :title="$t('ui.appeareance.appeareance')"
-    back
-  ></MenuBackLayout>
+  <MenuBackLayout :title="$t('ui.appeareance.appeareance')" back>
+  </MenuBackLayout>
 </template>
 <script>
 import { useI18n } from "vue-i18n";
