@@ -49,7 +49,7 @@ div#holder {
   align-items: center;
   justify-content: center;
   flex-direction: row;
-  height: 75vh;
+  height: 80vh;
 }
 #holder > #img-div {
   display: flex;
@@ -85,6 +85,7 @@ div#buttons-div {
   justify-content: center;
   flex-direction: column;
   width: 100vw;
+  height: 100%;
 }
 #top-bar {
   width: 100vw;

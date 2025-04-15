@@ -1,37 +1,72 @@
 <template>
-  <div>
+  <div id="root">
     <span id="info">{{ props.info }}</span>
     <span id="value" @click="promptForChange">{{
-      keyValue == " "
-        ? $t("ui.controls.keys.space")
-        : [
-            "ArrowRight",
-            "ArrowLeft",
-            "ArrowDown",
-            "ArrowUp",
-            "Delete",
-            "Backspace",
-            "Home",
-            "End",
-            "PageUp",
-            "PageDown",
-            "Shift",
-            "CapsLock",
-          ].includes(keyValue!)
+      [
+        "ArrowRight",
+        "ArrowLeft",
+        "ArrowDown",
+        "ArrowUp",
+        "Delete",
+        "Backspace",
+        "Home",
+        "End",
+        "PageUp",
+        "PageDown",
+        "Shift",
+        "CapsLock",
+        " ",
+      ].includes(keyValue!)
         ? $t("ui.controls.keys." + keyValue)
         : keyValue
     }}</span>
+    <span id="description" v-if="props.desc != null">
+      <Icon
+        icon="iconamoon:question-mark-circle-duotone"
+        class="icon-question-controls"
+        @click="showDesc"
+      />
+    </span>
   </div>
-  <Dialog v-model:visible="visible" modal :header="$t('ui.controls.change')">
+  <Dialog
+    v-model:visible="visible"
+    modal
+    :header="$t('ui.controls.change')"
+    class="change-controls"
+  >
     {{ $t("ui.controls.change-footer") }}
+  </Dialog>
+  <Dialog
+    v-model:visible="visibleDesc"
+    modal
+    :header="$t('ui.controls.description')"
+    class="desc-controls"
+  >
+    {{ props.desc }}
   </Dialog>
 </template>
 <style>
 span.p-dialog-title {
   padding: 15px;
 }
-.p-dialog-content {
+.desc-controls .p-dialog-content {
+  max-width: 400px;
+  text-wrap: pretty;
+  text-align: justify;
+}
+.change-controls .p-dialog-content {
+  width: 100%;
   text-align: center;
+}
+.icon-question-controls {
+  color: var(--main-color);
+  width: 25px;
+  height: 50%;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.icon-question-controls:hover {
+  transform: scale(1.2);
 }
 </style>
 <style scoped>
@@ -49,7 +84,13 @@ div {
     display: flex;
     align-items: center;
     justify-content: center;
+    text-align: center;
   }
+}
+#description {
+  width: 20%;
+  height: 100%;
+  margin-left: 15px;
 }
 #value {
   background-color: #30303066;
@@ -61,26 +102,8 @@ div {
 #value:hover {
   transform: scale(1.05);
 }
-.p-button-outlined {
-  border: 2.5px solid var(--main-color) !important;
-  color: var(--main-color) !important;
-  margin-block: 10px;
-  transition: all 0.3s;
-  display: flex;
-  align-items: center;
-  justify-content: start;
-}
-.p-button-outlined:hover {
-  border-color: var(--main-contrast) !important;
-  color: var(--main-contrast) !important;
-  background-color: var(--main-color) !important;
-}
-.p-inputtext {
-  border: 1px solid var(--transparent-main-color);
-  margin-bottom: 5px;
-}
-.p-inputtext:enabled:focus {
-  border: 1px solid var(--main-color);
+#info {
+  margin-right: 15px;
 }
 </style>
 <script setup lang="ts">
@@ -88,18 +111,19 @@ const props = defineProps({
   info: String,
   movementKey: String,
   value: String,
+  desc: String,
 });
 const t = useI18n();
 </script>
 <script lang="ts">
 import { Dialog } from "primevue";
-import { InputText } from "primevue";
-import { Button } from "primevue";
+import { Icon } from "@iconify/vue/dist/iconify.js";
 import { useI18n } from "vue-i18n";
 export default {
   data() {
     return {
       visible: false,
+      visibleDesc: false,
       keyValue: this.value,
     };
   },
@@ -111,7 +135,11 @@ export default {
     controlsChange(e: KeyboardEvent) {
       this.visible = false;
       this.keyValue = e.key;
+      localStorage.setItem(this.movementKey!, e.key);
       document.removeEventListener("keydown", this.controlsChange);
+    },
+    showDesc() {
+      this.visibleDesc = true;
     },
   },
 };

@@ -18,7 +18,7 @@ export async function lostEffect() {
   $board.classList.add("drop");
   setTimeout(() => {
     router.push("/main");
-    $bgc.style.backgroundImage = `radial-gradient(transparent, var(--main-color-transparent))`;
+    $bgc.style.backgroundImage = `radial-gradient(transparent, var(--transparent-main-color))`;
   }, 1500);
 }
 
