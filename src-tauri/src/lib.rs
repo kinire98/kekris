@@ -30,7 +30,6 @@ pub fn run() {
             commands::targeting_strategy_eliminations,
             commands::targeting_strategy_random,
             commands::targeting_strategy_payback,
-            commands::pause_game,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

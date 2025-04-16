@@ -1,7 +1,6 @@
 use std::{
     fmt::Debug,
     ops::Range,
-    option,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
@@ -10,6 +9,7 @@ use board::{
     local_board::{ClearLinePattern, LocalBoard},
     remote_board::RemoteBoard,
 };
+use game_info::GameInfo;
 use game_options::GameOptions;
 use pieces::Piece;
 use queue::local_queue::LocalQueue;
@@ -20,6 +20,7 @@ use tauri::{AppHandle, Emitter};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
 pub mod board;
+pub mod game_info;
 mod pieces;
 pub mod queue;
 pub mod sound;
@@ -70,6 +71,8 @@ pub struct Game {
     piece_lowest_y: i16,
     count_movements_enabled: bool,
     movements_left: u8,
+    game_info: GameInfo,
+    register_info: bool,
 }
 
 impl Game {
@@ -104,6 +107,8 @@ impl Game {
             piece_lowest_y: -20,
             count_movements_enabled: false,
             movements_left: MOVEMENTS_LEFT_RESET,
+            game_info: GameInfo::new(options),
+            register_info: false,
         }
     }
 
@@ -152,7 +157,9 @@ impl Game {
             .as_secs();
         let mut prev_time = self.start_time;
         while self.first_level_commands.try_recv().is_ok() {} // Empty possible orders given before start
+        // Game loop
         while self.run {
+            // First of all execute the critical checks first
             self.critical_checks(
                 &tx_points,
                 &mut rx_extended_lock,
@@ -160,6 +167,8 @@ impl Game {
                 &mut rx,
             )
             .await;
+            // Control operations such as forfeit and retry
+            // If one of these execute it doesnt make sense to check for the rest
             while let Ok(control) = self.game_control.try_recv() {
                 match control {
                     GameControl::Forfeit => {
@@ -173,6 +182,7 @@ impl Game {
                     }
                 }
             }
+            // Checks of the movements
             self.first_level_checks(
                 &tx_points,
                 &mut rx_extended_lock,
@@ -181,7 +191,10 @@ impl Game {
             )
             .await;
 
+            // Makes sure that executes max 120 times per second, no need for more
+            // and it avoids CPU overuse
             tokio::time::sleep(Duration::from_micros(8_333)).await;
+            // Time calculations
             let cur_time = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .expect("Time went backwards 🗿🤙")
@@ -198,7 +211,13 @@ impl Game {
         if forfeited {
             self.game_over_emit();
         }
+        if self.register_info {
+            self.register_info().await;
+        }
     }
+    /// In this method there are checks crucial for the gameplay,
+    /// related to piece fixation and countdown. Generally, anything
+    /// that can make you lose the game
     async fn critical_checks(
         &mut self,
         tx_points: &Sender<u16>,
@@ -206,27 +225,34 @@ impl Game {
         tx_extended_lock: Sender<i16>,
         rx: &mut Receiver<bool>,
     ) {
+        // Register the lowest point of y
         if self.local_board.piece_y() > self.piece_lowest_y {
             self.piece_lowest_y = self.local_board.piece_y();
         }
+        // If the movements left drop to 0 and are enabled, piece gets fixed
         if self.movements_left == 0 && self.count_movements_enabled {
             self.local_board.hard_drop();
             self.state_emit();
-            self.piece_fixed(&tx_points).await;
+            self.piece_fixed(tx_points).await;
         }
+        // If the max time for the piece fixed has passed, and the current y coordinate is
+        // greater than or equal than the lowest point of y then the piece gets fixed
         while let Ok(y) = rx_extended_lock.try_recv() {
             if y >= self.piece_lowest_y && self.count_movements_enabled {
                 self.local_board.hard_drop();
                 self.state_emit();
-                self.piece_fixed(&tx_points).await;
+                self.piece_fixed(tx_points).await;
             }
         }
+        // If the piece is at bottom (that meeaning that it cannot go down) it starts the countdown
+        // for movements and time
         if self.local_board.piece_at_bottom() {
             self.count_movements_enabled = true;
             self.movements_left = MOVEMENTS_LEFT_RESET;
             self.piece_lowest_y = self.local_board.piece_y();
             Self::extended_lock_down(tx_extended_lock.clone(), self.piece_lowest_y).await;
         }
+        // Game tick
         if rx.try_recv().is_ok() && !self.count_movements_enabled {
             self.last_piece = self.local_board.cur_piece();
             if self.local_board.next_tick() {
@@ -235,6 +261,7 @@ impl Game {
             self.state_emit();
         }
     }
+    /// Checks for piece movements
     async fn first_level_checks(
         &mut self,
         tx_points: &Sender<u16>,
@@ -251,21 +278,27 @@ impl Game {
                     if self.local_board.move_right() {
                         self.count_movements();
                         play_right_left(self.app.clone()).await;
+                        self.game_info.piece_moved();
                     }
                 }
                 FirstLevelCommands::LeftMove => {
                     if self.local_board.move_left() {
                         self.count_movements();
                         play_right_left(self.app.clone()).await;
+                        self.game_info.piece_moved();
                     }
                 }
-                FirstLevelCommands::ClockWiseRotation => self.local_board.rotation_clockwise(),
+                FirstLevelCommands::ClockWiseRotation => {
+                    self.local_board.rotation_clockwise();
+                    self.game_info.spinned();
+                }
                 FirstLevelCommands::CounterClockWiseRotation => {
-                    self.local_board.rotation_counterclockwise()
+                    self.local_board.rotation_counterclockwise();
+                    self.game_info.spinned();
                 }
                 FirstLevelCommands::HardDrop => {
                     self.local_board.hard_drop();
-                    self.piece_fixed(&tx_points).await;
+                    self.piece_fixed(tx_points).await;
                     self.state_emit();
                     play_piece_drop(self.app.clone()).await;
                 }
@@ -281,18 +314,23 @@ impl Game {
                         self.queue_emit();
                     }
                 }
-                FirstLevelCommands::FullRotation => self.local_board.rotation_full(),
+                FirstLevelCommands::FullRotation => {
+                    self.local_board.rotation_full();
+                    self.game_info.spinned();
+                }
             }
             self.state_emit();
-            self.critical_checks(&tx_points, rx_extended_lock, tx_extended_lock.clone(), rx)
+            self.critical_checks(tx_points, rx_extended_lock, tx_extended_lock.clone(), rx)
                 .await;
         }
     }
+    /// Counts movements for the piece fixation
     fn count_movements(&mut self) {
         if self.count_movements_enabled {
             self.movements_left -= 1;
         }
     }
+    /// This keeps track of the time. Receives the level of the game to execute the loop faster
     async fn tick_loop(sender: Sender<bool>, mut receiver: Receiver<u16>) {
         // !  This thread shouldn't abruptly die, it's not fine if it dies
         tokio::spawn(async move {
@@ -312,12 +350,15 @@ impl Game {
             }
         });
     }
+    /// This keeps the track for the extended piece lock down
     async fn extended_lock_down(sender: Sender<i16>, lowest_y: i16) {
         tokio::spawn(async move {
             tokio::time::sleep(Duration::from_millis(EXTENDED_TIME_LOCK_MILIS)).await;
             let _ = sender.send(lowest_y).await;
         });
     }
+    /// Checks for piece fixed. Emits the state necessary to the frontend, checks if game has been los or won,
+    /// and performs operations for, checking lines cleareance
     async fn piece_fixed(&mut self, sender: &Sender<u16>) {
         self.piece_lowest_y = -20;
         self.count_movements_enabled = false;
@@ -325,9 +366,18 @@ impl Game {
         self.queue_emit();
         self.piece_fixed_emit();
         self.check_line_cleared().await;
+        self.game_info.piece_used();
 
         let game_over = self.local_board.game_over();
         let game_won = self.local_board.game_won(self.get_win_condition());
+        if game_over || game_won {
+            let now_time = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("Time went backwards 🗿🤙")
+                .as_secs();
+            self.game_info
+                .register_final_info(now_time - self.start_time, self.points, self.level);
+        }
         if game_won {
             self.game_won_emit();
             self.run = false;
@@ -338,6 +388,7 @@ impl Game {
         }
         sender.send(self.level).await.unwrap();
     }
+
     fn get_win_condition(&self) -> impl Fn(bool, u32) -> bool {
         let seconds = self.start_time;
         let normal_win_condition = move |_game_over, _lines_cleared| false;
@@ -366,6 +417,7 @@ impl Game {
         }
     }
 
+    /// Checks if the line has been cleared and performs the neccesary calculations
     async fn check_line_cleared(&mut self) {
         let pattern = self.local_board.clear_line_pattern();
         if pattern != ClearLinePattern::None {
@@ -387,6 +439,7 @@ impl Game {
                 ClearLinePattern::None => (),
                 _ => play_line_clear(self.app.clone()).await,
             }
+            self.game_info.line_cleared(pattern);
         }
         self.prev_clear_line_pattern = pattern;
     }
@@ -520,6 +573,10 @@ impl Game {
                 format!("{:02}:{:02}:{:02}", hours, minutes, seconds),
             )
             .unwrap();
+    }
+    async fn register_info(&mut self) {
+        let info = self.game_info;
+        tokio::spawn(async move {});
     }
 }
 #[derive(Debug)]

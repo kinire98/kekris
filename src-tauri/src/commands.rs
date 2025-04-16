@@ -168,6 +168,3 @@ pub async fn targeting_strategy_random() {
         // channel.lock().await.targeting_strategy_elimination();
     }
 }
-
-#[tauri::command]
-pub async fn pause_game() {}

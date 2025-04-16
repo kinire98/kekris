@@ -1,10 +1,19 @@
 <template>
-  <Button variant="outlined" raised @click="changeRoute" class="menu-button">
-    <h2>{{ props.label }}</h2>
-    <h3>{{ props.desc }}</h3>
-  </Button>
+  <div>
+    <Button variant="outlined" raised @click="changeRoute" class="menu-button">
+      <h2>{{ props.label }}</h2>
+      <h3>{{ props.desc }}</h3>
+    </Button>
+  </div>
 </template>
 <style scoped>
+div {
+  position: relative;
+  display: flex;
+  align-items: end;
+  justify-content: end;
+  width: 100%;
+}
 h2 {
   display: flex;
   align-items: start;
@@ -25,9 +34,11 @@ h3 {
 }
 .menu-button {
   flex-direction: column;
-  width: 45vw;
+  width: 80%;
   height: 150px;
-  border: 2.5px solid var(--main-color);
+  border-block: 2.5px solid var(--main-color);
+  border-left: 2.5px solid var(--main-color);
+  border-right: none;
   color: var(--main-color);
   margin-block: 50px;
   font-size: 25px;
@@ -40,7 +51,7 @@ h3 {
 }
 .menu-button:hover {
   width: 50vw;
-  transform: translateX(-5vw) scale(1.1);
+  transform: translateX(calc(75% * 0.05 * -1)) scale(1.1);
   border-color: var(--main-contrast) !important;
   color: var(--main-contrast) !important;
   background-color: var(--main-color) !important;
