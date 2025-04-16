@@ -13,6 +13,7 @@ div:hover {
 </style>
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
+import { setDefaultLocale } from "../helpers/defaultLocale";
 
 const props = defineProps<{
   locale: string;
@@ -40,5 +41,6 @@ function translateToEmoji(countryCode: string): string {
 
 function changeLocale() {
   locale.value = props.locale;
+  setDefaultLocale(props.locale);
 }
 </script>

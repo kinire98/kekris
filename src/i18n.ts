@@ -1,4 +1,5 @@
 import { createI18n } from "vue-i18n";
+import { getDefaultLocale } from "./helpers/defaultLocale";
 function loadLocaleMessages() {
     const messages: Record<string, any> = {}
 
@@ -16,7 +17,7 @@ function loadLocaleMessages() {
     return messages
 }
 export default createI18n({
-    locale: "es",
+    locale: getDefaultLocale(),
     fallbackLocale: "en",
     messages: loadLocaleMessages(),
     legacy: false

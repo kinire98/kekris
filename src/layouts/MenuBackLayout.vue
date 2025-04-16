@@ -55,7 +55,7 @@ div#holder {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  width: 40vw;
   z-index: 999;
 }
 #holder > div > a {
@@ -84,7 +84,7 @@ div#buttons-div {
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  width: 100vw;
+  width: 60vw;
   height: 100%;
 }
 #top-bar {

@@ -16,7 +16,7 @@ import { monochromeTheme } from "./themes/monochromeTheme";
 import { neonTheme } from "./themes/neonTheme";
 import { pastelTheme } from "./themes/pastelTheme";
 import { retroNeonTheme } from "./themes/retroNeonTheme";
-import { vampireTheme } from "./themes/vampireTheme";
+import { mutedMineralsTheme } from "./themes/mutedMineralsTheme";
 
 
 
@@ -27,12 +27,12 @@ export const themes = {
     "monochrome": monochromeTheme,
     "retroNeon": retroNeonTheme,
     "ice": iceTheme,
-    "vampire": vampireTheme
+    "mutedMinerals": mutedMineralsTheme
 }
 
 export type PossibleThemes = keyof typeof themes;
 
-let storedTheme: PossibleThemes = "neon";
+let storedTheme: PossibleThemes = getTheme()! as PossibleThemes;
 const defaultTheme: PossibleThemes = "neon";
 
 export function getBorderColor(): string {
@@ -109,13 +109,11 @@ function getColor(piece: Piece, colorType: ColorType): string {
     if (piece == Piece.Empty) {
         return "transparent";
     }
-    if (storedTheme.length == 0) {
-        let theme = getTheme();
-        if (theme == null) {
-            storedTheme = defaultTheme;
-            return themes[defaultTheme][piece][colorType];
-        }
-        storedTheme = theme as PossibleThemes;
+    let theme = getTheme();
+    if (theme == null) {
+        storedTheme = defaultTheme;
+        return themes[defaultTheme][piece][colorType];
     }
+    storedTheme = theme as PossibleThemes;
     return themes[storedTheme][piece][colorType];
 }

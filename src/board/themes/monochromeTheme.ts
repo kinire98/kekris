@@ -2,31 +2,31 @@ import { Theme } from "../../types/Theme";
 
 export const monochromeTheme: Theme = {
     I: {
-        border: "#111",
-        fill: "#333"
-    },
-    O: {
-        border: "#222",
-        fill: "#444"
-    },
-    T: {
         border: "#333",
         fill: "#555"
     },
-    S: {
+    O: {
         border: "#444",
         fill: "#666"
     },
-    Z: {
+    T: {
         border: "#555",
         fill: "#777"
     },
-    L: {
+    S: {
         border: "#666",
         fill: "#888"
     },
-    J: {
+    Z: {
         border: "#777",
         fill: "#999"
+    },
+    L: {
+        border: "#888",
+        fill: "#AAA"
+    },
+    J: {
+        border: "#999",
+        fill: "#BBB"
     }
 }

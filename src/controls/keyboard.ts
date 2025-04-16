@@ -31,6 +31,8 @@ export function removeInputListeners() {
   }
 }
 function keyUp(event: KeyboardEvent) {
+  if (pressedSet.has(event.key)) pressedSet.delete(event.key);
+  if (event.key != getLeftMoveCode() && event.key != getRightMoveCode() && event.key != getSoftDropCode()) return;
   if (keySet.has(event.key)) keySet.delete(event.key);
   if (keyIntervals[event.key]) {
     clearInterval(keyIntervals[event.key]);
@@ -42,8 +44,17 @@ function keyDown(event: KeyboardEvent) {
   if (pressedSet.has(event.key)) return;
   manageInput(event.key);
   if (event.key != getLeftMoveCode() && event.key != getRightMoveCode() && event.key != getSoftDropCode()) {
+    pressedSet.add(event.key);
     return;
   }
+  // // If right is pressed it doesn't allow the opposite, and viceversa
+  // if (event.key == getLeftMoveCode() && keySet.has(getRightMoveCode())) {
+  //   return;
+  // }
+  // // If left is pressed it doesn't allow the opposite, and viceversa
+  // if (event.key == getRightMoveCode() && keySet.has(getLeftMoveCode())) {
+  //   return;
+  // }
   keySet.add(event.key);
   setTimeout(() => {
     if (keySet.has(event.key)) {

@@ -1,7 +1,7 @@
 import { Theme } from "../../types/Theme";
 
 export const retroNeonTheme: Theme = {
-    I: {
+    S: {
         border: "#118c00",
         fill: "#39ff14"
     },
@@ -13,7 +13,7 @@ export const retroNeonTheme: Theme = {
         border: "#990099",
         fill: "#ff00ff"
     },
-    S: {
+    I: {
         border: "#009999",
         fill: "#00ffff"
     },
@@ -21,12 +21,12 @@ export const retroNeonTheme: Theme = {
         border: "#8b0000",
         fill: "#ff073a"
     },
-    L: {
-        border: "#006b99",
+    J: {
+        border: "#003b69",
         fill: "#00bfff"
     },
-    J: {
-        border: "",
+    L: {
+        border: "#b36b00",
         fill: "#ff9900"
     }
 }

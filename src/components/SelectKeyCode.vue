@@ -20,11 +20,10 @@
         ? $t("ui.controls.keys." + keyValue)
         : keyValue
     }}</span>
-    <span id="description" v-if="props.desc != null">
+    <span id="description" v-if="props.desc != null" :title="props.desc">
       <Icon
         icon="iconamoon:question-mark-circle-duotone"
         class="icon-question-controls"
-        @click="showDesc"
       />
     </span>
   </div>
@@ -35,14 +34,6 @@
     class="change-controls"
   >
     {{ $t("ui.controls.change-footer") }}
-  </Dialog>
-  <Dialog
-    v-model:visible="visibleDesc"
-    modal
-    :header="$t('ui.controls.description')"
-    class="desc-controls"
-  >
-    {{ props.desc }}
   </Dialog>
 </template>
 <style>
@@ -88,9 +79,13 @@ div {
   }
 }
 #description {
-  width: 20%;
-  height: 100%;
+  width: 5vw;
+  height: 1.5vw;
   margin-left: 15px;
+  * {
+    width: 100%;
+    height: 100%;
+  }
 }
 #value {
   background-color: #30303066;
@@ -123,7 +118,6 @@ export default {
   data() {
     return {
       visible: false,
-      visibleDesc: false,
       keyValue: this.value,
     };
   },
@@ -137,9 +131,6 @@ export default {
       this.keyValue = e.key;
       localStorage.setItem(this.movementKey!, e.key);
       document.removeEventListener("keydown", this.controlsChange);
-    },
-    showDesc() {
-      this.visibleDesc = true;
     },
   },
 };

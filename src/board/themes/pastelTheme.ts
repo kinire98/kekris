@@ -1,32 +1,32 @@
 import { Theme } from "../../types/Theme";
 
 export const pastelTheme: Theme = {
-    I: {
-        border: "#b87ca1",
-        fill: "#f7b2d9"
+    S: {
+        border: "#47855b",
+        fill: "#bcf4cb"
     },
     O: {
-        border: "#bba844",
-        fill: "#ffef78"
+        border: "#8c902e",
+        fill: "#fefda6"
     },
     T: {
-        border: "#9c82c8",
-        fill: "#dabfff"
+        border: "#3e2734",
+        fill: "#ae94a3"
     },
-    S: {
-        border: "#5ac7a7",
-        fill: "#dabfff"
+    I: {
+        border: "#005187",
+        fill: "#c4dafa"
     },
     Z: {
-        border: "#bb89a7",
-        fill: "#ffc2e2"
+        border: "#840007",
+        fill: "#ff7c70"
     },
     L: {
-        border: "#7aa5c2",
-        fill: "#c9e4ff"
+        border: "#874e00",
+        fill: "#ffbe58"
     },
     J: {
-        border: "#c0a060",
-        fill: "#ffe0ac"
+        border: "#c4dafa",
+        fill: "#005187"
     }
 }

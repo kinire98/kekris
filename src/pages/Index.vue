@@ -3,17 +3,6 @@
     <img src="/logo-drop-shadow.png" alt="" />
     <h2>{{ $t("ui.index.click") }}</h2>
   </div>
-  <div id="languages">
-    <select id="languages-select">
-      <option
-        :value="language"
-        @click="changeLocale(language)"
-        v-for="language in availableLocales"
-      >
-        {{ $t("languages." + language) }}
-      </option>
-    </select>
-  </div>
   <div id="front"></div>
   <Dialog v-model:visible="visible" modal :header="$t('ui.username.select')">
     <InputText type="text" v-model="value" :invalid="!value" />
@@ -28,12 +17,6 @@
 <style scoped>
 * {
   cursor: pointer;
-}
-#languages {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  z-index: 3;
 }
 #logo {
   display: flex;
@@ -100,16 +83,12 @@ import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import { getUsername, setUsername } from "../helpers/username";
 
-const { locale, availableLocales, t } = useI18n();
+const t = useI18n();
 
 const visible = ref(false);
 const value = ref("");
 
 const router = useRouter();
-
-function changeLocale(localeString: string) {
-  locale.value = localeString;
-}
 
 function changeRouteChecking() {
   const username = getUsername();
