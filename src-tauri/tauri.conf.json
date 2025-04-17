@@ -80,7 +80,8 @@
       "icons/icon.ico"
     ],
     "resources": [
-      "./assets"
+      "./assets",
+      "./migrations"
     ]
   }
 }

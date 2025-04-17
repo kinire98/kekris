@@ -156,15 +156,15 @@ impl GameInfo {
     pub fn spinned(&mut self) {
         self.spins += 1;
     }
-    pub fn register_final_info(&mut self, time: u64, points: u128, level: u16) {
+    pub fn register_final_info(&mut self, time: u64, points: u64, level: u16) {
         match &mut self.specific_info {
             GameTypeInfo::Classic(classic_game_info) => {
-                classic_game_info.level = level;
+                classic_game_info.level_reached = level;
                 classic_game_info.points = points;
-                classic_game_info.time = time;
+                classic_game_info.time_endured = time;
             }
             GameTypeInfo::Lines(lines_game_info) => {
-                lines_game_info.time = time;
+                lines_game_info.time_endured = time;
             }
             GameTypeInfo::Blitz(blitz_game_info) => {
                 blitz_game_info.points = points;
@@ -182,17 +182,17 @@ enum GameTypeInfo {
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Copy)]
 struct ClassicGameInfo {
-    time: u64,
-    points: u128,
-    level: u16,
+    time_endured: u64,
+    points: u64,
+    level_reached: u16,
 }
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Copy)]
 struct LinesGameInfo {
-    time: u64,
+    time_endured: u64,
 }
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Copy)]
 struct BlitzGameInfo {
-    points: u128,
+    points: u64,
 }

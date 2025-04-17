@@ -58,7 +58,7 @@ pub struct Game {
     lines_40: bool,
     blitz: bool,
     start_time: u64,
-    points: u128,
+    points: u64,
     game_started: bool,
     prev_clear_line_pattern: ClearLinePattern,
     level: u16,
@@ -457,7 +457,7 @@ impl Game {
             ClearLinePattern::TSpinTriple => 1600,
             ClearLinePattern::MiniTSpin => 100,
             ClearLinePattern::MiniTSpinSingle => 200,
-        } * self.level as u128;
+        } * self.level as u64;
         if pattern == self.prev_clear_line_pattern {
             self.points += match pattern {
                 ClearLinePattern::None => 0,
@@ -471,7 +471,7 @@ impl Game {
                 ClearLinePattern::TSpinTriple => 1600,
                 ClearLinePattern::MiniTSpin => 50,
                 ClearLinePattern::MiniTSpinSingle => 100,
-            } * self.level as u128;
+            } * self.level as u64;
         }
     }
     fn lines_awarded_calculation(&mut self, pattern: ClearLinePattern) {
