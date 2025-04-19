@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{board::local_board::ClearLinePattern, game_options::GameOptions};
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, sqlx::FromRow)]
 pub struct GameInfo {
     piece_moves: u32,
     spins: u32,
@@ -156,7 +156,7 @@ impl GameInfo {
     pub fn spinned(&mut self) {
         self.spins += 1;
     }
-    pub fn register_final_info(&mut self, time: u64, points: u64, level: u16) {
+    pub fn register_final_info(&mut self, time: u64, points: u32, level: u16) {
         match &mut self.specific_info {
             GameTypeInfo::Classic(classic_game_info) => {
                 classic_game_info.level_reached = level;
@@ -171,28 +171,57 @@ impl GameInfo {
             }
         }
     }
+    pub fn type_of_info(&self) -> GameTypeInfo {
+        self.specific_info
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
-enum GameTypeInfo {
+pub enum GameTypeInfo {
     Classic(ClassicGameInfo),
     Lines(LinesGameInfo),
     Blitz(BlitzGameInfo),
 }
 
-#[derive(Serialize, Deserialize, Default, Debug, Clone, Copy)]
-struct ClassicGameInfo {
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Copy, sqlx::FromRow)]
+pub struct ClassicGameInfo {
     time_endured: u64,
-    points: u64,
+    points: u32,
     level_reached: u16,
 }
 
-#[derive(Serialize, Deserialize, Default, Debug, Clone, Copy)]
-struct LinesGameInfo {
+impl ClassicGameInfo {
+    pub fn time_endured(&self) -> u32 {
+        self.time_endured as u32
+    }
+
+    pub fn points(&self) -> u32 {
+        self.points
+    }
+
+    pub fn level_reached(&self) -> u16 {
+        self.level_reached
+    }
+}
+
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Copy, sqlx::FromRow)]
+pub struct LinesGameInfo {
     time_endured: u64,
 }
 
-#[derive(Serialize, Deserialize, Default, Debug, Clone, Copy)]
-struct BlitzGameInfo {
-    points: u64,
+impl LinesGameInfo {
+    pub fn time_endured(&self) -> u32 {
+        self.time_endured as u32
+    }
+}
+
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Copy, sqlx::FromRow)]
+pub struct BlitzGameInfo {
+    points: u32,
+}
+
+impl BlitzGameInfo {
+    pub fn points(&self) -> u32 {
+        self.points
+    }
 }

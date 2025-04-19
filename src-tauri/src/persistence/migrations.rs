@@ -11,9 +11,10 @@ pub async fn run_migrations(app: AppHandle) {
     if !db_path.exists() {
         File::create(&db_path).await.unwrap();
     }
-    let db = SqlitePool::connect(&format!("sqlite://{}", db_path.display()))
-        .await
-        .expect("DB failed");
+    let url = format!("sqlite://{}", db_path.display());
+
+    super::DB_URL.set(url.clone()).unwrap();
+    let db = SqlitePool::connect(&url).await.expect("DB failed");
 
     // Run migrations
     MIGRATOR.run(&db).await.expect("Migration failed");

@@ -19,6 +19,8 @@ use sound::{
 use tauri::{AppHandle, Emitter};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
+use crate::persistence::store_game_info;
+
 pub mod board;
 pub mod game_info;
 mod pieces;
@@ -58,7 +60,7 @@ pub struct Game {
     lines_40: bool,
     blitz: bool,
     start_time: u64,
-    points: u64,
+    points: u32,
     game_started: bool,
     prev_clear_line_pattern: ClearLinePattern,
     level: u16,
@@ -401,7 +403,7 @@ impl Game {
                 .unwrap()
                 .as_secs()
                 - seconds
-                > 120
+                >= 120
         };
         let lines_40_win_condition = move |game_over, lines_cleared| {
             if game_over {
@@ -457,7 +459,7 @@ impl Game {
             ClearLinePattern::TSpinTriple => 1600,
             ClearLinePattern::MiniTSpin => 100,
             ClearLinePattern::MiniTSpinSingle => 200,
-        } * self.level as u64;
+        } * self.level as u32;
         if pattern == self.prev_clear_line_pattern {
             self.points += match pattern {
                 ClearLinePattern::None => 0,
@@ -471,7 +473,7 @@ impl Game {
                 ClearLinePattern::TSpinTriple => 1600,
                 ClearLinePattern::MiniTSpin => 50,
                 ClearLinePattern::MiniTSpinSingle => 100,
-            } * self.level as u64;
+            } * self.level as u32;
         }
     }
     fn lines_awarded_calculation(&mut self, pattern: ClearLinePattern) {
@@ -576,7 +578,9 @@ impl Game {
     }
     async fn register_info(&mut self) {
         let info = self.game_info;
-        tokio::spawn(async move {});
+        tokio::spawn(async move {
+            store_game_info::store_game_info(info).await;
+        });
     }
 }
 #[derive(Debug)]
