@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use super::{board::local_board::ClearLinePattern, game_options::GameOptions};
+use super::game_options::GameOptions;
+use crate::game::board::local_board::ClearLinePattern;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, sqlx::FromRow)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, sqlx::FromRow, PartialEq, Eq)]
 pub struct GameInfo {
     piece_moves: u32,
     spins: u32,
@@ -49,6 +50,41 @@ impl GameInfo {
             minitspins: 0,
             minitspin_singles: 0,
             specific_info: type_info,
+        }
+    }
+    pub fn new_from(
+        piece_moves: u32,
+        spins: u32,
+        lines_cleared: u32,
+        pieces_used: u32,
+        singles: u32,
+        doubles: u32,
+        triples: u32,
+        tetrises: u32,
+        tspins: u32,
+        tspin_singles: u32,
+        tspin_doubles: u32,
+        tspin_triples: u32,
+        minitspins: u32,
+        minitspin_singles: u32,
+        specific_info: GameTypeInfo,
+    ) -> Self {
+        Self {
+            piece_moves,
+            spins,
+            lines_cleared,
+            pieces_used,
+            singles,
+            doubles,
+            triples,
+            tetrises,
+            tspins,
+            tspin_singles,
+            tspin_doubles,
+            tspin_triples,
+            minitspins,
+            minitspin_singles,
+            specific_info,
         }
     }
 
@@ -176,14 +212,14 @@ impl GameInfo {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GameTypeInfo {
     Classic(ClassicGameInfo),
     Lines(LinesGameInfo),
     Blitz(BlitzGameInfo),
 }
 
-#[derive(Serialize, Deserialize, Default, Debug, Clone, Copy, sqlx::FromRow)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Copy, sqlx::FromRow, PartialEq, Eq)]
 pub struct ClassicGameInfo {
     time_endured: u64,
     points: u32,
@@ -191,6 +227,13 @@ pub struct ClassicGameInfo {
 }
 
 impl ClassicGameInfo {
+    pub fn new(time_endured: u64, points: u32, level_reached: u16) -> Self {
+        ClassicGameInfo {
+            time_endured,
+            points,
+            level_reached,
+        }
+    }
     pub fn time_endured(&self) -> u32 {
         self.time_endured as u32
     }
@@ -204,23 +247,29 @@ impl ClassicGameInfo {
     }
 }
 
-#[derive(Serialize, Deserialize, Default, Debug, Clone, Copy, sqlx::FromRow)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Copy, sqlx::FromRow, PartialEq, Eq)]
 pub struct LinesGameInfo {
     time_endured: u64,
 }
 
 impl LinesGameInfo {
+    pub fn new(time_endured: u64) -> Self {
+        LinesGameInfo { time_endured }
+    }
     pub fn time_endured(&self) -> u32 {
         self.time_endured as u32
     }
 }
 
-#[derive(Serialize, Deserialize, Default, Debug, Clone, Copy, sqlx::FromRow)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Copy, sqlx::FromRow, PartialEq, Eq)]
 pub struct BlitzGameInfo {
     points: u32,
 }
 
 impl BlitzGameInfo {
+    pub fn new(points: u32) -> Self {
+        BlitzGameInfo { points }
+    }
     pub fn points(&self) -> u32 {
         self.points
     }

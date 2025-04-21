@@ -9,8 +9,6 @@ use board::{
     local_board::{ClearLinePattern, LocalBoard},
     remote_board::RemoteBoard,
 };
-use game_info::GameInfo;
-use game_options::GameOptions;
 use pieces::Piece;
 use queue::local_queue::LocalQueue;
 use sound::{
@@ -19,10 +17,12 @@ use sound::{
 use tauri::{AppHandle, Emitter};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
-use crate::persistence::store_game_info;
+use crate::{
+    models::{game_info::GameInfo, game_options::GameOptions},
+    persistence::store_game_info,
+};
 
 pub mod board;
-pub mod game_info;
 mod pieces;
 pub mod queue;
 pub mod sound;
@@ -612,4 +612,3 @@ enum FourthLevelCommands {}
 // * - Piece set
 // * - Piece hard dropped
 // * - Other boards state -> not yet implemented
-pub mod game_options;

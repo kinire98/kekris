@@ -1,6 +1,8 @@
 use sqlx::{Pool, Sqlite, SqlitePool};
 
-use crate::game::game_info::{BlitzGameInfo, ClassicGameInfo, GameInfo, LinesGameInfo};
+use crate::models::game_info::{self, BlitzGameInfo, ClassicGameInfo, GameInfo, LinesGameInfo};
+
+use super::{BLITZ_TABLE_NAME, CLASSIC_TABLE_NAME, GAME_INFO_TABLE_NAME, LINES_TABLE_NAME};
 
 pub async fn store_game_info(info: GameInfo) {
     let Some(url) = super::DB_URL.get() else {
@@ -8,16 +10,17 @@ pub async fn store_game_info(info: GameInfo) {
     };
     let pool = SqlitePool::connect(url).await.unwrap();
 
-    let result = sqlx::query(
+    let result = sqlx::query(&format!(
         r#"
-        INSERT INTO game_info (
+        INSERT INTO {} (
             piece_moves, spins, lines_cleared, pieces_used,
             singles, doubles, triples, tetrises, tspins,
             tspin_singles, tspin_doubles, tspin_triples,
             minitspins, minitspin_singles
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         "#,
-    )
+        GAME_INFO_TABLE_NAME
+    ))
     .bind(info.piece_moves())
     .bind(info.spins())
     .bind(info.lines_cleared())
@@ -36,17 +39,17 @@ pub async fn store_game_info(info: GameInfo) {
     .await
     .unwrap();
     let type_of_game = match info.type_of_info() {
-        crate::game::game_info::GameTypeInfo::Classic(type_info) => (
+        game_info::GameTypeInfo::Classic(type_info) => (
             store_classic(&pool, type_info, result.last_insert_rowid()).await,
-            "classic",
+            CLASSIC_TABLE_NAME,
         ),
-        crate::game::game_info::GameTypeInfo::Lines(type_info) => (
+        game_info::GameTypeInfo::Lines(type_info) => (
             store_lines(&pool, type_info, result.last_insert_rowid()).await,
-            "lines",
+            LINES_TABLE_NAME,
         ),
-        crate::game::game_info::GameTypeInfo::Blitz(type_info) => (
+        game_info::GameTypeInfo::Blitz(type_info) => (
             store_blitz(&pool, type_info, result.last_insert_rowid()).await,
-            "blitz",
+            BLITZ_TABLE_NAME,
         ),
     };
     sqlx::query(

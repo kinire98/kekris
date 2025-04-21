@@ -6,7 +6,8 @@ use tokio::sync::{
     mpsc::{self, Sender},
 };
 
-use crate::game::{FirstLevelCommands, Game, GameControl, game_options::GameOptions};
+use crate::game::{FirstLevelCommands, Game, GameControl};
+use crate::models::game_options::GameOptions;
 
 static FIRST_LEVEL_CHANNEL: OnceCell<Arc<Mutex<Sender<FirstLevelCommands>>>> =
     OnceCell::const_new();

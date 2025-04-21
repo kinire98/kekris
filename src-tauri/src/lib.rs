@@ -4,6 +4,7 @@ use tauri::Manager;
 mod commands;
 pub mod game;
 mod init_trace;
+pub mod models;
 pub mod persistence;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -35,6 +36,7 @@ pub fn run() {
             commands::game_commands::targeting_strategy_eliminations,
             commands::game_commands::targeting_strategy_random,
             commands::game_commands::targeting_strategy_payback,
+            commands::game_info_retreive::retreive_game_info
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
