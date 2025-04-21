@@ -81,6 +81,34 @@
         },
         "appeareance": {
             "appeareance": "Apariencia"
+        },
+        "stats": {
+            "piece_moves": "Movimientos de piezas",
+            "spins": "Giros",
+            "lines_cleared": "Líneas limpiadas",
+            "pieces_used": "Piezas utilizadas",
+            "singles": "Sencillos",
+            "doubles": "Dobles",
+            "triples": "Triples",
+            "tetrises": "Quads",
+            "tspins": "TSpins",
+            "tspin_singles": "TSpin Sencillos",
+            "tspin_doubles": "TSpin Dobles",
+            "tspin_triples": "TSpin Triples",
+            "minitspins": "MiniTSpins",
+            "minitspins_singles": "MiniTSpin Sencillos",
+            "pieces_per_second": "Piezas por segundo",
+            "piece_moves_per_second": "Movimientos de pieza por segundo",
+            "main_menu": "Menú principal",
+            "play_again": "Jugar de nuevo",
+            "stats": "Estadísticas",
+            "time": "Tiempo",
+            "points": "Puntos",
+            "points_lower": "puntos",
+            "behind_1st": "detrás de tu mejor marca",
+            "top": "Top",
+            "top_one": "Has superado tu mejor marca. ¡Enhorabuena! 🎊🎉 🎊🎉 🎊🎉 🎊🎉",
+            "personal_ranking": "Mejores marcas"
         }
     }
 }

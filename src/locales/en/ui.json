@@ -81,6 +81,34 @@
         },
         "appeareance": {
             "appeareance": "Appeareance"
+        },
+        "stats": {
+            "piece_moves": "Piece moves",
+            "spins": "Spins",
+            "lines_cleared": "Lines cleared",
+            "pieces_used": "Pieces used",
+            "singles": "Singles",
+            "doubles": "Doubles",
+            "triples": "Triples",
+            "tetrises": "Quads",
+            "tspins": "TSpins",
+            "tspin_singles": "TSpin Singles",
+            "tspin_doubles": "TSpin Doubles",
+            "tspin_triples": "TSpin Triples",
+            "minitspins": "MiniTSpins",
+            "minitspins_singles": "MiniTSpin Singles",
+            "pieces_per_second": "Pieces used per second",
+            "piece_moves_per_second": "Piece moves per second",
+            "main_menu": "Main menu",
+            "play_again": "Play again",
+            "stats": "Stats",
+            "time": "Time",
+            "points": "Points",
+            "points_lower": "points",
+            "behind_1st": "behind first",
+            "top": "Top",
+            "top_one": "You broke your record. Well done! 🎊🎉 🎊🎉 🎊🎉 🎊🎉",
+            "personal_ranking": "Personal ranking"
         }
     }
 }

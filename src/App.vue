@@ -1,6 +1,8 @@
 <template>
+  <Suspense>
+    <RouterView />
+  </Suspense>
   <div id="bgc"></div>
-  <RouterView />
 </template>
 
 <style>

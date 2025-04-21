@@ -15,6 +15,7 @@ import type { ClearLinePattern } from "../types/ClearLinePattern";
 import { removeInputListeners } from "../controls/keyboard";
 import { UnlistenFn } from "@tauri-apps/api/event";
 import { Piece } from "../types/Piece";
+import { router } from "../router";
 
 const canvasHeight = 760;
 const canvasWidth = 380;
@@ -231,8 +232,16 @@ function drawBoard(board: string) {
 
 
 async function gameLost() {
-  unlisteners.push(await listen(gameOverEmit, () => {
+  unlisteners.push(await listen(gameOverEmit, (e) => {
     lostEffect();
+
+    setTimeout(() => {
+      if (e.payload == true) {
+        router.push("/main");
+      } else {
+        router.push("/board");
+      }
+    }, 1500);
     removeInputListeners();
     unlisteners.forEach(el => {
       el()
@@ -256,6 +265,9 @@ async function pieceFixedEvent() {
 async function gameWon() {
   unlisteners.push(await listen(gameWonEmit, () => {
     gameWonEffect();
+    setTimeout(() => {
+      router.push("/stats");
+    }, 1500);
     removeInputListeners();
     unlisteners.forEach(el => {
       el()

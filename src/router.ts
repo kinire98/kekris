@@ -9,10 +9,11 @@ import ProfilePage from './pages/ProfilePage.vue';
 import Controls from './pages/Controls.vue';
 import Appeareance from './pages/Appeareance.vue';
 import Language from './pages/Language.vue';
+import Stats from './pages/Stats.vue';
 
 const routes = [
     { path: '/', component: Index },
-    { path: '/main', component: Main },
+    // { path: '/main', component: Main },
     { path: '/multiplayer', component: Multiplayer },
     { path: '/singleplayer', component: Singleplayer },
     { path: '/settings', component: Settings },
@@ -23,6 +24,8 @@ const routes = [
     { path: '/classic', component: Board },
     { path: '/lines', component: Board },
     { path: '/blitz', component: Board },
+    { path: '/stats', component: Stats },
+    { path: '/main', component: Stats },
 ]
 
 export const router = createRouter({

@@ -42,7 +42,7 @@ h3 {
   color: var(--main-color);
   margin-block: 50px;
   font-size: 25px;
-  transition: all 0.4s;
+  transition: all 0.3s;
   display: flex;
   align-items: center;
   justify-content: start;

@@ -31,8 +31,11 @@ declare module 'vue' {
     SelectKeyCode: typeof import('./src/components/SelectKeyCode.vue')['default']
     Settings: typeof import('./src/pages/Settings.vue')['default']
     Singleplayer: typeof import('./src/pages/Singleplayer.vue')['default']
+    Stat: typeof import('./src/components/Stat.vue')['default']
+    Stats: typeof import('./src/pages/Stats.vue')['default']
     Summary: typeof import('./src/pages/Summary.vue')['default']
     Theme: typeof import('./src/components/Theme.vue')['default']
+    TimeMark: typeof import('./src/components/TimeMark.vue')['default']
     Toast: typeof import('primevue/toast')['default']
   }
 }
