@@ -14,7 +14,6 @@ pub async fn run_migrations(app: AppHandle) {
     let url = format!("sqlite://{}", db_path.display());
 
     super::DB_URL.set(url.clone()).unwrap();
-    println!("{}", url.clone());
 
     let db = SqlitePool::connect(&url).await.expect("DB failed");
 
