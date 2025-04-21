@@ -2,7 +2,7 @@
 pub struct GameGenericInfo {
     id: u32,
     game_type: String,
-    game_id: u32,
+    id_game: u32,
 }
 impl GameGenericInfo {
     pub fn id(&self) -> u32 {
@@ -12,6 +12,6 @@ impl GameGenericInfo {
         self.game_type.as_ref()
     }
     pub fn game_id(&self) -> u32 {
-        self.game_id
+        self.id_game
     }
 }

@@ -211,7 +211,7 @@ impl Game {
             }
         }
         if forfeited {
-            self.game_over_emit();
+            self.game_over_emit(true);
         }
         if self.register_info {
             self.register_info().await;
@@ -383,10 +383,12 @@ impl Game {
         if game_won {
             self.game_won_emit();
             self.run = false;
+            self.register_info = true;
         } else if game_over {
-            self.game_over_emit();
+            self.game_over_emit(false);
             play_loss(self.app.clone()).await;
             self.run = false;
+            self.register_info = true;
         }
         sender.send(self.level).await.unwrap();
     }
@@ -561,8 +563,8 @@ impl Game {
     fn game_won_emit(&self) {
         self.app.emit(GAME_WON_EMIT, true).unwrap();
     }
-    fn game_over_emit(&self) {
-        self.app.emit(GAME_OVER_EMIT, true).unwrap();
+    fn game_over_emit(&self, forfeited: bool) {
+        self.app.emit(GAME_OVER_EMIT, forfeited).unwrap();
     }
     fn time_emit(&self, now_secs: u64) {
         let total_secs = now_secs - self.start_time;
@@ -578,9 +580,16 @@ impl Game {
     }
     async fn register_info(&mut self) {
         let info = self.game_info;
-        tokio::spawn(async move {
+        #[cfg(debug_assertions)]
+        {
             store_game_info::store_game_info(info).await;
-        });
+        }
+        #[cfg(not(debug_assertions))]
+        {
+            tokio::spawn(async move {
+                store_game_info::store_game_info(info).await;
+            });
+        }
     }
 }
 #[derive(Debug)]

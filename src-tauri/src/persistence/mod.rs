@@ -23,11 +23,11 @@ const GAME_INFO_DOUBLES: &str = "doubles";
 const GAME_INFO_TRIPLES: &str = "triples";
 const GAME_INFO_TETRISES: &str = "tetrises";
 const GAME_INFO_TSPINS: &str = "tspins";
-const GAME_INFO_TSPINS_SINGLES: &str = "tspins_singles";
-const GAME_INFO_TSPINS_DOUBLES: &str = "tspins_doubles";
-const GAME_INFO_TSPINS_TRIPLES: &str = "tspins_triples";
+const GAME_INFO_TSPINS_SINGLES: &str = "tspin_singles";
+const GAME_INFO_TSPINS_DOUBLES: &str = "tspin_doubles";
+const GAME_INFO_TSPINS_TRIPLES: &str = "tspin_triples";
 const GAME_INFO_MINI_TSPINS: &str = "minitspins";
-const GAME_INFO_MINI_TSPINS_SINGLES: &str = "minitspins_singles";
+const GAME_INFO_MINI_TSPINS_SINGLES: &str = "minitspin_singles";
 
 const CLASSIC_TIME_ENDURED: &str = "time_endured";
 const CLASSIC_POINTS: &str = "points";
