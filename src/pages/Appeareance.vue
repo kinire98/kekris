@@ -30,7 +30,7 @@ import { themes } from "../board/colors";
 import { getTheme, setTheme } from "../helpers/themes";
 import { ref } from "vue";
 
-const t = useI18n();
+useI18n();
 let themeName = ref(getTheme() ?? "neon");
 function capitalizeFirstLetter(stringVal: string): string {
   return stringVal.charAt(0).toUpperCase() + stringVal.slice(1);

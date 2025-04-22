@@ -109,7 +109,7 @@ div#buttons-div {
 </style>
 <script setup lang="ts">
 const props = defineProps({ title: String, back: Boolean });
-const t = useI18n();
+useI18n();
 </script>
 <script lang="ts">
 import Button from "primevue/button";
