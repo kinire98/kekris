@@ -11,11 +11,12 @@
           v-if="props.back == true"
         />
         <h1 id="menu-title" @click="showChangeUserNameDialog">
-          {{ getUsername() }}
+          <span>{{ getUsername() }}</span
+          ><Icon icon="mdi-light:pencil" />
         </h1>
       </div>
     </div>
-    <div>
+    <div id="content">
       <slot></slot>
     </div>
   </div>
@@ -39,16 +40,24 @@
 h1 {
   color: var(--white-contrast);
   cursor: pointer;
-  transition: all 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  span {
+    transition: all 0.3s;
+    margin-right: 20px;
+  }
 }
-h1:hover {
+h1:hover span {
   transform: scale(1.1);
 }
+
 #holder-top {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
+  height: 100vh;
 }
 #top-bar {
   width: 100vw;
@@ -106,10 +115,14 @@ h1:hover {
 .p-inputtext:enabled:focus {
   border: 1px solid var(--main-color);
 }
+#content {
+  width: 100%;
+  height: 85vh;
+}
 </style>
 <script setup lang="ts">
 const props = defineProps({ title: String, back: Boolean });
-const t = useI18n();
+useI18n();
 </script>
 <script lang="ts">
 import Button from "primevue/button";
@@ -119,6 +132,7 @@ import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
 import { getUsername, setUsername } from "../helpers/username";
 import { useI18n } from "vue-i18n";
+import { Icon } from "@iconify/vue/dist/iconify.js";
 export default {
   data() {
     return { visible: false, userNameValue: getUsername()! };

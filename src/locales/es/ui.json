@@ -63,6 +63,10 @@
             "payback-desc": "Apunta a la última persona que te envió basura, o una persona al azar si no has recibido nada (o el objetivo es un KO)",
             "forfeit": "Abandonar",
             "retry": "Reintentar",
+            "start_frecuency": "Retraso de comienzo de repetición",
+            "repeat_frecuency": "Frecuencia de repetición",
+            "start_frecuency_desc": "Retraso de comienzo de repetición para ciertos movimientos (Caída suave, mover a la izquierda y mover a la derecha). Se mide en milisegundos",
+            "repeat_frecuency_desc": "Frecuencia de repetición para ciertos movimientos (Caída suave, mover a la izquierda y mover a la derecha). Se mide en milisegundos",
             "keys": {
                 "ArrowRight": "Flecha derecha",
                 "ArrowLeft": "Flecha izquierda",
@@ -83,6 +87,7 @@
             "appeareance": "Apariencia"
         },
         "stats": {
+            "results": "Resultados",
             "piece_moves": "Movimientos de piezas",
             "spins": "Giros",
             "lines_cleared": "Líneas limpiadas",
@@ -97,8 +102,9 @@
             "tspin_triples": "TSpin Triples",
             "minitspins": "MiniTSpins",
             "minitspins_singles": "MiniTSpin Sencillos",
-            "pieces_per_second": "Piezas por segundo",
+            "pieces_per_second": "Piezas utilizadas por segundo",
             "piece_moves_per_second": "Movimientos de pieza por segundo",
+            "lines_cleared_per_second": "Líneas limpiadas por segundo",
             "main_menu": "Menú principal",
             "play_again": "Jugar de nuevo",
             "stats": "Estadísticas",
@@ -109,6 +115,21 @@
             "top": "Top",
             "top_one": "Has superado tu mejor marca. ¡Enhorabuena! 🎊🎉 🎊🎉 🎊🎉 🎊🎉",
             "personal_ranking": "Mejores marcas"
+        },
+        "profile": {
+            "classic": "Clásica",
+            "lines": "40 líneas",
+            "blitz": "Relámpago",
+            "last_game": "Última partida",
+            "ranking": "Ranking",
+            "points_lower": "puntos",
+            "no_info": "Todavía no has jugado a este modo de juego",
+            "top_5": "Top 5"
+        },
+        "again": {
+            "title": "¿Otra vez?",
+            "main_menu": "Menú principal",
+            "try_again": "Volver a intentar"
         }
     }
 }

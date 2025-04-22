@@ -144,28 +144,28 @@ pub async fn start_game(app: AppHandle, options: GameOptions) {
 
 #[tauri::command]
 pub async fn targeting_strategy_eliminations() {
-    if let Some(channel) = FIRST_LEVEL_CHANNEL.get() {
+    if let Some(_channel) = FIRST_LEVEL_CHANNEL.get() {
         // channel.clone().send(FirstLevelCommands::SoftDrop);
     }
 }
 
 #[tauri::command]
 pub async fn targeting_strategy_even() {
-    if let Some(channel) = FIRST_LEVEL_CHANNEL.get() {
+    if let Some(_channel) = FIRST_LEVEL_CHANNEL.get() {
         // channel.lock().await.targeting_strategy_elimination();
     }
 }
 
 #[tauri::command]
 pub async fn targeting_strategy_payback() {
-    if let Some(channel) = FIRST_LEVEL_CHANNEL.get() {
+    if let Some(_channel) = FIRST_LEVEL_CHANNEL.get() {
         // channel.lock().await.targeting_strategy_elimination();
     }
 }
 
 #[tauri::command]
 pub async fn targeting_strategy_random() {
-    if let Some(channel) = FIRST_LEVEL_CHANNEL.get() {
+    if let Some(_channel) = FIRST_LEVEL_CHANNEL.get() {
         // channel.lock().await.targeting_strategy_elimination();
     }
 }

@@ -51,7 +51,7 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  background-image: radial-gradient(transparent, #222831);
+  background-image: radial-gradient(transparent, var(--transparent-main-color));
   transition: all 0.3s;
   z-index: 0 !important;
 }

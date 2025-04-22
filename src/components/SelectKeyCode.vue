@@ -108,7 +108,7 @@ const props = defineProps({
   value: String,
   desc: String,
 });
-const t = useI18n();
+useI18n();
 </script>
 <script lang="ts">
 import { Dialog } from "primevue";

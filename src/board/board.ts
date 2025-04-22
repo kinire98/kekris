@@ -237,9 +237,9 @@ async function gameLost() {
 
     setTimeout(() => {
       if (e.payload == true) {
-        router.push("/main");
+        router.push("/again");
       } else {
-        router.push("/board");
+        router.push("/stats");
       }
     }, 1500);
     removeInputListeners();

@@ -4,9 +4,7 @@ import { hardDropEffect } from "../board/effects";
 import { getClockwiseCode, getCounterClockwiseCode, getForfeitCode, getFullRotationCode, getHardDropCode, getLeftMoveCode, getRetryCode, getRightMoveCode, getSavePieceCode, getSoftDropCode, getTargetingEliminationsCode, getTargetingEvenCode, getTargetingPaybackCode, getTargetingRandomCode } from "./keycodes";
 import { currentGameOptions } from "../board/board";
 
-const customRepeatInterval = getRepeatInterval(); // Customize this value (in milliseconds)
-const customStartRepeatInteval = getStartRepeatInterval();
-let keyIntervals: Record<string, NodeJS.Timeout> = {}; // Tracks active intervals for keys
+let keyIntervals: Record<string, NodeJS.Timeout> = {};
 const keySet = new Set<string>();
 const pressedSet = new Set<string>();
 export default function manageInputListeners() {
@@ -22,6 +20,45 @@ export default function manageInputListeners() {
 export function removeInputListeners() {
   document.removeEventListener("keyup", keyUp);
   document.removeEventListener("keydown", keyDown);
+  removeIntervals();
+}
+function keyUp(event: KeyboardEvent) {
+  if (pressedSet.has(event.key)) pressedSet.delete(event.key);
+  if (event.key != getLeftMoveCode() && event.key != getRightMoveCode() && event.key != getSoftDropCode()) return;
+  if (keySet.has(event.key)) keySet.delete(event.key);
+  removeIntervals();
+}
+function keyDown(event: KeyboardEvent) {
+  if (keyIntervals[event.key]) return;
+  if (pressedSet.has(event.key)) return;
+  manageInput(event.key);
+  if (event.key == getHardDropCode()) {
+    removeIntervals();
+  }
+  if (event.key != getLeftMoveCode() && event.key != getRightMoveCode() && event.key != getSoftDropCode()) {
+    pressedSet.add(event.key);
+    return;
+  }
+  if (keySet.size > 0) {
+    return;
+  }
+
+  keySet.add(event.key);
+
+  const customRepeatInterval = getRepeatInterval();
+  const customStartRepeatInterval = getStartRepeatInterval();
+  console.log(customRepeatInterval);
+  console.log(customStartRepeatInterval);
+  setTimeout(() => {
+    if (keySet.has(event.key)) {
+      keyIntervals[event.key] = setInterval(() => {
+        manageInput(event.key);
+      }, customRepeatInterval);
+    }
+  }, customStartRepeatInterval);
+}
+
+function removeIntervals() {
   for (const interval in keyIntervals) {
     if (Object.prototype.hasOwnProperty.call(keyIntervals, interval)) {
       const element = keyIntervals[interval];
@@ -30,41 +67,6 @@ export function removeInputListeners() {
     }
   }
 }
-function keyUp(event: KeyboardEvent) {
-  if (pressedSet.has(event.key)) pressedSet.delete(event.key);
-  if (event.key != getLeftMoveCode() && event.key != getRightMoveCode() && event.key != getSoftDropCode()) return;
-  if (keySet.has(event.key)) keySet.delete(event.key);
-  if (keyIntervals[event.key]) {
-    clearInterval(keyIntervals[event.key]);
-    delete keyIntervals[event.key];
-  }
-}
-function keyDown(event: KeyboardEvent) {
-  if (keyIntervals[event.key]) return;
-  if (pressedSet.has(event.key)) return;
-  manageInput(event.key);
-  if (event.key != getLeftMoveCode() && event.key != getRightMoveCode() && event.key != getSoftDropCode()) {
-    pressedSet.add(event.key);
-    return;
-  }
-  // // If right is pressed it doesn't allow the opposite, and viceversa
-  // if (event.key == getLeftMoveCode() && keySet.has(getRightMoveCode())) {
-  //   return;
-  // }
-  // // If left is pressed it doesn't allow the opposite, and viceversa
-  // if (event.key == getRightMoveCode() && keySet.has(getLeftMoveCode())) {
-  //   return;
-  // }
-  keySet.add(event.key);
-  setTimeout(() => {
-    if (keySet.has(event.key)) {
-      keyIntervals[event.key] = setInterval(() => {
-        manageInput(event.key);
-      }, customRepeatInterval);
-    }
-  }, customStartRepeatInteval);
-}
-
 
 function manageInput(keyCode: string) {
   switch (keyCode) {

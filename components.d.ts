@@ -8,12 +8,14 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    Again: typeof import('./src/pages/Again.vue')['default']
     Appeareance: typeof import('./src/pages/Appeareance.vue')['default']
     BackProfilePage: typeof import('./src/layouts/BackProfilePage.vue')['default']
     Board: typeof import('./src/pages/Board.vue')['default']
     Button: typeof import('primevue/button')['default']
     Controls: typeof import('./src/pages/Controls.vue')['default']
     Dialog: typeof import('primevue/dialog')['default']
+    Divider: typeof import('primevue/divider')['default']
     Index: typeof import('./src/pages/Index.vue')['default']
     InputText: typeof import('primevue/inputtext')['default']
     Language: typeof import('./src/pages/Language.vue')['default']
@@ -26,6 +28,7 @@ declare module 'vue' {
     Multiplayer: typeof import('./src/pages/Multiplayer.vue')['default']
     Profile: typeof import('./src/components/Profile.vue')['default']
     ProfilePage: typeof import('./src/pages/ProfilePage.vue')['default']
+    ProfileStatsPanel: typeof import('./src/components/ProfileStatsPanel.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SelectKeyCode: typeof import('./src/components/SelectKeyCode.vue')['default']
@@ -37,5 +40,6 @@ declare module 'vue' {
     Theme: typeof import('./src/components/Theme.vue')['default']
     TimeMark: typeof import('./src/components/TimeMark.vue')['default']
     Toast: typeof import('primevue/toast')['default']
+    ValueSelect: typeof import('./src/components/ValueSelect.vue')['default']
   }
 }

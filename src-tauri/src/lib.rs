@@ -36,7 +36,10 @@ pub fn run() {
             commands::game_commands::targeting_strategy_eliminations,
             commands::game_commands::targeting_strategy_random,
             commands::game_commands::targeting_strategy_payback,
-            commands::game_info_retreive::retreive_game_info
+            commands::game_info_retreive::retreive_game_info,
+            commands::game_info_retreive::retreive_classic_game_info,
+            commands::game_info_retreive::retreive_lines_game_info,
+            commands::game_info_retreive::retreive_blitz_game_info
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,12 +1,13 @@
 use serde::{Deserialize, Serialize};
 
-use super::game_info::{GameInfo, GameTypeInfo};
+use super::game_info::{ClassicGameInfo, GameInfo, GameTypeInfo};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EmitGameInfo {
     last_game_info: GameInfo,
     top_five_results: Vec<GameInfo>,
     last_in_top_five: i64,
+    empty: bool,
 }
 
 impl EmitGameInfo {
@@ -38,6 +39,31 @@ impl EmitGameInfo {
             last_game_info,
             last_in_top_five: Self::in_top_five(last_game_info, top_five.as_ref()),
             top_five_results: top_five,
+            empty: false,
+        }
+    }
+    pub fn empty() -> Self {
+        EmitGameInfo {
+            last_game_info: GameInfo::new_from(
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                GameTypeInfo::Classic(ClassicGameInfo::default()),
+            ),
+            top_five_results: vec![],
+            last_in_top_five: -1,
+            empty: true,
         }
     }
     fn top_five_classic(mut previous_results: Vec<GameInfo>) -> Vec<GameInfo> {
@@ -45,9 +71,9 @@ impl EmitGameInfo {
             (
                 super::game_info::GameTypeInfo::Classic(classic_game_info_a),
                 super::game_info::GameTypeInfo::Classic(classic_game_info_b),
-            ) => classic_game_info_a
+            ) => classic_game_info_b
                 .points()
-                .cmp(&classic_game_info_b.points()),
+                .cmp(&classic_game_info_a.points()),
             _ => panic!("Invalid state"),
         });
         previous_results
@@ -75,7 +101,7 @@ impl EmitGameInfo {
             (
                 super::game_info::GameTypeInfo::Blitz(blitz_game_info_a),
                 super::game_info::GameTypeInfo::Blitz(blitz_game_info_b),
-            ) => blitz_game_info_a.points().cmp(&blitz_game_info_b.points()),
+            ) => blitz_game_info_b.points().cmp(&blitz_game_info_a.points()),
             _ => panic!("Invalid state"),
         });
         previous_results

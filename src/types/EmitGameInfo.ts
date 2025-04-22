@@ -2,6 +2,7 @@ export interface EmitGameInfo {
     last_game_info: GameInfo;
     top_five_results: GameInfo[];
     last_in_top_five: number;
+    empty: boolean;
 }
 
 export interface GameInfo {

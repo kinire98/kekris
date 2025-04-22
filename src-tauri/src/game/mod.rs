@@ -7,7 +7,7 @@ use std::{
 use board::{
     Board,
     local_board::{ClearLinePattern, LocalBoard},
-    remote_board::RemoteBoard,
+    // remote_board::RemoteBoard,
 };
 use pieces::Piece;
 use queue::local_queue::LocalQueue;
@@ -30,11 +30,11 @@ mod strategy;
 
 const HELD_PIECE_EMIT: &str = "held_piece_emit";
 const QUEUE_EMIT: &str = "queue_emit";
-const STRATEGY_EMIT: &str = "strategy_emit";
+// const STRATEGY_EMIT: &str = "strategy_emit";
 const BOARD_STATE_EMIT: &str = "board_state_emit";
 const LINE_CLEARED_EMIT: &str = "line_cleared";
 const LINE_CLEARED_INFO_EMIT: &str = "line_cleared_info";
-const HARD_DROP_EMIT: &str = "hard_drop";
+// const HARD_DROP_EMIT: &str = "hard_drop";
 const PIECE_FIXED_EMIT: &str = "piece_fixed";
 const POINTS_EMIT: &str = "points";
 const GAME_OVER_EMIT: &str = "game_over";
@@ -55,7 +55,7 @@ pub struct Game {
     app: AppHandle,
     number_of_players: u8,
     local_board: LocalBoard,
-    remote_boards: Vec<RemoteBoard>,
+    // remote_boards: Vec<RemoteBoard>,
     normal: bool,
     lines_40: bool,
     blitz: bool,
@@ -88,7 +88,7 @@ impl Game {
             app,
             number_of_players: options.number_of_players(),
             local_board: LocalBoard::new(LocalQueue::default()),
-            remote_boards: Vec::new(),
+            // remote_boards: Vec::new(),
             normal: options.is_normal(),
             lines_40: options.is_lines_40(),
             blitz: options.is_blitz(),
@@ -204,10 +204,10 @@ impl Game {
             if cur_time > prev_time {
                 prev_time = cur_time;
                 self.time_emit(cur_time);
-                if self.blitz && self.local_board.game_won(self.get_win_condition()) {
-                    self.game_won_emit();
-                    self.run = false;
-                }
+                // if self.blitz && self.local_board.game_won(self.get_win_condition()) {
+                // self.game_won_emit();
+                // self.run = false;
+                // }
             }
         }
         if forfeited {
@@ -372,23 +372,34 @@ impl Game {
 
         let game_over = self.local_board.game_over();
         let game_won = self.local_board.game_won(self.get_win_condition());
-        if game_over || game_won {
+        if game_won {
+            self.game_won_emit();
+            self.run = false;
+            self.register_info = true;
             let now_time = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .expect("Time went backwards 🗿🤙")
                 .as_secs();
             self.game_info
                 .register_final_info(now_time - self.start_time, self.points, self.level);
-        }
-        if game_won {
-            self.game_won_emit();
-            self.run = false;
-            self.register_info = true;
         } else if game_over {
-            self.game_over_emit(false);
             play_loss(self.app.clone()).await;
             self.run = false;
-            self.register_info = true;
+            if self.normal {
+                self.game_over_emit(false);
+                self.register_info = true;
+                let now_time = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .expect("Time went backwards 🗿🤙")
+                    .as_secs();
+                self.game_info.register_final_info(
+                    now_time - self.start_time,
+                    self.points,
+                    self.level,
+                );
+            } else {
+                self.game_over_emit(true);
+            }
         }
         sender.send(self.level).await.unwrap();
     }
@@ -580,16 +591,10 @@ impl Game {
     }
     async fn register_info(&mut self) {
         let info = self.game_info;
-        #[cfg(debug_assertions)]
-        {
+
+        tokio::spawn(async move {
             store_game_info::store_game_info(info).await;
-        }
-        #[cfg(not(debug_assertions))]
-        {
-            tokio::spawn(async move {
-                store_game_info::store_game_info(info).await;
-            });
-        }
+        });
     }
 }
 #[derive(Debug)]
@@ -608,9 +613,9 @@ pub enum FirstLevelCommands {
     SavePiece,
     FullRotation,
 }
-enum SecondLevelCommands {}
-enum ThirdLevelCommands {}
-enum FourthLevelCommands {}
+// enum SecondLevelCommands {}
+// enum ThirdLevelCommands {}
+// enum FourthLevelCommands {}
 // * Events to emit
 // * - Held piece -> Piece
 // * - Queue -> [Piece]

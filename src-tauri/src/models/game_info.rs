@@ -52,6 +52,7 @@ impl GameInfo {
             specific_info: type_info,
         }
     }
+    #[allow(clippy::too_many_arguments)]
     pub fn new_from(
         piece_moves: u32,
         spins: u32,

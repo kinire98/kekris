@@ -75,6 +75,24 @@
         :value="getTargetingPaybackCode()"
         :desc="$t('ui.controls.payback-desc')"
       />
+      <ValueSelect
+        :name="$t('ui.controls.repeat_frecuency')"
+        :desc="$t('ui.controls.repeat_frecuency_desc')"
+        :initialValue="getRepeatIntervalStored()"
+        :defaultValue="defaultRepeatInterval"
+        :min="minRepeatInterval"
+        :max="maxRepeatInterval"
+        @change="repeatIntervalChanged"
+      />
+      <ValueSelect
+        :name="$t('ui.controls.start_frecuency')"
+        :desc="$t('ui.controls.start_frecuency_desc')"
+        :initialValue="getStartRepeatIntervalStored()"
+        :defaultValue="defaultStartRepeatInterval"
+        :min="minStartRepeatInterval"
+        :max="maxStartRepeatInterval"
+        @change="startRepeatIntervalChanged"
+      />
     </div>
   </MenuBackLayout>
 </template>
@@ -120,11 +138,30 @@ import {
   savePieceCodeKey,
   softDropCodeKey,
 } from "../controls/keycodes";
-const t = useI18n();
+useI18n();
+function startRepeatIntervalChanged(payload: number) {
+  setStartRepeatInterval(payload);
+}
+function repeatIntervalChanged(payload: number) {
+  setRepeatInterval(payload);
+}
 </script>
 <script lang="ts">
 import { useI18n } from "vue-i18n";
 import MenuBackLayout from "../layouts/MenuBackLayout.vue";
+import ValueSelect from "../components/ValueSelect.vue";
+import {
+  defaultRepeatInterval,
+  defaultStartRepeatInterval,
+  getRepeatIntervalStored,
+  getStartRepeatIntervalStored,
+  maxRepeatInterval,
+  maxStartRepeatInterval,
+  minRepeatInterval,
+  minStartRepeatInterval,
+  setRepeatInterval,
+  setStartRepeatInterval,
+} from "../helpers/intervalsStoring";
 export default {
   mounted() {
     const $codes = document.getElementById("codes")! as HTMLElement;

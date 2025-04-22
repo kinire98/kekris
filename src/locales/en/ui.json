@@ -63,6 +63,10 @@
             "payback-desc": "Targets the person who most recently sent you garbage, or a random persona if you have not received any (or the target is KO)",
             "forfeit": "Forfeit",
             "retry": "Retry",
+            "start_frecuency": "Start delay for repeat",
+            "repeat_frecuency": "Repeat frecuency",
+            "start_frecuency_desc": "Start delay for the repetition of certain movments (Soft drop, move right and move left). Is measured in milliseconds.",
+            "repeat_frecuency_desc": "Repetition frecuency of certain movments (Soft drop, move right and move left). Is measured in milliseconds.",
             "keys": {
                 "ArrowRight": "Arrow right",
                 "ArrowLeft": "Arrow left",
@@ -83,6 +87,7 @@
             "appeareance": "Appeareance"
         },
         "stats": {
+            "results": "Results",
             "piece_moves": "Piece moves",
             "spins": "Spins",
             "lines_cleared": "Lines cleared",
@@ -99,6 +104,7 @@
             "minitspins_singles": "MiniTSpin Singles",
             "pieces_per_second": "Pieces used per second",
             "piece_moves_per_second": "Piece moves per second",
+            "lines_cleared_per_second": "Lines cleared per second",
             "main_menu": "Main menu",
             "play_again": "Play again",
             "stats": "Stats",
@@ -109,6 +115,21 @@
             "top": "Top",
             "top_one": "You broke your record. Well done! 🎊🎉 🎊🎉 🎊🎉 🎊🎉",
             "personal_ranking": "Personal ranking"
+        },
+        "profile": {
+            "classic": "Classic",
+            "lines": "40 lines",
+            "blitz": "Blitz",
+            "last_game": "Last game",
+            "points_lower": "points",
+            "ranking": "Ranking",
+            "no_info": "You haven't player this game mode yet",
+            "top_5": "Top 5"
+        },
+        "again": {
+            "title": "Again?",
+            "main_menu": "Main menu",
+            "try_again": "Try again"
         }
     }
 }

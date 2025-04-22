@@ -22,16 +22,52 @@ pub async fn retreive_last_games_info() -> EmitGameInfo {
     .fetch_one(&pool)
     .await
     .unwrap();
-    return EmitGameInfo::new(
+    EmitGameInfo::new(
         get_last_result(generic_info.game_id(), generic_info.game_type(), &pool).await,
         get_all_results(generic_info.game_type(), &pool).await,
-    );
+    )
+}
+pub async fn retreive_last_classic_info() -> EmitGameInfo {
+    get_all_info(super::CLASSIC_TABLE_NAME).await
+}
+pub async fn retreive_last_lines_info() -> EmitGameInfo {
+    get_all_info(super::LINES_TABLE_NAME).await
+}
+pub async fn retreive_last_blitz_info() -> EmitGameInfo {
+    get_all_info(super::BLITZ_TABLE_NAME).await
+}
+async fn get_all_info(type_of_game: &str) -> EmitGameInfo {
+    let Some(url) = super::DB_URL.get() else {
+        panic!("DB_URL Not set")
+    };
+    let pool = SqlitePool::connect(url).await.unwrap();
+    let generic_info_result = sqlx::query_as::<_, GameGenericInfo>(&format!(
+        r#"
+        SELECT *
+        FROM {} 
+        WHERE game_type =  ?1
+        ORDER BY id DESC 
+        LIMIT 1 
+        "#,
+        super::GAME_TABLE_NAME
+    ))
+    .bind(type_of_game)
+    .fetch_one(&pool)
+    .await;
+    let Ok(generic_info) = generic_info_result else {
+        return EmitGameInfo::empty();
+    };
+    EmitGameInfo::new(
+        get_last_result(generic_info.game_id(), type_of_game, &pool).await,
+        get_all_results(type_of_game, &pool).await,
+    )
 }
 async fn get_all_results(type_of_game: &str, pool: &Pool<Sqlite>) -> Vec<GameInfo> {
     let all_of_type = sqlx::query(
         r#"
         SELECT id_game
         FROM games
+        WHERE game_type = ?1
         "#,
     )
     .bind(type_of_game)
