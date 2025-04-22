@@ -6,7 +6,7 @@ import {
     getSPieceDarkColor, getTPieceColor, getTPieceDarkColor,
     getZPieceColor, getZPieceDarkColor
 } from "./colors";
-import { Piece } from "../types/piece";
+import { Piece } from "../types/Piece";
 
 const heldPieceEmit = "held_piece_emit";
 

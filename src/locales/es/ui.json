@@ -1,0 +1,135 @@
+{
+    "ui": {
+        "main": {
+            "singleplayer": "Un jugador",
+            "singleplayer-desc": "Supera tus propios récords, practica o relájate",
+            "multiplayer": "Multijugador",
+            "multiplayer-desc": "Compite con tus amigos",
+            "settings": "Ajustes",
+            "settings-desc": "Personaliza tu experiencia"
+        },
+        "index": {
+            "click": "Haz click en cualquier lugar"
+        },
+        "singleplayer": {
+            "singleplayer": "Un jugador",
+            "classic": "Clásica",
+            "lines": "40 líneas",
+            "blitz": "Relámpago",
+            "classic-desc": "Experiencia clásica. Aguanta todo lo que puedas",
+            "lines-desc": "Una batalla contra el reloj. Completa 40 líneas lo más rápido que puedas",
+            "blitz-desc": "2 minutos. Consigue tantos puntos cómo puedas"
+        },
+        "multiplayer": {
+            "multiplayer": "Multijugador",
+            "soon": "Multijugador pronto disponible"
+        },
+        "settings": {
+            "settings": "Ajustes",
+            "controls": "Controles",
+            "controls-desc": "Personaliza los controles del juego a los que prefieras",
+            "appeareance": "Apariencia",
+            "appeareance-desc": "Selecciona tu apariencia de tablero favorita",
+            "language": "Idioma",
+            "language-desc": "Cambia tu idioma"
+        },
+        "username": {
+            "select": "Escribir nombre de usuario",
+            "confirm": "Confirmar"
+        },
+        "language": {
+            "language": "Idioma"
+        },
+        "controls": {
+            "controls": "Controles",
+            "description": "Descripción del control",
+            "change": "Presiona cualquier tecla o botón",
+            "change-footer": "Haz click en la X para cancelar la asignación",
+            "right": "Mover a la derecha",
+            "left": "Mover a la izquierda",
+            "hard-drop": "Caída fuerte",
+            "soft-drop": "Caída suave",
+            "save-piece": "Guardar pieza",
+            "clockwise": "Rotación en el sentido de las agujas del reloj",
+            "counter-clockwise": "Rotación en el sentido contrario de las agujas del reloj",
+            "full-rotation": "Rotación 180°",
+            "random": "Estrategia de ataque aleatoria",
+            "even": "Estrategia de ataque repartida",
+            "elimination": "Estrategia de ataque eliminatoria",
+            "payback": "Estrategia de ataque resentida",
+            "random-desc": "Apunta a jugadores al azar, sin ninguna lógica detrás",
+            "even-desc": "Tiende a atacar a aquellos que han recibido menos basura esta ronda.",
+            "elimination-desc": "Tiende a atacar a aquellos que tienen la pila más alta en el momento",
+            "payback-desc": "Apunta a la última persona que te envió basura, o una persona al azar si no has recibido nada (o el objetivo es un KO)",
+            "forfeit": "Abandonar",
+            "retry": "Reintentar",
+            "start_frecuency": "Retraso de comienzo de repetición",
+            "repeat_frecuency": "Frecuencia de repetición",
+            "start_frecuency_desc": "Retraso de comienzo de repetición para ciertos movimientos (Caída suave, mover a la izquierda y mover a la derecha). Se mide en milisegundos",
+            "repeat_frecuency_desc": "Frecuencia de repetición para ciertos movimientos (Caída suave, mover a la izquierda y mover a la derecha). Se mide en milisegundos",
+            "keys": {
+                "ArrowRight": "Flecha derecha",
+                "ArrowLeft": "Flecha izquierda",
+                "ArrowDown": "Flecha abajo",
+                "ArrowUp": "Flecha arriba",
+                " ": "Espacio",
+                "Backspace": "Retroceso",
+                "Delete": "Suprimir",
+                "Home": "Inicio",
+                "End": "Fin",
+                "PageUp": "Avance página",
+                "PageDown": "Retroceso página",
+                "Shift": "Mayúsculas",
+                "CapsLock": "Bloqueo mayúsculas"
+            }
+        },
+        "appeareance": {
+            "appeareance": "Apariencia"
+        },
+        "stats": {
+            "results": "Resultados",
+            "piece_moves": "Movimientos de piezas",
+            "spins": "Giros",
+            "lines_cleared": "Líneas limpiadas",
+            "pieces_used": "Piezas utilizadas",
+            "singles": "Sencillos",
+            "doubles": "Dobles",
+            "triples": "Triples",
+            "tetrises": "Quads",
+            "tspins": "TSpins",
+            "tspin_singles": "TSpin Sencillos",
+            "tspin_doubles": "TSpin Dobles",
+            "tspin_triples": "TSpin Triples",
+            "minitspins": "MiniTSpins",
+            "minitspins_singles": "MiniTSpin Sencillos",
+            "pieces_per_second": "Piezas utilizadas por segundo",
+            "piece_moves_per_second": "Movimientos de pieza por segundo",
+            "lines_cleared_per_second": "Líneas limpiadas por segundo",
+            "main_menu": "Menú principal",
+            "play_again": "Jugar de nuevo",
+            "stats": "Estadísticas",
+            "time": "Tiempo",
+            "points": "Puntos",
+            "points_lower": "puntos",
+            "behind_1st": "detrás de tu mejor marca",
+            "top": "Top",
+            "top_one": "Has superado tu mejor marca. ¡Enhorabuena! 🎊🎉 🎊🎉 🎊🎉 🎊🎉",
+            "personal_ranking": "Mejores marcas"
+        },
+        "profile": {
+            "classic": "Clásica",
+            "lines": "40 líneas",
+            "blitz": "Relámpago",
+            "last_game": "Última partida",
+            "ranking": "Ranking",
+            "points_lower": "puntos",
+            "no_info": "Todavía no has jugado a este modo de juego",
+            "top_5": "Top 5"
+        },
+        "again": {
+            "title": "¿Otra vez?",
+            "main_menu": "Menú principal",
+            "try_again": "Volver a intentar"
+        }
+    }
+}

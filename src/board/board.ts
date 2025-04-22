@@ -9,10 +9,13 @@ import {
   getGhostColor
 } from "./colors";
 import { invoke } from "@tauri-apps/api/core";
-import type { GameOptions } from "../types";
+import type { GameOptions } from "../types/GameOptions";
 import { gameWonEffect, lineClearedEffect, lostEffect, pieceFixedEffect } from "./effects";
 import type { ClearLinePattern } from "../types/ClearLinePattern";
-
+import { removeInputListeners } from "../controls/keyboard";
+import { UnlistenFn } from "@tauri-apps/api/event";
+import { Piece } from "../types/Piece";
+import { router } from "../router";
 
 const canvasHeight = 760;
 const canvasWidth = 380;
@@ -33,6 +36,9 @@ const pointsEmit = "points";
 const gameOverEmit = "game_over";
 const gameWonEmit = "game_won";
 const lineClearedInfoEmit = "line_cleared_info";
+const timeEmit = "time_emit";
+
+const unlisteners: UnlistenFn[] = [];
 // E -> Empty
 // C -> Clear
 // G -> Ghost
@@ -47,26 +53,29 @@ const lineClearedInfoEmit = "line_cleared_info";
 let mainCanvas: HTMLCanvasElement;
 let bufferCanvas: HTMLCanvasElement;
 
-export default function startDraw(canvas: HTMLCanvasElement, secondCanvas: HTMLCanvasElement) {
+export let currentGameOptions: GameOptions;
+export default function startDraw(canvas: HTMLCanvasElement, secondCanvas: HTMLCanvasElement, options: GameOptions) {
+  currentGameOptions = options;
   const ctx: CanvasRenderingContext2D = canvas.getContext("2d")!;
   mainCanvas = canvas;
   bufferCanvas = secondCanvas;
   drawLines(ctx);
   startBoardChangeEventListener();
-  let options: GameOptions = {
-    number_of_players: 1,
-    lines_40: false,
-    normal: true,
-    blitz: false
-  };
   invoke("start_game", {
     options: options
   });
   gameLost();
   lineCleared();
   pieceFixedEvent();
-  gameWon();
-  lineClearedInfo();
+  if (options.normal || options.lines_40) {
+    lineClearedInfo();
+  } else {
+    pointsInfo();
+  }
+  if (!options.normal) {
+    gameWon();
+    timer();
+  }
 }
 function drawBufferBoard(board: string) {
   const ctx: CanvasRenderingContext2D = bufferCanvas.getContext("2d")!;
@@ -82,27 +91,23 @@ function drawBoardInternal(board: string, ctx: CanvasRenderingContext2D, drawLDi
     drawLines(ctx);
   }
   for (let i = boardSize - 1; i > -1; i--) {
-    const piece: string = board[i]!;
-    if (piece == "E")
+    const piece: Piece = board[i]! as Piece;
+    if (piece == Piece.Empty)
       continue;
     const y = Math.floor(i / columnNumber);
     const x = i % columnNumber;
-    if (piece == "R") {
+    if (piece == Piece.Trash) {
       trashPiece(ctx, x, y);
       continue;
     }
-    if (piece == "G") {
+    if (piece == Piece.Ghost) {
       ghostPiece(ctx, x, y);
       continue;
     }
     const color = getColor(piece);
     const darkColor = getDarkColor(piece);
     ctx.strokeStyle = color;
-    ctx.lineWidth = 8; // central rect
-    //First magic number -> x offset
-    //Second magic number -> y offset
-    //Third magic number -> width
-    //Fourth magic number -> height
+    ctx.lineWidth = 8;
     const widthSecondRing = 5;
     ctx.strokeRect(widthSecondRing + (pieceWidth * x), widthSecondRing + (pieceWidth * y), pieceWidth - (widthSecondRing * 2), pieceHeight - (widthSecondRing * 2));
     ctx.strokeStyle = darkColor;
@@ -159,7 +164,6 @@ function getColor(piece: string): string {
     return getSPieceColor();
   else if (piece == "Z")
     return getZPieceColor();
-  console.log(piece);
   throw new Error("Invalid Value");
 }
 function getDarkColor(piece: string): string {
@@ -228,32 +232,65 @@ function drawBoard(board: string) {
 
 
 async function gameLost() {
-  await listen(gameOverEmit, () => {
+  unlisteners.push(await listen(gameOverEmit, (e) => {
     lostEffect();
-  });
+
+    setTimeout(() => {
+      if (e.payload == true) {
+        router.push("/again");
+      } else {
+        router.push("/stats");
+      }
+    }, 1500);
+    removeInputListeners();
+    unlisteners.forEach(el => {
+      el()
+    });
+    unlisteners.length = 0;
+  }));
 }
 
 async function lineCleared() {
-  await listen(lineClearedEmit, (e) => {
+  unlisteners.push(await listen(lineClearedEmit, (e) => {
     lineClearedEffect(e.payload as ClearLinePattern);
-  });
+  }));
 }
 
 async function pieceFixedEvent() {
-  await listen(pieceFixed, () => {
+  unlisteners.push(await listen(pieceFixed, () => {
     pieceFixedEffect();
-  });
+  }));
 }
 
 async function gameWon() {
-  await listen(gameWonEmit, () => {
+  unlisteners.push(await listen(gameWonEmit, () => {
     gameWonEffect();
-  });
+    setTimeout(() => {
+      router.push("/stats");
+    }, 1500);
+    removeInputListeners();
+    unlisteners.forEach(el => {
+      el()
+    });
+    unlisteners.length = 0;
+  }));
 }
 
 async function lineClearedInfo() {
-  await listen(lineClearedInfoEmit, (e) => {
+  unlisteners.push(await listen(lineClearedInfoEmit, (e) => {
     const $lines = document.getElementById("write-lines") as HTMLElement;
-    $lines.innerHTML = e.payload as string;
-  })
+    $lines.innerText = e.payload as string;
+  }));
+}
+async function pointsInfo() {
+  unlisteners.push(await listen(pointsEmit, (e) => {
+    const $points = document.getElementById("write-lines") as HTMLElement;
+    $points.innerText = e.payload as string;
+  }));
+}
+async function timer() {
+  unlisteners.push(await listen(timeEmit, (e) => {
+    const $points = document.getElementById("timer")! as HTMLElement;
+    $points.innerText = e.payload as string;
+  }));
 }

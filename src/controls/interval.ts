@@ -1,7 +1,12 @@
+import { getRepeatIntervalStored, getStartRepeatIntervalStored } from "../helpers/intervalsStoring";
+
+
+
 export function getStartRepeatInterval(): number {
-    return 100;
+    return getStartRepeatIntervalStored();
 }
 
+
 export function getRepeatInterval(): number {
-    return 75;
+    return getRepeatIntervalStored();
 }
