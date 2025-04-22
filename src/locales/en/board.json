@@ -1,0 +1,17 @@
+{
+    "board": {
+        "lines": "Lines",
+        "points": "Points",
+        "None": "None",
+        "Single": "Single",
+        "Double": "Double",
+        "Triple": "Triple",
+        "Tetris": "Quad",
+        "TSpin": "TSpin",
+        "TSpinSingle": "TSpin Single",
+        "TSpinDouble": "TSpin Double",
+        "TSpinTriple": "TSpin Triple",
+        "MiniTSpin": "MiniTSpin",
+        "MiniTSpinSingle": "MiniTSpin Single"
+    }
+}

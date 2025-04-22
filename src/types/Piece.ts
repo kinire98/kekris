@@ -6,6 +6,7 @@ export enum Piece {
     J = "J",
     S = "S",
     Z = "Z",
-    Ghost = "Ghost",
-    Trash = "Trash",
+    Ghost = "G",
+    Trash = "R",
+    Empty = "E"
 };

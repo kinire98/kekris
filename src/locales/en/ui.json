@@ -1,0 +1,135 @@
+{
+    "ui": {
+        "main": {
+            "singleplayer": "Singleplayer",
+            "multiplayer": "Multiplayer",
+            "settings": "Settings",
+            "singleplayer-desc": "Break your own records, practice or relax",
+            "multiplayer-desc": "Challenge your friends",
+            "settings-desc": "Customize your experience"
+        },
+        "index": {
+            "click": "Click anywhere"
+        },
+        "singleplayer": {
+            "singleplayer": "Singleplayer",
+            "classic": "Classic",
+            "classic-desc": "Classic experience. See how much you last",
+            "lines": "40 lines",
+            "lines-desc": "A battle against the clock. Complete 40 lines as fast as you can",
+            "blitz": "Blitz",
+            "blitz-desc": "2 minutes. Get as many points as you can"
+        },
+        "multiplayer": {
+            "multiplayer": "Multiplayer",
+            "soon": "Multiplayer soon available"
+        },
+        "settings": {
+            "settings": "Settings",
+            "controls": "Controls",
+            "controls-desc": "Customize the game controls to the ones that suit you the best",
+            "appeareance": "Appeareance",
+            "appeareance-desc": "Select your preferred board appeareance",
+            "language": "Language",
+            "language-desc": "Change your language"
+        },
+        "username": {
+            "select": "Select username",
+            "confirm": "Confirm"
+        },
+        "language": {
+            "language": "Language"
+        },
+        "controls": {
+            "controls": "Controls",
+            "description": "Control description",
+            "change": "Press the key or button",
+            "change-footer": "Click on the X to cancel the keybind change",
+            "right": "Move right",
+            "left": "Move left",
+            "hard-drop": "Hard drop",
+            "soft-drop": "Soft drop",
+            "save-piece": "Save piece",
+            "clockwise": "Clockwise rotation",
+            "counter-clockwise": "Counterclockwise rotation",
+            "full-rotation": "180° rotation",
+            "random": "Random attack strategy",
+            "even": "Even attack strategy",
+            "elimination": "Elimination attack strategy",
+            "payback": "Payback attack strategy",
+            "random-desc": "Targets people at random, with no logic to it",
+            "even-desc": "Tends to target those who have received the least garage this round.",
+            "elimination-desc": "Tends to target those who have the tallest stack at the moment",
+            "payback-desc": "Targets the person who most recently sent you garbage, or a random persona if you have not received any (or the target is KO)",
+            "forfeit": "Forfeit",
+            "retry": "Retry",
+            "start_frecuency": "Start delay for repeat",
+            "repeat_frecuency": "Repeat frecuency",
+            "start_frecuency_desc": "Start delay for the repetition of certain movments (Soft drop, move right and move left). Is measured in milliseconds.",
+            "repeat_frecuency_desc": "Repetition frecuency of certain movments (Soft drop, move right and move left). Is measured in milliseconds.",
+            "keys": {
+                "ArrowRight": "Arrow right",
+                "ArrowLeft": "Arrow left",
+                "ArrowDown": "Arrow down",
+                "ArrowUp": "Arrow up",
+                " ": "Space",
+                "Delete": "Delete",
+                "Home": "Home",
+                "End": "End",
+                "PageUp": "Page up",
+                "PageDown": "Page down",
+                "Backspace": "Backspace",
+                "Shift": "Shift",
+                "CapsLock": "Caps lock"
+            }
+        },
+        "appeareance": {
+            "appeareance": "Appeareance"
+        },
+        "stats": {
+            "results": "Results",
+            "piece_moves": "Piece moves",
+            "spins": "Spins",
+            "lines_cleared": "Lines cleared",
+            "pieces_used": "Pieces used",
+            "singles": "Singles",
+            "doubles": "Doubles",
+            "triples": "Triples",
+            "tetrises": "Quads",
+            "tspins": "TSpins",
+            "tspin_singles": "TSpin Singles",
+            "tspin_doubles": "TSpin Doubles",
+            "tspin_triples": "TSpin Triples",
+            "minitspins": "MiniTSpins",
+            "minitspins_singles": "MiniTSpin Singles",
+            "pieces_per_second": "Pieces used per second",
+            "piece_moves_per_second": "Piece moves per second",
+            "lines_cleared_per_second": "Lines cleared per second",
+            "main_menu": "Main menu",
+            "play_again": "Play again",
+            "stats": "Stats",
+            "time": "Time",
+            "points": "Points",
+            "points_lower": "points",
+            "behind_1st": "behind first",
+            "top": "Top",
+            "top_one": "You broke your record. Well done! 🎊🎉 🎊🎉 🎊🎉 🎊🎉",
+            "personal_ranking": "Personal ranking"
+        },
+        "profile": {
+            "classic": "Classic",
+            "lines": "40 lines",
+            "blitz": "Blitz",
+            "last_game": "Last game",
+            "points_lower": "points",
+            "ranking": "Ranking",
+            "no_info": "You haven't player this game mode yet",
+            "top_5": "Top 5"
+        },
+        "again": {
+            "title": "Again?",
+            "main_menu": "Main menu",
+            "try_again": "Try again"
+        }
+    }
+}

@@ -7,7 +7,7 @@ impl Board for RemoteBoard {
         todo!()
     }
 
-    fn game_won(&self, win_condition: impl Fn(bool, u32) -> bool) -> bool {
+    fn game_won(&self, _win_condition: impl Fn(bool, u32) -> bool) -> bool {
         todo!()
     }
 

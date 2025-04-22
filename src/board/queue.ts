@@ -1,6 +1,6 @@
 import { listen } from "@tauri-apps/api/event";
 import { getIPieceColor, getIPieceDarkColor, getJPieceColor, getJPieceDarkColor, getLPieceColor, getLPieceDarkColor, getOPieceColor, getOPieceDarkColor, getSPieceColor, getSPieceDarkColor, getTPieceColor, getTPieceDarkColor, getZPieceColor, getZPieceDarkColor } from "./colors";
-import { Piece } from "../types/piece";
+import { Piece } from "../types/Piece";
 
 const queueEmit = "queue_emit";
 
