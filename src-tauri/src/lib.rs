@@ -12,6 +12,7 @@ pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
             let main_window = app.get_webview_window("main").unwrap();
+            #[cfg(dev)]
             main_window.minimize().unwrap();
             let handle = app.handle().clone();
             tokio::spawn(async move {
@@ -39,7 +40,8 @@ pub fn run() {
             commands::game_info_retreive::retreive_game_info,
             commands::game_info_retreive::retreive_classic_game_info,
             commands::game_info_retreive::retreive_lines_game_info,
-            commands::game_info_retreive::retreive_blitz_game_info
+            commands::game_info_retreive::retreive_blitz_game_info,
+            commands::exit_app::exit_app
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

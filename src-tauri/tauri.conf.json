@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "kekris",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "identifier": "com.kinire.kekris",
   "build": {
     "beforeDevCommand": "pnpm dev",
@@ -13,9 +13,7 @@
     "windows": [
       {
         "title": "main",
-        "width": 800,
-        "height": 600,
-        "focus": false,
+        "focus": true,
         "fullscreen": true,
         "minimizable": true
       }
@@ -73,15 +71,22 @@
     "active": true,
     "targets": "all",
     "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
+      "icons/512x512.png",
       "icons/icon.icns",
       "icons/icon.ico"
     ],
     "resources": [
       "./assets",
       "./migrations"
-    ]
+    ],
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": false,
+        "files": {
+          "/usr/share/README.md": "../README.md",
+          "/usr/assets": "./assets/"
+        }
+      }
+    }
   }
 }
