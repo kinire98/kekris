@@ -28,6 +28,12 @@
         <slot></slot>
       </div>
     </div>
+<<<<<<< HEAD
+=======
+    <div v-if="props.exit" id="exit-icon">
+      <Icon icon="radix-icons:exit" @click="exit" />
+    </div>
+>>>>>>> dev
   </div>
 </template>
 <style scoped>
@@ -106,9 +112,37 @@ div#buttons-div {
   justify-content: space-between;
   width: 25vw !important;
 }
+<<<<<<< HEAD
 </style>
 <script setup lang="ts">
 const props = defineProps({ title: String, back: Boolean });
+=======
+#exit-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  left: 50px;
+  bottom: 50px;
+  * {
+    width: 50px;
+    height: 50px;
+    color: var(--main-color);
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  *:hover {
+    transform: scale(1.1);
+  }
+}
+</style>
+<script setup lang="ts">
+import { Icon } from "@iconify/vue/dist/iconify.js";
+import { invoke } from "@tauri-apps/api/core";
+const props = defineProps({ title: String, back: Boolean, exit: Boolean });
+>>>>>>> dev
 useI18n();
 </script>
 <script lang="ts">
@@ -119,6 +153,12 @@ export default {
     goBack() {
       this.$router.back();
     },
+<<<<<<< HEAD
+=======
+    exit() {
+      invoke("exit_app");
+    },
+>>>>>>> dev
   },
 };
 </script>

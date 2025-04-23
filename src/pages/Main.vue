@@ -1,5 +1,9 @@
 <template>
+<<<<<<< HEAD
   <MenuBackLayout>
+=======
+  <MenuBackLayout exit>
+>>>>>>> dev
     <Toast class="not-yet-implemented" position="bottom-right" />
     <MenuButton
       :label="$t('ui.main.singleplayer')"
