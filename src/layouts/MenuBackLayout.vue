@@ -28,6 +28,9 @@
         <slot></slot>
       </div>
     </div>
+    <div v-if="props.exit" id="exit-icon">
+      <Icon icon="radix-icons:exit" @click="exit" />
+    </div>
   </div>
 </template>
 <style scoped>
@@ -106,10 +109,32 @@ div#buttons-div {
   justify-content: space-between;
   width: 25vw !important;
 }
+#exit-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  left: 50px;
+  bottom: 50px;
+  * {
+    width: 50px;
+    height: 50px;
+    color: var(--main-color);
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  *:hover {
+    transform: scale(1.1);
+  }
+}
 </style>
 <script setup lang="ts">
-const props = defineProps({ title: String, back: Boolean });
-const t = useI18n();
+import { Icon } from "@iconify/vue/dist/iconify.js";
+import { invoke } from "@tauri-apps/api/core";
+const props = defineProps({ title: String, back: Boolean, exit: Boolean });
+useI18n();
 </script>
 <script lang="ts">
 import Button from "primevue/button";
@@ -118,6 +143,9 @@ export default {
   methods: {
     goBack() {
       this.$router.back();
+    },
+    exit() {
+      invoke("exit_app");
     },
   },
 };

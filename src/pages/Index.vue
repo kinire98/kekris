@@ -83,7 +83,7 @@ import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import { getUsername, setUsername } from "../helpers/username";
 
-const t = useI18n();
+useI18n();
 
 const visible = ref(false);
 const value = ref("");

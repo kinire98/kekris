@@ -11,7 +11,7 @@
 }
 </style>
 <script setup lang="ts">
-const t = useI18n();
+useI18n();
 const { availableLocales } = useI18n();
 </script>
 <script lang="ts">

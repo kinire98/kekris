@@ -9,6 +9,7 @@ pub async fn run_migrations(app: AppHandle) {
     let base: PathBuf = app.path().app_data_dir().unwrap();
     let db_path = base.join("kekris.db");
     if !db_path.exists() {
+        File::create(base).await.unwrap();
         File::create(&db_path).await.unwrap();
     }
     let url = format!("sqlite://{}", db_path.display());

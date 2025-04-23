@@ -25,8 +25,8 @@ export function removeInputListeners() {
 function keyUp(event: KeyboardEvent) {
   if (pressedSet.has(event.key)) pressedSet.delete(event.key);
   if (event.key != getLeftMoveCode() && event.key != getRightMoveCode() && event.key != getSoftDropCode()) return;
-  if (keySet.has(event.key)) keySet.delete(event.key);
   removeIntervals();
+  if (keySet.has(event.key)) keySet.delete(event.key);
 }
 function keyDown(event: KeyboardEvent) {
   if (keyIntervals[event.key]) return;
