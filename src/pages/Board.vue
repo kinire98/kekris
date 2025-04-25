@@ -146,7 +146,7 @@
 .won {
   position: relative;
   opacity: 0;
-  top: 400px;
+  top: 50vh;
   transform: scale(2);
 }
 #timer {

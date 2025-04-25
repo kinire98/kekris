@@ -29,8 +29,19 @@
       </div>
     </div>
 <<<<<<< HEAD
-=======
 <<<<<<< HEAD
+=======
+=======
+>>>>>>> main
+<<<<<<< HEAD
+=======
+    <div v-if="props.exit" id="exit-icon">
+      <Icon icon="radix-icons:exit" @click="exit" />
+    </div>
+>>>>>>> dev
+<<<<<<< HEAD
+>>>>>>> main
+=======
 =======
     <div v-if="props.exit" id="exit-icon">
       <Icon icon="radix-icons:exit" @click="exit" />
@@ -116,15 +127,23 @@ div#buttons-div {
   width: 25vw !important;
 }
 <<<<<<< HEAD
-</style>
-<script setup lang="ts">
-const props = defineProps({ title: String, back: Boolean });
-=======
 <<<<<<< HEAD
 </style>
 <script setup lang="ts">
 const props = defineProps({ title: String, back: Boolean });
 =======
+=======
+>>>>>>> main
+<<<<<<< HEAD
+</style>
+<script setup lang="ts">
+const props = defineProps({ title: String, back: Boolean });
+=======
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> dev
+>>>>>>> main
 #exit-icon {
   display: flex;
   align-items: center;
@@ -150,6 +169,13 @@ const props = defineProps({ title: String, back: Boolean });
 import { Icon } from "@iconify/vue/dist/iconify.js";
 import { invoke } from "@tauri-apps/api/core";
 const props = defineProps({ title: String, back: Boolean, exit: Boolean });
+<<<<<<< HEAD
+>>>>>>> dev
+>>>>>>> main
+=======
+<<<<<<< HEAD
+>>>>>>> dev
+=======
 >>>>>>> dev
 >>>>>>> main
 useI18n();
@@ -163,8 +189,19 @@ export default {
       this.$router.back();
     },
 <<<<<<< HEAD
-=======
 <<<<<<< HEAD
+=======
+=======
+>>>>>>> main
+<<<<<<< HEAD
+=======
+    exit() {
+      invoke("exit_app");
+    },
+>>>>>>> dev
+<<<<<<< HEAD
+>>>>>>> main
+=======
 =======
     exit() {
       invoke("exit_app");

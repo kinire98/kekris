@@ -1,9 +1,18 @@
 <template>
 <<<<<<< HEAD
-  <MenuBackLayout>
-=======
 <<<<<<< HEAD
   <MenuBackLayout>
+=======
+=======
+>>>>>>> main
+<<<<<<< HEAD
+  <MenuBackLayout>
+=======
+  <MenuBackLayout exit>
+>>>>>>> dev
+<<<<<<< HEAD
+>>>>>>> main
+=======
 =======
   <MenuBackLayout exit>
 >>>>>>> dev
