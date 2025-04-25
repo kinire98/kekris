@@ -1,4 +1,6 @@
+use tauri::AppHandle;
+
 #[tauri::command]
-pub fn exit_app() {
-    std::process::exit(0x0);
+pub fn exit_app(app: AppHandle) {
+    app.exit(0);
 }

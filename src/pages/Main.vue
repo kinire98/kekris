@@ -1,6 +1,10 @@
 <template>
 <<<<<<< HEAD
+<<<<<<< HEAD
   <MenuBackLayout>
+=======
+  <MenuBackLayout exit>
+>>>>>>> dev
 =======
   <MenuBackLayout exit>
 >>>>>>> dev
