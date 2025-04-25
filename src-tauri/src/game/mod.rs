@@ -311,6 +311,7 @@ impl Game {
                 FirstLevelCommands::SavePiece => {
                     let piece = self.local_board.held_piece();
                     self.local_board.save_piece();
+                    self.count_movements_enabled = false;
                     if piece != self.local_board.held_piece() {
                         self.emit_held_piece();
                         self.queue_emit();
