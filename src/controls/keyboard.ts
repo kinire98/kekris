@@ -4,13 +4,17 @@ import { hardDropEffect } from "../board/effects";
 import { getClockwiseCode, getCounterClockwiseCode, getForfeitCode, getFullRotationCode, getHardDropCode, getLeftMoveCode, getRetryCode, getRightMoveCode, getSavePieceCode, getSoftDropCode, getTargetingEliminationsCode, getTargetingEvenCode, getTargetingPaybackCode, getTargetingRandomCode } from "./keycodes";
 import { currentGameOptions } from "../board/board";
 
+let customRepeatInterval = getRepeatInterval();
+let customStartRepeatInterval = getStartRepeatInterval();
 let keyIntervals: Record<string, NodeJS.Timeout> = {};
-const keySet = new Set<string>();
-const pressedSet = new Set<string>();
+const keySet = new Set<string>(); // Repeat interval
+const pressedSet = new Set<string>(); // Not repeat
 export default function manageInputListeners() {
   keyIntervals = {};
   keySet.clear();
   pressedSet.clear();
+  customRepeatInterval = getRepeatInterval();
+  customStartRepeatInterval = getStartRepeatInterval();
   // Handle keydown event
   document.addEventListener("keydown", keyDown);
 
@@ -23,15 +27,28 @@ export function removeInputListeners() {
   removeIntervals();
 }
 function keyUp(event: KeyboardEvent) {
-  if (pressedSet.has(event.key)) pressedSet.delete(event.key);
-  if (event.key != getLeftMoveCode() && event.key != getRightMoveCode() && event.key != getSoftDropCode()) return;
-  if (keySet.has(event.key)) keySet.delete(event.key);
-  removeIntervals();
+  if (pressedSet.has(event.key)) {
+    pressedSet.delete(event.key);
+    return;
+  }
 
+  if (event.key != getLeftMoveCode() && event.key != getRightMoveCode() && event.key != getSoftDropCode()) {
+    return;
+  }
+
+  if (keySet.has(event.key)) {
+    keySet.delete(event.key);
+    removeIntervals();
+  }
 }
 function keyDown(event: KeyboardEvent) {
-  if (keyIntervals[event.key]) return;
-  if (pressedSet.has(event.key)) return;
+  if (keySet.has(event.key)) {
+    return;
+  }
+  if (pressedSet.has(event.key)) {
+    return;
+  }
+
   manageInput(event.key);
   if (event.key == getHardDropCode()) {
     removeIntervals();
@@ -40,18 +57,13 @@ function keyDown(event: KeyboardEvent) {
     pressedSet.add(event.key);
     return;
   }
-  if (keySet.size > 0) {
-    return;
-  }
+
 
   keySet.add(event.key);
 
-  const customRepeatInterval = getRepeatInterval();
-  const customStartRepeatInterval = getStartRepeatInterval();
-  console.log(customRepeatInterval);
-  console.log(customStartRepeatInterval);
+
   setTimeout(() => {
-    if (keySet.has(event.key)) {
+    if (keySet.has(event.key) && !keyIntervals.hasOwnProperty(event.key)) {
       keyIntervals[event.key] = setInterval(() => {
         manageInput(event.key);
       }, customRepeatInterval);
