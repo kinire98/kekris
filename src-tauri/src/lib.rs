@@ -6,6 +6,7 @@ pub mod game;
 mod init_trace;
 pub mod models;
 pub mod persistence;
+pub mod room;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -41,7 +42,8 @@ pub fn run() {
             commands::game_info_retreive::retreive_classic_game_info,
             commands::game_info_retreive::retreive_lines_game_info,
             commands::game_info_retreive::retreive_blitz_game_info,
-            commands::exit_app::exit_app
+            commands::exit_app::exit_app,
+            commands::room_commands::listen_for_rooms
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

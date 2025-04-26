@@ -6,7 +6,10 @@ use tokio::sync::{
     mpsc::{self, Sender},
 };
 
-use crate::game::{FirstLevelCommands, Game, GameControl};
+use crate::game::{
+    local_game::{FirstLevelCommands, GameControl, LocalGame},
+    queue::local_queue::LocalQueue,
+};
 use crate::models::game_options::GameOptions;
 
 static FIRST_LEVEL_CHANNEL: OnceCell<Arc<Mutex<Sender<FirstLevelCommands>>>> =
@@ -137,7 +140,7 @@ pub async fn start_game(app: AppHandle, options: GameOptions) {
             .unwrap();
     }
     tokio::spawn(async move {
-        let mut game = Game::new(options, app, rx, control_rx);
+        let mut game = LocalGame::new(options, app, rx, control_rx, LocalQueue::default());
         game.start_game().await;
     });
 }

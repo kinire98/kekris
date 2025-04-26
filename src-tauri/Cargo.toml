@@ -1,6 +1,6 @@
 [package]
 name = "kekris"
-version = "0.0.0"
+version = "0.2.3"
 description = "A Tetris clone"
 authors = ["kinire98"]
 edition = "2024"
@@ -12,7 +12,7 @@ name = "tauri_app_lib"
 crate-type = ["lib", "cdylib", "staticlib"]
 
 [build-dependencies]
-tauri-build = { version = "2.0.5", features = [] }
+tauri-build = { version = "2.2.0", features = [] }
 
 [dependencies]
 tauri = { version = "2.5.1", features = [] }
@@ -21,7 +21,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rand = "0.9"
 color-eyre = "0.6.3"
-tokio = { version = "1.44.0", features = ["full"] }
+tokio = { version = "1.44.2", features = ["full"] }
 rodio = "0.20.1"
 sqlx = { version = "0.8.5", features = ["sqlite", "runtime-tokio-native-tls", "macros"] }
 
