@@ -22,7 +22,27 @@
         },
         "multiplayer": {
             "multiplayer": "Multijugador",
-            "soon": "Multijugador pronto disponible"
+            "soon": "Multijugador pronto disponible",
+            "local-network": "Red local",
+            "local-network-desc": "Juega con jugadores conectados en tu red local",
+            "internet": "Internet",
+            "internet-desc": "Juega con gente fuera de tu red",
+            "not-available": "No disponible",
+            "local": {
+                "local": "Red local",
+                "host": "Hostear partida",
+                "host-desc": "Crea tu propia partida",
+                "room-list": "Listado de partidas disponibles",
+                "games": "partidas",
+                "game": "partida",
+                "no-rooms": "No hay partidas disponibles"
+            },
+            "room": {
+                "room-of": "Partida de",
+                "change": "Cambiar nombre de sala",
+                "players": "Jugadores",
+                "play": "Jugar"
+            }
         },
         "settings": {
             "settings": "Ajustes",

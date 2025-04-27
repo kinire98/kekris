@@ -22,21 +22,8 @@
 import MenuBackLayout from "../layouts/MenuBackLayout.vue";
 import MenuButton from "../components/MenuButton.vue";
 import { Toast } from "primevue";
-import { useToast } from "primevue";
 import { useI18n } from "vue-i18n";
 export default {
-  beforeRouteLeave(to, _from, next) {
-    if (to.path === "/multiplayer") {
-      const toast = useToast();
-      toast.add({
-        severity: "contrast",
-        summary: this.$t("ui.multiplayer.soon"),
-        life: 2500,
-      });
-      next(false);
-    }
-    next(true);
-  },
   setup() {
     const t = useI18n();
     return {

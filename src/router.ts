@@ -2,7 +2,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import Index from './pages/Index.vue'
 import Board from "./pages/Board.vue";
 import Main from "./pages/Main.vue";
-import Multiplayer from './pages/Multiplayer.vue';
+import Multiplayer from './pages/multiplayer/Multiplayer.vue';
 import Singleplayer from './pages/Singleplayer.vue';
 import Settings from './pages/Settings.vue';
 import ProfilePage from './pages/ProfilePage.vue';
@@ -11,6 +11,9 @@ import Appeareance from './pages/Appeareance.vue';
 import Language from './pages/Language.vue';
 import Stats from './pages/Stats.vue';
 import Again from './pages/Again.vue';
+import Internet from './pages/multiplayer/Internet.vue';
+import Local from './pages/multiplayer/Local.vue';
+import Room from './pages/multiplayer/Room.vue';
 
 const routes = [
     { path: '/', component: Index },
@@ -27,6 +30,10 @@ const routes = [
     { path: '/blitz', component: Board },
     { path: '/stats', component: Stats },
     { path: '/again', component: Again },
+    { path: '/internet', component: Internet },
+    { path: '/local', component: Local },
+    { path: '/host', component: Room },
+    { path: '/join', component: Room },
 ]
 
 export const router = createRouter({
