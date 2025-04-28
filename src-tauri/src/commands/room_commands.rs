@@ -1,4 +1,4 @@
-use std::sync::{Arc, mpsc::channel};
+use std::sync::Arc;
 
 use tauri::AppHandle;
 use tokio::sync::{
@@ -8,17 +8,18 @@ use tokio::sync::{
 
 use crate::{
     models::{
-        dummy_room::{self, DummyPlayer, DummyRoom},
+        dummy_room::{DummyPlayer, DummyRoom},
         room_info::RoomInfo,
     },
-    room::{Room, listen_to_rooms::listen_to_rooms, player::Player},
+    room::{Room, listen_to_rooms::listen_to_rooms},
 };
 
 const PLAYERS_EMIT: &str = "playersEmit";
 const ROOM_NAME_EMIT: &str = "roomNameEmit";
 
-static ROOM: OnceCell<Arc<Mutex<Room>>> = OnceCell::const_new();
 static END_SEARCH_CHANNEL: OnceCell<Arc<Mutex<Sender<bool>>>> = OnceCell::const_new();
+static END_LISTEN_ROOM: OnceCell<Arc<Mutex<Sender<bool>>>> = OnceCell::const_new();
+static END_ROOM: OnceCell<Arc<Mutex<Sender<bool>>>> = OnceCell::const_new();
 
 #[tauri::command]
 pub async fn listen_for_rooms(app: AppHandle) {
@@ -40,18 +41,33 @@ pub async fn stop_search() {
         tx.lock().await.send(false).await.unwrap();
     }
 }
-
 #[tauri::command]
-pub async fn join_room(room: RoomInfo, player: DummyPlayer) {
-    stop_search().await
+pub async fn join_room(app: AppHandle, room: RoomInfo, player: DummyPlayer) {
+    stop_search().await;
+    crate::room::join_room::join_room(room, player, app).await;
 }
 
 #[tauri::command]
-pub fn create_room(app: AppHandle, name: String) -> DummyRoom {
-    let room = Room::new(name, app);
+pub async fn create_room(app: AppHandle, name: String) -> DummyRoom {
+    let (tx, rx) = mpsc::channel(32);
+    if let Some(channel) = END_LISTEN_ROOM.get() {
+        let mut lock = channel.lock().await;
+        *lock = tx;
+    } else {
+        END_LISTEN_ROOM.set(Arc::new(Mutex::new(tx))).unwrap();
+    }
+    let (tx_end, rx_end) = mpsc::channel(32);
+    if let Some(channel) = END_ROOM.get() {
+        let mut lock = channel.lock().await;
+        *lock = tx_end;
+    } else {
+        END_ROOM.set(Arc::new(Mutex::new(tx_end))).unwrap();
+    }
+    let mut room = Room::new(name, app, rx_end, rx);
     let dummy_room = room.as_ref().into();
-    ROOM.set(Arc::new(Mutex::new(room)))
-        .expect("Reasonable this will not panic");
+    tokio::spawn(async move {
+        room.room_start().await;
+    });
     dummy_room
 }
 
@@ -59,7 +75,14 @@ pub fn create_room(app: AppHandle, name: String) -> DummyRoom {
 pub fn leave_room() {}
 
 #[tauri::command]
-pub fn close_room() {}
+pub async fn close_room() {
+    if let Some(channel) = END_LISTEN_ROOM.get() {
+        let _ = channel.lock().await.send(false).await;
+    }
+    if let Some(channel) = END_ROOM.get() {
+        let _ = channel.lock().await.send(false).await;
+    }
+}
 
 #[tauri::command]
 pub fn get_room_name() -> String {
@@ -67,7 +90,11 @@ pub fn get_room_name() -> String {
 }
 
 #[tauri::command]
-pub fn room_info(app: AppHandle) -> DummyRoom {
-    let room = Room::new("test".to_string(), app);
+pub async fn room_info(app: AppHandle) -> DummyRoom {
+    let (_tx, rx) = mpsc::channel(32);
+
+    let (_tx_end, rx_end) = mpsc::channel(32);
+
+    let room = Room::new("test".to_string(), app, rx_end, rx);
     room.as_ref().into()
 }

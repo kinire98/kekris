@@ -148,6 +148,7 @@ import { getUsername } from "../../helpers/username";
 import { useI18n } from "vue-i18n";
 import i18n from "../../i18n";
 import { default as PlayerComponent } from "../../components/Player.vue";
+import { router } from "../../router";
 
 const playersEmit = "playersEmit";
 const roomNameEmit = "roomNameEmit";
@@ -160,7 +161,7 @@ let visible: boolean = false;
 let roomName: string =
   name == "host"
     ? i18n.global.t("ui.multiplayer.room.room-of") + " " + getUsername()
-    : await invoke("get_room_name");
+    : "";
 const players: Ref<Player[]> = ref([]);
 let room: Room;
 if (name == "host") {
@@ -168,6 +169,7 @@ if (name == "host") {
   players.value = room.players;
 } else {
   room = (await invoke("room_info")) as Room;
+  roomName = room.name;
 }
 listen(playersEmit, (e) => {
   players.value = e.payload as Player[];
@@ -178,6 +180,7 @@ function leaveRoom() {
   } else {
     invoke("leave_room");
   }
+  router.push("/main");
 }
 function startGame() {}
 </script>

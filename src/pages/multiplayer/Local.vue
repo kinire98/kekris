@@ -56,16 +56,20 @@ h2 {
 const roomUpdatesEvent = "room-updates";
 import { useI18n } from "vue-i18n";
 import MenuBackLayout from "../../layouts/MenuBackLayout.vue";
-import { Ref, ref } from "vue";
+import { onMounted, Ref, ref } from "vue";
 import { listen } from "@tauri-apps/api/event";
 import { RoomInfo } from "../../types/Room";
 import { invoke } from "@tauri-apps/api/core";
 import MenuButton from "../../components/MenuButton.vue";
 import { router } from "../../router";
+import { onBeforeRouteLeave } from "vue-router";
 useI18n();
 const games: Ref<RoomInfo[]> = ref([]);
-listen(roomUpdatesEvent, (e) => {
-  games.value = e.payload as RoomInfo[];
+onMounted(() => {
+  invoke("listen_for_rooms");
+  listen(roomUpdatesEvent, (e) => {
+    games.value = e.payload as RoomInfo[];
+  });
 });
 function join(room: RoomInfo) {
   invoke("join_room", {
@@ -73,4 +77,8 @@ function join(room: RoomInfo) {
   });
   router.push("/join");
 }
+onBeforeRouteLeave((to, from, next) => {
+  invoke("stop_search");
+  next(true);
+});
 </script>

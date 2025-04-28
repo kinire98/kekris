@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::room::{Room, Visibility, player::Player};
 
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct DummyRoom {
     players: Vec<DummyPlayer>,
     visibility: Visibility,
@@ -12,7 +12,7 @@ pub struct DummyRoom {
     limit_of_players: u8,
     games_played: u8,
 }
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DummyPlayer {
     name: String,
     ip: IpAddr,

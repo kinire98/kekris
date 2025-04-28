@@ -5,8 +5,11 @@ use tauri::{AppHandle, Emitter};
 
 use crate::{
     globals::{DUMMY_SEND_BROADCAST, LISTEN_BROADCAST_RESPONSE, SENDING_BROADCAST, SIZE_FOR_KB},
-    models::room_commands::RoomNetCommands,
+    models::{room_commands::RoomNetCommands, room_info::RoomInfo},
 };
+
+const SECONDS_TO_LISTEN: u64 = 10;
+const MILIS_TIMEOUT: u64 = 500;
 
 const ROOM_UPDATES_EVENT: &str = "room-updates";
 pub async fn listen_to_rooms(app: AppHandle, mut channel: tokio::sync::mpsc::Receiver<bool>) {
@@ -29,28 +32,29 @@ pub async fn listen_to_rooms(app: AppHandle, mut channel: tokio::sync::mpsc::Rec
             .await
             .unwrap();
 
-        let mut buf = [0; SIZE_FOR_KB];
+        let mut buf = vec![0; SIZE_FOR_KB];
 
-        let mut rooms = vec![];
+        let mut rooms: Vec<RoomInfo> = vec![];
         let listen_socket = UdpSocket::bind(LISTEN_BROADCAST_RESPONSE).await.unwrap();
-        let _ = tokio::time::timeout(Duration::from_secs(1), async {
+        let _ = tokio::time::timeout(Duration::from_millis(MILIS_TIMEOUT), async {
             loop {
                 let Ok((len, _)) = listen_socket.recv_from(&mut buf).await else {
                     continue;
                 };
                 let response: Result<RoomNetCommands, serde_json::Error> =
                     serde_json::from_slice(&buf[..len]);
+                dbg!(&response);
                 let Ok(command) = response else {
                     continue;
                 };
                 if let RoomNetCommands::RoomDiscoverResponse(info) = command {
                     rooms.push(info);
                 }
+                app.emit(ROOM_UPDATES_EVENT, &rooms).unwrap();
             }
         })
         .await;
-        println!("{:?}", rooms);
         app.emit(ROOM_UPDATES_EVENT, rooms).unwrap();
-        tokio::time::sleep(Duration::from_secs(5)).await;
+        tokio::time::sleep(Duration::from_secs(SECONDS_TO_LISTEN / 2)).await;
     }
 }
