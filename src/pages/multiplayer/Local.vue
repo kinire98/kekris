@@ -6,6 +6,7 @@
           :label="$t('ui.multiplayer.local.host')"
           :desc="$t('ui.multiplayer.local.host-desc')"
           path="/host"
+          v-if="show"
         />
       </div>
       <div id="games">
@@ -58,26 +59,38 @@ import { useI18n } from "vue-i18n";
 import MenuBackLayout from "../../layouts/MenuBackLayout.vue";
 import { onMounted, Ref, ref } from "vue";
 import { listen } from "@tauri-apps/api/event";
-import { RoomInfo } from "../../types/Room";
+import { Player, RoomInfo } from "../../types/Room";
 import { invoke } from "@tauri-apps/api/core";
 import MenuButton from "../../components/MenuButton.vue";
 import { router } from "../../router";
 import { onBeforeRouteLeave } from "vue-router";
+import { getUsername } from "../../helpers/username";
 useI18n();
 const games: Ref<RoomInfo[]> = ref([]);
+
+let show = await invoke("can_host_room");
 onMounted(() => {
   invoke("listen_for_rooms");
   listen(roomUpdatesEvent, (e) => {
     games.value = e.payload as RoomInfo[];
   });
 });
-function join(room: RoomInfo) {
-  invoke("join_room", {
+async function join(room: RoomInfo) {
+  let player: Player = {
+    name: getUsername()!,
+    ip: "192.168.0.1",
+    games_won: 0,
+    playing: false,
+    last_time: 0,
+    ping: 0,
+  };
+  await invoke("join_room", {
     room: room,
+    player: player,
   });
   router.push("/join");
 }
-onBeforeRouteLeave((to, from, next) => {
+onBeforeRouteLeave((_to, _from, next) => {
   invoke("stop_search");
   next(true);
 });

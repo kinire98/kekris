@@ -9,5 +9,6 @@ pub const LISTENING_DIRECTION_BROADCAST: &str = formatcp!("0.0.0.0:{}", LISTENIN
 pub const SENDING_BROADCAST: &str = formatcp!("255.255.255.255:{}", LISTENING_PORT_BROADCAST);
 pub const LISTEN_BROADCAST_RESPONSE: &str =
     formatcp!("0.0.0.0:{}", LISTENING_RESPONSE_PORT_BROADCAST);
+pub const LISTENING_DIRECTION_TCP: &str = formatcp!("0.0.0.0:{}", LISTENING_PORT_TCP_SERVER);
 pub const DUMMY_SEND_BROADCAST: &str = "0.0.0.0:0";
 pub const SIZE_FOR_KB: usize = 1048576;

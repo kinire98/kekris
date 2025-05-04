@@ -44,14 +44,14 @@ pub fn run() {
             commands::game_info_retreive::retreive_lines_game_info,
             commands::game_info_retreive::retreive_blitz_game_info,
             commands::exit_app::exit_app,
-            commands::room_commands::listen_for_rooms,
-            commands::room_commands::create_room,
-            commands::room_commands::close_room,
-            commands::room_commands::join_room,
-            commands::room_commands::leave_room,
-            commands::room_commands::get_room_name,
-            commands::room_commands::room_info,
-            commands::room_commands::stop_search
+            commands::room_commands::server::create_room,
+            commands::room_commands::server::close_room,
+            commands::room_commands::client::listen_for_rooms,
+            commands::room_commands::client::join_room,
+            commands::room_commands::client::leave_room,
+            commands::room_commands::client::room_info,
+            commands::room_commands::client::stop_search,
+            commands::room_commands::can_host_room
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

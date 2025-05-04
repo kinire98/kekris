@@ -21,12 +21,6 @@
         </h2>
         <div id="player-list">
           <PlayerComponent
-            :name="getUsername()!"
-            :kick="false"
-            :games_won="0"
-            :games_played="room.games_played"
-          />
-          <PlayerComponent
             v-for="player in players"
             :name="player.name"
             :kick="false"
@@ -142,7 +136,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { onMounted, Ref, ref } from "vue";
 import { useRoute } from "vue-router";
-import { Player, Room } from "../../types/Room";
+import { Player, Room, Visibility } from "../../types/Room";
 import { Button } from "primevue";
 import { getUsername } from "../../helpers/username";
 import { useI18n } from "vue-i18n";
@@ -165,11 +159,28 @@ let roomName: string =
 const players: Ref<Player[]> = ref([]);
 let room: Room;
 if (name == "host") {
-  room = (await invoke("create_room", { name: roomName })) as Room;
+  room = (await invoke("create_room", {
+    name: roomName,
+    playerName: getUsername()!,
+  })) as Room;
   players.value = room.players;
 } else {
-  room = (await invoke("room_info")) as Room;
-  roomName = room.name;
+  console.log("here");
+  let tmpRoom = (await invoke("room_info")) as Room | null;
+  console.log(tmpRoom);
+  if (tmpRoom == null) {
+    router.back();
+    room = {
+      players: [],
+      name: "",
+      visibility: "LocalNetwork",
+      limit_of_players: 0,
+      games_played: 0,
+    };
+  } else {
+    room = tmpRoom!;
+    roomName = room.name;
+  }
 }
 listen(playersEmit, (e) => {
   players.value = e.payload as Player[];

@@ -36,6 +36,41 @@ impl From<&Room> for DummyRoom {
     }
 }
 
+impl DummyPlayer {
+    pub fn fill(mut player: Self) -> Self {
+        player.ip = local_ip_address::local_ip().expect("Reasonable to expect it won't panic");
+        player.games_won = 0;
+        player.playing = false;
+        player.last_time = 0;
+        player.ping = 0;
+        player
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn ip(&self) -> IpAddr {
+        self.ip
+    }
+
+    pub fn games_won(&self) -> u16 {
+        self.games_won
+    }
+
+    pub fn playing(&self) -> bool {
+        self.playing
+    }
+
+    pub fn last_time(&self) -> u32 {
+        self.last_time
+    }
+
+    pub fn ping(&self) -> u32 {
+        self.ping
+    }
+}
+
 impl From<&Player> for DummyPlayer {
     fn from(value: &Player) -> Self {
         DummyPlayer {
