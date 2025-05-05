@@ -4,6 +4,7 @@ use std::time::Duration;
 use crate::models::room_commands::server::RejectReason;
 
 use crate::globals::LISTENING_DIRECTION_TCP;
+use crate::room::player::Player;
 
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -64,38 +65,46 @@ fn receive_updates(
                 else {
                     return;
                 };
-                if let ClientRoomNetCommands::JoinRoomRequest(dummy_player) = command {
-                    let number = *receive_players.lock().await;
-                    if number >= limit_players {
-                        let _ = socket
-                            .0
-                            .write_all(
-                                &serde_json::to_vec(
-                                    &ServerRoomNetCommands::JoinRoomRequestRejected(
-                                        RejectReason::RoomFull,
-                                    ),
+                match command {
+                    ClientRoomNetCommands::RoomDiscover => (), // Handled somewhere else
+                    ClientRoomNetCommands::JoinRoomRequest(dummy_player) => {
+                        let number = *receive_players.lock().await;
+                        if number >= limit_players {
+                            let _ = socket
+                                .0
+                                .write_all(
+                                    &serde_json::to_vec(
+                                        &ServerRoomNetCommands::JoinRoomRequestRejected(
+                                            RejectReason::RoomFull,
+                                        ),
+                                    )
+                                    .expect("Won't panic in a reasonable amount of times"),
                                 )
-                                .expect("Won't panic in a reasonable amount of times"),
+                                .await;
+                            return;
+                        }
+                        if (socket
+                            .0
+                            .write(
+                                &serde_json::to_vec(
+                                    &ServerRoomNetCommands::JoinRoomRequestAccepted(room),
+                                )
+                                .expect("Reasonable to think it won't panic"),
                             )
-                            .await;
-                        return;
+                            .await)
+                            .is_ok()
+                        {
+                            let _ = sender_copy
+                                .send(FirstLevelCommands::PlayerConnected((
+                                    dummy_player,
+                                    socket.0,
+                                )))
+                                .await;
+                        }
                     }
-                    if (socket
-                        .0
-                        .write(
-                            &serde_json::to_vec(&ServerRoomNetCommands::JoinRoomRequestAccepted(
-                                room,
-                            ))
-                            .expect("Reasonable to think it won't panic"),
-                        )
-                        .await)
-                        .is_ok()
-                    {
+                    ClientRoomNetCommands::LeaveRoom(dummy_player) => {
                         let _ = sender_copy
-                            .send(FirstLevelCommands::PlayerConnected((
-                                dummy_player,
-                                socket.0,
-                            )))
+                            .send(FirstLevelCommands::PlayerDisconnected(dummy_player))
                             .await;
                     }
                 }
@@ -118,33 +127,44 @@ fn send_updates(
                         async {
                             let dummys: Vec<DummyPlayer> =
                                 players.iter().clone().map(|player| player.into()).collect();
-                            for mut player in players {
-                                let stream = player.stream();
-                                if stream.is_some() {
-                                    stream
-                                        .unwrap()
-                                        .lock()
-                                        .await
-                                        .write_all(
-                                            &serde_json::to_vec(
-                                                &ServerRoomNetCommands::PlayersUpdate(
-                                                    dummys.clone(),
-                                                ),
-                                            )
-                                            .expect("Reasonable"),
-                                        )
-                                        .await
-                                        .unwrap();
-                                }
-                            }
+                            send_command_to_everyone(
+                                players,
+                                ServerRoomNetCommands::PlayersUpdate(dummys),
+                            )
+                            .await;
                         }
                         .await
                     }
                     Updates::NameChanged(_) => todo!(),
                     Updates::PlayerLimitChanged(_) => todo!(),
+                    Updates::RoomEnded(players) => {
+                        async {
+                            send_command_to_everyone(players, ServerRoomNetCommands::RoomClosed)
+                                .await;
+                        }
+                        .await
+                    }
                 }
             };
             tokio::time::sleep(Duration::from_micros(16_666)).await;
         }
     });
+}
+
+async fn send_command_to_everyone(players: Vec<Player>, command: ServerRoomNetCommands) {
+    for mut player in players {
+        let stream = player.stream();
+        if stream.is_some() {
+            let stream = stream.unwrap();
+            let command = command.clone();
+            tokio::spawn(async move {
+                stream
+                    .lock()
+                    .await
+                    .write_all(&serde_json::to_vec(&command).expect("Reasonable"))
+                    .await
+                    .unwrap();
+            });
+        }
+    }
 }

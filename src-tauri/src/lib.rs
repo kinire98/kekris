@@ -46,6 +46,7 @@ pub fn run() {
             commands::exit_app::exit_app,
             commands::room_commands::server::create_room,
             commands::room_commands::server::close_room,
+            commands::room_commands::server::start_online_game,
             commands::room_commands::client::listen_for_rooms,
             commands::room_commands::client::join_room,
             commands::room_commands::client::leave_room,

@@ -41,7 +41,9 @@
                 "room-of": "Partida de",
                 "change": "Cambiar nombre de sala",
                 "players": "Jugadores",
-                "play": "Jugar"
+                "play": "Jugar",
+                "ended-header": "Cierre de sala",
+                "ended": "La sala fue cerrada por el anfitrión"
             }
         },
         "settings": {

@@ -15,6 +15,7 @@ use crate::{
 };
 const CONNECTION_ERROR: &str = "connection_error";
 const CONNECTION_REJECTED: &str = "connection_rejected";
+const PLAYERS_EMIT: &str = "playersEmit";
 
 pub async fn join_room(
     room: RoomInfo,
@@ -52,7 +53,8 @@ pub async fn join_room(
             let _ = app.emit(CONNECTION_REJECTED, reject_reason);
             None
         }
-        ServerRoomNetCommands::RoomDiscoverResponse(_) => None, // Handled somewhere else
-        ServerRoomNetCommands::PlayersUpdate(_) => None,        // To handle somewhere else
+        ServerRoomNetCommands::RoomDiscoverResponse(_) => None,
+        ServerRoomNetCommands::PlayersUpdate(_) => None,
+        ServerRoomNetCommands::RoomClosed => None,
     }
 }

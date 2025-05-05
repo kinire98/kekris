@@ -33,13 +33,17 @@ impl RoomInfo {
     pub fn ip(&self) -> &IpAddr {
         &self.ip
     }
+
+    pub fn change_number_of_players(&mut self, players: u8) {
+        self.number_of_players = players;
+    }
 }
 
 impl From<&Room> for RoomInfo {
     fn from(value: &Room) -> Self {
         RoomInfo {
             number_of_players: value.players().len() as u8,
-            limit_of_players: value.limit_of_players(),
+            limit_of_players: value.limit_of_players() + 1,
             name: value.name().to_string(),
             games_played: value.games_played(),
             ip: local_ip_address::local_ip().unwrap(),

@@ -10,6 +10,7 @@ pub enum ServerRoomNetCommands {
     JoinRoomRequestAccepted(DummyRoom),
     JoinRoomRequestRejected(RejectReason),
     PlayersUpdate(Vec<DummyPlayer>),
+    RoomClosed,
 }
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub enum RejectReason {

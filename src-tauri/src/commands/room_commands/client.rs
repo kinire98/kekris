@@ -20,10 +20,7 @@ use crate::{
 #[tauri::command]
 pub async fn stop_search() {
     if let Some(tx) = END_SEARCH_CHANNEL.get() {
-        tx.lock().await.send(false).await.unwrap();
-    }
-    if let Some(tx) = END_LISTEN_ROOM_UPDATES.get() {
-        tx.lock().await.send(false).unwrap();
+        tx.lock().await.send(true).await.unwrap();
     }
 }
 
@@ -60,6 +57,9 @@ pub async fn join_room(app: AppHandle, room: RoomInfo, player: DummyPlayer) {
 #[tauri::command]
 pub async fn leave_room() {
     stop_search().await;
+    if let Some(tx) = END_LISTEN_ROOM_UPDATES.get() {
+        tx.lock().await.send(true).unwrap();
+    }
 }
 
 #[tauri::command]

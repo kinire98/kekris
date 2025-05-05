@@ -40,7 +40,9 @@
                 "room-of": "Room of",
                 "change": "Change room's name",
                 "players": "Players",
-                "play": "Play"
+                "play": "Play",
+                "ended-header": "Room closed",
+                "ended": "The room was closed by the host"
             }
         },
         "settings": {

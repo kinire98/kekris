@@ -66,7 +66,12 @@ impl Room {
                 .expect("Time went backwards 🗿🤙")
                 .as_secs(),
         };
-        listen_to_request((&info).into(), app, stop_listening_channel.resubscribe());
+        listen_to_request(
+            (&info).into(),
+            app,
+            stop_listening_channel.resubscribe(),
+            players_info.clone(),
+        );
         listen_to_room_requests(
             tx_commands,
             rx_updates,
@@ -81,6 +86,7 @@ impl Room {
         self.players_emit();
         loop {
             if self.close_room.try_recv().is_ok() {
+                self.close_room().await;
                 return;
             }
             if let Ok(command) = self.receive_commands.try_recv() {
@@ -91,7 +97,20 @@ impl Room {
                         self.players_emit();
                         self.players_update().await;
                     }
-                    FirstLevelCommands::PlayerDisconnected(dummy_player) => todo!(),
+                    FirstLevelCommands::PlayerDisconnected(dummy_player) => {
+                        let players: Vec<Player> = self
+                            .players
+                            .clone()
+                            .into_iter()
+                            .filter(|player| {
+                                let player: DummyPlayer = player.into();
+                                player != dummy_player
+                            })
+                            .collect();
+                        self.players = players;
+                        self.players_emit();
+                        self.players_update().await;
+                    }
                 }
             }
             if self.send_updates_time_passed() {
@@ -132,9 +151,11 @@ impl Room {
         self.app.emit(PLAYERS_EMIT, players).unwrap();
     }
     async fn players_update(&self) {
+        let mut players = self.players.clone();
+        players.push(self.local_player.clone());
         let _ = self
             .send_updates
-            .send(Updates::PlayersUpdate(self.players.clone()))
+            .send(Updates::PlayersUpdate(players))
             .await;
     }
     fn send_updates_time_passed(&self) -> bool {
@@ -147,6 +168,12 @@ impl Room {
     async fn updates(&self) {
         self.players_update().await;
         self.players_emit();
+    }
+    async fn close_room(&mut self) {
+        let _ = self
+            .send_updates
+            .send(Updates::RoomEnded(self.players.clone()))
+            .await;
     }
 }
 
@@ -167,6 +194,7 @@ pub enum Updates {
     PlayersUpdate(Vec<Player>),
     NameChanged(String),
     PlayerLimitChanged(u8),
+    RoomEnded(Vec<Player>),
 }
 
 pub mod client;

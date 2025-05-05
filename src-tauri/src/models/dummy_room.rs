@@ -12,7 +12,7 @@ pub struct DummyRoom {
     limit_of_players: u8,
     games_played: u8,
 }
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct DummyPlayer {
     name: String,
     ip: IpAddr,

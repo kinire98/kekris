@@ -45,3 +45,6 @@ pub async fn close_room() {
         let _ = channel.lock().await.send(false).await;
     }
 }
+
+#[tauri::command]
+pub async fn start_online_game() {}

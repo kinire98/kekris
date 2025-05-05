@@ -16,7 +16,7 @@
       <div class="room-content">
         <h2>
           {{ $t("ui.multiplayer.room.players") }}
-          {{ room.players.length + 1 }} /
+          {{ players.length }} /
           {{ room.limit_of_players + 1 }}
         </h2>
         <div id="player-list">
@@ -26,6 +26,7 @@
             :kick="false"
             :games_played="room.games_played"
             :games_won="0"
+            class="players"
           />
         </div>
       </div>
@@ -38,6 +39,18 @@
         />
       </div>
     </div>
+    <Dialog
+      v-model:visible="visiblePopUp"
+      modal
+      :header="$t('ui.multiplayer.room.ended-header')"
+    >
+      <Button
+        :label="$t('ui.multiplayer.room.ended')"
+        variant="outlined"
+        raised
+        @click="popUpClosed"
+      ></Button>
+    </Dialog>
   </div>
 </template>
 
@@ -129,6 +142,9 @@ h1 {
   margin-left: 50px;
   transition: all 0.3s;
 }
+.players {
+  margin-block: 15px;
+}
 </style>
 
 <script setup lang="ts">
@@ -143,15 +159,19 @@ import { useI18n } from "vue-i18n";
 import i18n from "../../i18n";
 import { default as PlayerComponent } from "../../components/Player.vue";
 import { router } from "../../router";
+import { Dialog } from "primevue";
 
 const playersEmit = "playersEmit";
 const roomNameEmit = "roomNameEmit";
+const roomClosedEmit = "roomClosed";
 
 useI18n();
 
 let route = useRoute();
 let name = route.path.substring(1);
 let visible: boolean = false;
+
+let visiblePopUp = false;
 let roomName: string =
   name == "host"
     ? i18n.global.t("ui.multiplayer.room.room-of") + " " + getUsername()
@@ -165,7 +185,6 @@ if (name == "host") {
   })) as Room;
   players.value = room.players;
 } else {
-  console.log("here");
   let tmpRoom = (await invoke("room_info")) as Room | null;
   console.log(tmpRoom);
   if (tmpRoom == null) {
@@ -185,6 +204,9 @@ if (name == "host") {
 listen(playersEmit, (e) => {
   players.value = e.payload as Player[];
 });
+listen(roomClosedEmit, () => {
+  visiblePopUp = true;
+});
 function leaveRoom() {
   if (name == "host") {
     invoke("close_room");
@@ -193,5 +215,12 @@ function leaveRoom() {
   }
   router.push("/main");
 }
-function startGame() {}
+function startGame() {
+  invoke("start_online_game");
+  router.push("/multiplayer");
+}
+function popUpClosed() {
+  visiblePopUp = false;
+  router.push("/main");
+}
 </script>
