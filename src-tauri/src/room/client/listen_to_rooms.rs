@@ -11,8 +11,7 @@ use crate::{
     },
 };
 
-const SECONDS_TO_LISTEN: u64 = 10;
-const MILIS_TIMEOUT: u64 = 50;
+const MILIS_TIMEOUT: u64 = 200;
 
 const ROOM_UPDATES_EVENT: &str = "room-updates";
 pub async fn listen_to_rooms(app: AppHandle, mut channel: tokio::sync::mpsc::Receiver<bool>) {
@@ -20,15 +19,14 @@ pub async fn listen_to_rooms(app: AppHandle, mut channel: tokio::sync::mpsc::Rec
         .await
         .expect("Check error");
     let listen_socket = UdpSocket::bind(LISTEN_BROADCAST_RESPONSE).await.unwrap();
+
+    send_socket
+        .set_broadcast(true)
+        .expect("Reasonably expected to not panic");
     loop {
-        if channel.try_recv().is_ok() {
-            drop(send_socket);
-            drop(listen_socket);
-            break;
-        }
-        send_socket
-            .set_broadcast(true)
-            .expect("Reasonably expected to not panic");
+        let mut buf = vec![0; SIZE_FOR_KB];
+        let mut rooms: Vec<RoomInfo> = vec![];
+
         let addr: SocketAddr = SENDING_BROADCAST.parse().unwrap();
         send_socket
             .send_to(
@@ -38,37 +36,44 @@ pub async fn listen_to_rooms(app: AppHandle, mut channel: tokio::sync::mpsc::Rec
             .await
             .unwrap();
 
-        let mut buf = vec![0; SIZE_FOR_KB];
-
-        let mut rooms: Vec<RoomInfo> = vec![];
-        if channel.try_recv().is_ok() {
-            drop(send_socket);
-            drop(listen_socket);
-            break;
-        }
-        let _ = tokio::time::timeout(Duration::from_millis(MILIS_TIMEOUT), async {
-            loop {
-                let Ok((len, _)) = listen_socket.recv_from(&mut buf).await else {
+        tokio::select! {
+            _ = channel.recv() => {
+                break;
+            },
+            result = listen_socket.recv_from(&mut buf) => {
+                let Ok((amount, _)) = result else {
                     continue;
                 };
                 let response: Result<ServerRoomNetCommands, serde_json::Error> =
-                    serde_json::from_slice(&buf[..len]);
+                    serde_json::from_slice(&buf[..amount]);
                 let Ok(command) = response else {
                     continue;
                 };
                 if let ServerRoomNetCommands::RoomDiscoverResponse(info) = command {
                     rooms.push(info);
                 }
-                app.emit(ROOM_UPDATES_EVENT, &rooms).unwrap();
+                loop {
+                    tokio::select! {
+                        _ = tokio::time::sleep(Duration::from_millis(MILIS_TIMEOUT))  => {
+                            break;
+                        },
+                        result = listen_socket.recv_from(&mut buf) => {
+                            let Ok((amount, _)) = result else {
+                                continue;
+                            };
+                            let response: Result<ServerRoomNetCommands, serde_json::Error> =
+                                serde_json::from_slice(&buf[..amount]);
+                            let Ok(command) = response else {
+                                continue;
+                            };
+                            if let ServerRoomNetCommands::RoomDiscoverResponse(info) = command {
+                                rooms.push(info);
+                            }
+                        },
+                    }
+                }
             }
-        })
-        .await;
-        if channel.try_recv().is_ok() {
-            drop(send_socket);
-            drop(listen_socket);
-            break;
         }
         app.emit(ROOM_UPDATES_EVENT, rooms).unwrap();
-        tokio::time::sleep(Duration::from_secs(SECONDS_TO_LISTEN)).await;
     }
 }

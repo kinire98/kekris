@@ -44,8 +44,9 @@
       modal
       :header="$t('ui.multiplayer.room.ended-header')"
     >
+      {{ $t("ui.multiplayer.room.ended") }}
       <Button
-        :label="$t('ui.multiplayer.room.ended')"
+        :label="$t('ui.multiplayer.room.ended-button')"
         variant="outlined"
         raised
         @click="popUpClosed"
@@ -150,7 +151,7 @@ h1 {
 <script setup lang="ts">
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { onMounted, Ref, ref } from "vue";
+import { onMounted, Ref, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { Player, Room, Visibility } from "../../types/Room";
 import { Button } from "primevue";
@@ -171,7 +172,7 @@ let route = useRoute();
 let name = route.path.substring(1);
 let visible: boolean = false;
 
-let visiblePopUp = false;
+let visiblePopUp = ref(false);
 let roomName: string =
   name == "host"
     ? i18n.global.t("ui.multiplayer.room.room-of") + " " + getUsername()
@@ -186,7 +187,6 @@ if (name == "host") {
   players.value = room.players;
 } else {
   let tmpRoom = (await invoke("room_info")) as Room | null;
-  console.log(tmpRoom);
   if (tmpRoom == null) {
     router.back();
     room = {
@@ -205,7 +205,7 @@ listen(playersEmit, (e) => {
   players.value = e.payload as Player[];
 });
 listen(roomClosedEmit, () => {
-  visiblePopUp = true;
+  visiblePopUp.value = true;
 });
 function leaveRoom() {
   if (name == "host") {
@@ -220,7 +220,13 @@ function startGame() {
   router.push("/multiplayer");
 }
 function popUpClosed() {
-  visiblePopUp = false;
+  visiblePopUp.value = false;
   router.push("/main");
 }
+watch(visiblePopUp, (newValue, _oldValue) => {
+  if (!newValue) {
+    router.push("/main");
+  }
+  console.log(newValue);
+});
 </script>

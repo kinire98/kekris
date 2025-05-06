@@ -24,7 +24,6 @@ pub async fn listen_to_room_updates(
 ) {
     tokio::spawn(async move {
         let mut buffer = vec![0; SIZE_FOR_KB];
-        // stream.write_all("alsdf".as_bytes()).await.unwrap();
         loop {
             tokio::select! {
                 content = stream.read(&mut buffer) => {
@@ -38,7 +37,7 @@ pub async fn listen_to_room_updates(
                                     let _  = app.emit(PLAYERS_EMIT, dummy_players);
                                 }
                                 ServerRoomNetCommands::RoomClosed => {
-                                    let _ = app.emit(ROOM_CLOSED_EMIT, false);
+                                    app.emit(ROOM_CLOSED_EMIT, false).unwrap();
                                     break;
                                 },
                             }
@@ -46,16 +45,16 @@ pub async fn listen_to_room_updates(
                     }
                 },
                 value = stop_channel.recv() => {
+                    dbg!(&value);
                     if let Ok(value_recv) = value{
                         if value_recv {
-                            let Ok(_) = stream
+                            let Ok(value_result) = stream
                                 .write(
                                     &serde_json::to_vec(&ClientRoomNetCommands::LeaveRoom(player.clone()))
                                         .expect("Reasonable to expect not to panic"),
                                 )
                                 .await
                             else {
-                                println!("here");
                                 let _ = stream
                                     .write(
                                         &serde_json::to_vec(&ClientRoomNetCommands::LeaveRoom(player.clone()))
@@ -64,6 +63,7 @@ pub async fn listen_to_room_updates(
                                     .await;
                                 break;
                             };
+                            dbg!(value_result);
                             break;
                         }
                     }

@@ -40,7 +40,7 @@ impl Player {
     pub fn ping(&self) -> u32 {
         self.ping
     }
-    pub fn stream(&mut self) -> Option<Arc<Mutex<TcpStream>>> {
+    pub fn stream(&self) -> Option<Arc<Mutex<TcpStream>>> {
         self.stream.clone()
     }
 }

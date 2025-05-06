@@ -42,7 +42,8 @@
                 "players": "Players",
                 "play": "Play",
                 "ended-header": "Room closed",
-                "ended": "The room was closed by the host"
+                "ended": "The room was closed by the host",
+                "ended-button": "<- Return to main menu"
             }
         },
         "settings": {

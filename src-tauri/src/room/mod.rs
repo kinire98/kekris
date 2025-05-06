@@ -1,12 +1,11 @@
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
 use std::{net::IpAddr, time::Duration};
 
 use local_ip_address::local_ip;
 use player::Player;
 use serde::{Deserialize, Serialize};
 use server::listen_to_broadcast_requests::listen_to_request;
-use server::send_receive_room_updates::listen_to_room_requests;
+use server::send_receive_room_updates::{listen_to_player_updates, listen_to_room_requests};
 use tauri::{AppHandle, Emitter};
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::{self, Receiver, Sender};
@@ -16,7 +15,7 @@ use crate::models::dummy_room::DummyPlayer;
 
 const PLAYERS_EMIT: &str = "playersEmit";
 
-const UPDATES_IN_SECONDS: u64 = 1;
+const UPDATES_IN_MILLIS: u64 = 300;
 // Can only be open for 4.85 hours
 #[derive(Debug)]
 pub struct Room {
@@ -30,9 +29,10 @@ pub struct Room {
     app: AppHandle,
     close_room: Receiver<bool>,
     receive_commands: Receiver<FirstLevelCommands>,
-    send_updates: Sender<Updates>,
+    send_commands: Sender<FirstLevelCommands>, // Needed to clone for players listening
+    send_updates: broadcast::Sender<Updates>,
+    game_starting_sender: broadcast::Sender<bool>,
     player_info: Arc<Mutex<u8>>,
-    start_time: u64,
 }
 
 impl Room {
@@ -44,8 +44,9 @@ impl Room {
         player_name: String,
     ) -> Self {
         let ip = local_ip().unwrap();
-        let (tx_updates, rx_updates) = mpsc::channel(32);
+        let (tx_updates, _) = broadcast::channel(32);
         let (tx_commands, rx_commands) = mpsc::channel(32);
+        let (tx_started, _) = broadcast::channel(32);
         let players_limit = 15;
         let players_info = Arc::new(Mutex::new(1));
         let info = Self {
@@ -59,12 +60,10 @@ impl Room {
             app: app.clone(),
             close_room,
             receive_commands: rx_commands,
+            send_commands: tx_commands.clone(),
             send_updates: tx_updates,
+            game_starting_sender: tx_started.clone(),
             player_info: players_info.clone(),
-            start_time: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .expect("Time went backwards 🗿🤙")
-                .as_secs(),
         };
         listen_to_request(
             (&info).into(),
@@ -72,54 +71,60 @@ impl Room {
             stop_listening_channel.resubscribe(),
             players_info.clone(),
         );
-        listen_to_room_requests(
-            tx_commands,
-            rx_updates,
-            stop_listening_channel.resubscribe(),
-            (&info).into(),
-            players_info,
-            players_limit,
-        );
+        listen_to_room_requests(tx_commands, (&info).into(), players_info, players_limit);
         info
     }
     pub async fn room_start(&mut self) {
         self.players_emit();
         loop {
-            if self.close_room.try_recv().is_ok() {
-                self.close_room().await;
-                return;
-            }
-            if let Ok(command) = self.receive_commands.try_recv() {
-                match command {
-                    FirstLevelCommands::FatalFail => todo!(),
-                    FirstLevelCommands::PlayerConnected(player_info) => {
-                        self.players.push(player_info.into());
-                        self.players_emit();
-                        self.players_update().await;
+            tokio::select! {
+                _ = self.close_room.recv() => {
+                    self.close_room();
+                    break;
+                },
+                result = self.receive_commands.recv() => {
+                    let Some(command) = result else {
+                        continue;
+                    };
+                    match command {
+                        FirstLevelCommands::FatalFail => todo!(),
+                        FirstLevelCommands::PlayerConnected(player_info) => {
+                            self.players.push(player_info.into());
+                            self.players_emit();
+                            self.players_update();
+                            let info: &Player = self.players.last().expect("Exists");
+                            listen_to_player_updates(
+                                self.send_commands.clone(),
+                                info.stream().expect("Exists"),
+                                info.into(),
+                                self.game_starting_sender.subscribe(),
+                                self.send_updates.subscribe(),
+                            );
+                            let mut value = self.player_info.lock().await;
+                            *value = (self.players.len() + 1) as u8;
+                        }
+                        FirstLevelCommands::PlayerDisconnected(dummy_player) => {
+                            let players: Vec<Player> = self
+                                .players
+                                .clone()
+                                .into_iter()
+                                .filter(|player| {
+                                    let player: DummyPlayer = player.into();
+                                    player != dummy_player
+                                })
+                                .collect();
+                            self.players = players;
+                            self.players_emit();
+                            self.players_update();
+                            let mut value = self.player_info.lock().await;
+                            *value = (self.players.len() + 1) as u8;
+                        }
                     }
-                    FirstLevelCommands::PlayerDisconnected(dummy_player) => {
-                        let players: Vec<Player> = self
-                            .players
-                            .clone()
-                            .into_iter()
-                            .filter(|player| {
-                                let player: DummyPlayer = player.into();
-                                player != dummy_player
-                            })
-                            .collect();
-                        self.players = players;
-                        self.players_emit();
-                        self.players_update().await;
-                    }
+                },
+                _ = tokio::time::sleep(Duration::from_millis(UPDATES_IN_MILLIS)) => {
+                    self.updates();
                 }
             }
-            if self.send_updates_time_passed() {
-                self.updates().await;
-            }
-            let mut value = self.player_info.lock().await;
-            *value = (self.players.len() + 1) as u8;
-
-            tokio::time::sleep(Duration::from_micros(16_666)).await;
         }
     }
 
@@ -150,30 +155,18 @@ impl Room {
         players.push(local_player.into());
         self.app.emit(PLAYERS_EMIT, players).unwrap();
     }
-    async fn players_update(&self) {
+    fn players_update(&self) {
         let mut players = self.players.clone();
         players.push(self.local_player.clone());
-        let _ = self
-            .send_updates
-            .send(Updates::PlayersUpdate(players))
-            .await;
+        let _ = self.send_updates.send(Updates::PlayersUpdate(players));
     }
-    fn send_updates_time_passed(&self) -> bool {
-        let now_time = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards 🗿🤙")
-            .as_secs();
-        now_time - self.start_time >= UPDATES_IN_SECONDS
-    }
-    async fn updates(&self) {
-        self.players_update().await;
+
+    fn updates(&self) {
+        self.players_update();
         self.players_emit();
     }
-    async fn close_room(&mut self) {
-        let _ = self
-            .send_updates
-            .send(Updates::RoomEnded(self.players.clone()))
-            .await;
+    fn close_room(&mut self) {
+        let _ = self.send_updates.send(Updates::RoomEnded).unwrap();
     }
 }
 
@@ -184,17 +177,19 @@ pub enum Visibility {
     Internet,
 }
 
+#[derive(Debug)]
 pub enum FirstLevelCommands {
     FatalFail,
     PlayerConnected((DummyPlayer, TcpStream)),
     PlayerDisconnected(DummyPlayer),
 }
 
+#[derive(Debug, Clone)]
 pub enum Updates {
     PlayersUpdate(Vec<Player>),
     NameChanged(String),
     PlayerLimitChanged(u8),
-    RoomEnded(Vec<Player>),
+    RoomEnded,
 }
 
 pub mod client;
