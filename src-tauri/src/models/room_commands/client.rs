@@ -8,4 +8,5 @@ pub enum ClientRoomNetCommands {
     RoomDiscover,
     JoinRoomRequest(DummyPlayer),
     LeaveRoom(DummyPlayer),
+    PingResponse,
 }

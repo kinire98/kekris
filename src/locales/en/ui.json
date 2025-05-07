@@ -43,7 +43,9 @@
                 "play": "Play",
                 "ended-header": "Room closed",
                 "ended": "The room was closed by the host",
-                "ended-button": "<- Return to main menu"
+                "ended-button": "<- Return to main menu",
+                "ended-connection-header": "Desconnection",
+                "ended-connection": "You lost the connection with the room's host"
             }
         },
         "settings": {

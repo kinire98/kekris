@@ -1,6 +1,5 @@
 use std::{net::IpAddr, sync::Arc};
 
-use serde::{Deserialize, Serialize};
 use tokio::{net::TcpStream, sync::Mutex};
 
 use crate::{game::remote_game::RemoteGame, models::dummy_room::DummyPlayer};
@@ -12,8 +11,8 @@ pub struct Player {
     games_won: u16,
     playing: bool,
     last_time: u32,
-    game: Option<RemoteGame>,
-    ping: u32,
+    game: Option<Arc<Mutex<RemoteGame>>>,
+    ping: u64,
     stream: Option<Arc<Mutex<TcpStream>>>,
 }
 impl Player {
@@ -37,11 +36,20 @@ impl Player {
         self.last_time
     }
 
-    pub fn ping(&self) -> u32 {
+    pub fn ping(&self) -> u64 {
         self.ping
     }
+
+    pub fn game(&self) -> Option<Arc<Mutex<RemoteGame>>> {
+        self.game.clone()
+    }
+
     pub fn stream(&self) -> Option<Arc<Mutex<TcpStream>>> {
         self.stream.clone()
+    }
+
+    pub fn ping_received(&mut self, ping: u64) {
+        self.ping = ping;
     }
 }
 

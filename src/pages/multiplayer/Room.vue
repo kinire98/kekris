@@ -52,6 +52,19 @@
         @click="popUpClosed"
       ></Button>
     </Dialog>
+    <Dialog
+      v-model:visible="visiblePopUpConnection"
+      modal
+      :header="$t('ui.multiplayer.room.ended-connection-header')"
+    >
+      {{ $t("ui.multiplayer.room.ended-connection") }}
+      <Button
+        :label="$t('ui.multiplayer.room.ended-button')"
+        variant="outlined"
+        raised
+        @click="popUpConnectionClosed"
+      ></Button>
+    </Dialog>
   </div>
 </template>
 
@@ -165,6 +178,7 @@ import { Dialog } from "primevue";
 const playersEmit = "playersEmit";
 const roomNameEmit = "roomNameEmit";
 const roomClosedEmit = "roomClosed";
+const lostConnectionEmit = "connectionLost";
 
 useI18n();
 
@@ -173,6 +187,7 @@ let name = route.path.substring(1);
 let visible: boolean = false;
 
 let visiblePopUp = ref(false);
+let visiblePopUpConnection = ref(false);
 let roomName: string =
   name == "host"
     ? i18n.global.t("ui.multiplayer.room.room-of") + " " + getUsername()
@@ -207,6 +222,9 @@ listen(playersEmit, (e) => {
 listen(roomClosedEmit, () => {
   visiblePopUp.value = true;
 });
+listen(lostConnectionEmit, () => {
+  visiblePopUpConnection.value = true;
+});
 function leaveRoom() {
   if (name == "host") {
     invoke("close_room");
@@ -223,10 +241,18 @@ function popUpClosed() {
   visiblePopUp.value = false;
   router.push("/main");
 }
+function popUpConnectionClosed() {
+  visiblePopUpConnection.value = false;
+  router.push("/main");
+}
 watch(visiblePopUp, (newValue, _oldValue) => {
   if (!newValue) {
     router.push("/main");
   }
-  console.log(newValue);
+});
+watch(visiblePopUpConnection, (newValue, _oldValue) => {
+  if (!newValue) {
+    router.push("/main");
+  }
 });
 </script>

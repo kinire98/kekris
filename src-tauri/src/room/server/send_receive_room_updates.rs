@@ -1,8 +1,9 @@
 use std::sync::Arc;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use crate::models::room_commands::server::RejectReason;
 
-use crate::globals::LISTENING_DIRECTION_TCP;
+use crate::globals::{LISTENING_DIRECTION_TCP, PING_LIMIT_IN_SECONDS, UPDATES_IN_MILLIS};
 
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -91,12 +92,17 @@ pub fn listen_to_room_requests(
 pub fn listen_to_player_updates(
     send_commands: Sender<FirstLevelCommands>,
     stream: Arc<Mutex<TcpStream>>,
-    _player: DummyPlayer,
+    player: DummyPlayer,
     mut game_starting: broadcast::Receiver<bool>,
     mut updates: broadcast::Receiver<Updates>,
 ) {
     tokio::spawn(async move {
         let mut buffer = vec![0; SIZE_FOR_KB];
+        let mut time_last_ping = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards 🗿🤙")
+            .as_secs();
+        let mut check_ping = false;
         loop {
             let mut socket = stream.lock().await;
             tokio::select! {
@@ -104,28 +110,32 @@ pub fn listen_to_player_updates(
                     break;
                 },
                 value = socket.read(&mut buffer) => {
-                    dbg!(&value);
                     let Ok(content) = value else {
-                        return;
+                        continue;
                     };
                     let Ok(command) = serde_json::from_slice::<ClientRoomNetCommands>(&buffer[..content]) else {
-                        return;
+                        continue;
                     };
                     match command {
                         ClientRoomNetCommands::RoomDiscover => (),
-                        ClientRoomNetCommands::JoinRoomRequest(_) => (), //Up to here handled somewhere else
+                        ClientRoomNetCommands::JoinRoomRequest(_) => (),
                         ClientRoomNetCommands::LeaveRoom(dummy_player) => {
-                            dbg!("here");
-                            let _ = send_commands
-                            .send(FirstLevelCommands::PlayerDisconnected(dummy_player))
-                            .await;
+                            let _ = send_commands.send(FirstLevelCommands::PlayerDisconnected(dummy_player)).await;
                             break;
+                        },
+                        ClientRoomNetCommands::PingResponse => {
+                            check_ping = false;
+                            let cur_time = SystemTime::now()
+                                .duration_since(UNIX_EPOCH)
+                                .expect("Time went backwards 🗿🤙")
+                                .as_secs();
+                            let _ = send_commands.send(FirstLevelCommands::PingReceived((player.clone(), cur_time - time_last_ping))).await;
                         },
                     }
                 },
                 value = updates.recv() => {
                     let Ok(command) = value else {
-                        return;
+                        continue;
                     };
                     match command {
                         Updates::PlayersUpdate(players) => {
@@ -140,9 +150,39 @@ pub fn listen_to_player_updates(
                             let _ = socket.write(&serde_json::to_vec(&ServerRoomNetCommands::RoomClosed).expect("Reasonable")).await;
                             break;
                         },
+                        Updates::SendPing => {
+                            let result = socket.write(&serde_json::to_vec(&ServerRoomNetCommands::PingRequest).expect("Reasonable to expect not to panic")).await;
+                            if result.is_ok() {
+                                check_ping = true;
+                                time_last_ping = SystemTime::now()
+                                    .duration_since(UNIX_EPOCH)
+                                    .expect("Time went backwards 🗿🤙")
+                                    .as_secs();
+                            }
+                        }
                     };
+                },
+                _ = tokio::time::sleep(Duration::from_secs(PING_LIMIT_IN_SECONDS)) => {}
+            }
+            if check_ping {
+                let cur_time = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .expect("Time went backwards 🗿🤙")
+                    .as_secs();
+                if cur_time - time_last_ping > PING_LIMIT_IN_SECONDS {
+                    let _ = send_commands
+                        .send(FirstLevelCommands::PlayerDisconnected(player.clone()))
+                        .await;
+                    let _ = socket
+                        .write(
+                            &serde_json::to_vec(&ServerRoomNetCommands::DisconnectedSignal)
+                                .expect("Reasonable"),
+                        )
+                        .await;
+                    break;
                 }
             }
+            tokio::time::sleep(Duration::from_millis(UPDATES_IN_MILLIS)).await;
         }
     });
 }

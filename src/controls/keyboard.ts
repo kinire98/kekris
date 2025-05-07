@@ -151,7 +151,6 @@ async function hardDrop() {
 }
 
 async function leftMove() {
-  console.log("right");
   await invoke("left_move");
 }
 

@@ -11,11 +11,11 @@ use tokio::net::TcpStream;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio::sync::{Mutex, broadcast};
 
+use crate::globals::UPDATES_IN_MILLIS;
 use crate::models::dummy_room::DummyPlayer;
 
 const PLAYERS_EMIT: &str = "playersEmit";
 
-const UPDATES_IN_MILLIS: u64 = 300;
 // Can only be open for 4.85 hours
 #[derive(Debug)]
 pub struct Room {
@@ -25,6 +25,7 @@ pub struct Room {
     name: String,
     limit_of_players: u8,
     games_played: u16,
+    #[allow(dead_code)]
     ip: IpAddr,
     app: AppHandle,
     close_room: Receiver<bool>,
@@ -86,6 +87,9 @@ impl Room {
                     let Some(command) = result else {
                         continue;
                     };
+                    // if let FirstLevelCommands::PlayerDisconnected(player) = &command {
+                    //     dbg!("here");
+                    // }
                     match command {
                         FirstLevelCommands::FatalFail => todo!(),
                         FirstLevelCommands::PlayerConnected(player_info) => {
@@ -118,11 +122,25 @@ impl Room {
                             self.players_update();
                             let mut value = self.player_info.lock().await;
                             *value = (self.players.len() + 1) as u8;
-                        }
+                        },
+                        FirstLevelCommands::PingReceived((dummy_player, ping)) => {
+                            let mut players = self.players.clone();
+                            for player in &mut players {
+                                let dummy: DummyPlayer = (&*player).into();
+                                if dummy == dummy_player {
+                                    player.ping_received(ping);
+                                }
+                            }
+                            self.players = players;
+                        },
                     }
                 },
                 _ = tokio::time::sleep(Duration::from_millis(UPDATES_IN_MILLIS)) => {
                     self.updates();
+                    let result = self.send_updates.send(Updates::SendPing);
+                    if result.is_err() {
+                        let _ = self.send_updates.send(Updates::SendPing);
+                    }
                 }
             }
         }
@@ -182,6 +200,7 @@ pub enum FirstLevelCommands {
     FatalFail,
     PlayerConnected((DummyPlayer, TcpStream)),
     PlayerDisconnected(DummyPlayer),
+    PingReceived((DummyPlayer, u64)),
 }
 
 #[derive(Debug, Clone)]
@@ -190,6 +209,7 @@ pub enum Updates {
     NameChanged(String),
     PlayerLimitChanged(u8),
     RoomEnded,
+    SendPing,
 }
 
 pub mod client;

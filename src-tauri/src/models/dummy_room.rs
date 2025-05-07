@@ -19,7 +19,7 @@ pub struct DummyPlayer {
     games_won: u16,
     playing: bool,
     last_time: u32,
-    ping: u32,
+    ping: u64,
 }
 
 impl From<&Room> for DummyRoom {
@@ -66,7 +66,7 @@ impl DummyPlayer {
         self.last_time
     }
 
-    pub fn ping(&self) -> u32 {
+    pub fn ping(&self) -> u64 {
         self.ping
     }
 }

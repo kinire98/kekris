@@ -56,5 +56,7 @@ pub async fn join_room(
         ServerRoomNetCommands::RoomDiscoverResponse(_) => None,
         ServerRoomNetCommands::PlayersUpdate(_) => None,
         ServerRoomNetCommands::RoomClosed => None,
+        ServerRoomNetCommands::PingRequest => None,
+        ServerRoomNetCommands::DisconnectedSignal => None,
     }
 }

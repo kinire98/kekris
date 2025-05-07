@@ -43,7 +43,10 @@
                 "players": "Jugadores",
                 "play": "Jugar",
                 "ended-header": "Cierre de sala",
-                "ended": "La sala fue cerrada por el anfitrión"
+                "ended": "La sala fue cerrada por el anfitrión",
+                "ended-button": "<- Volver al menú principal",
+                "ended-connection-header": "Desconexión",
+                "ended-connection": "Se perdió la conexión con el anfitrión de la sala"
             }
         },
         "settings": {
