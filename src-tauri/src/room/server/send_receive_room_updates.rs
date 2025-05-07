@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use crate::models::room_commands::server::RejectReason;
+use crate::models::room_commands::server::{CloseReason, RejectReason};
 
 use crate::globals::{LISTENING_DIRECTION_TCP, PING_LIMIT_IN_SECONDS, UPDATES_IN_MILLIS};
 
@@ -105,6 +105,26 @@ pub fn listen_to_player_updates(
         let mut check_ping = false;
         loop {
             let mut socket = stream.lock().await;
+            if check_ping {
+                let cur_time = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .expect("Time went backwards 🗿🤙")
+                    .as_secs();
+                if cur_time - time_last_ping > PING_LIMIT_IN_SECONDS {
+                    dbg!("here");
+                    let _ = send_commands
+                        .send(FirstLevelCommands::PlayerDisconnected(player.clone()))
+                        .await;
+                    let _ = socket
+                        .write(
+                            &serde_json::to_vec(&ServerRoomNetCommands::DisconnectedSignal)
+                                .expect("Reasonable"),
+                        )
+                        .await;
+                    break;
+                }
+            }
+
             tokio::select! {
                 _value = game_starting.recv() => {
                     break;
@@ -124,6 +144,7 @@ pub fn listen_to_player_updates(
                             break;
                         },
                         ClientRoomNetCommands::PingResponse => {
+                            dbg!("send_ping_response_received", check_ping);
                             check_ping = false;
                             let cur_time = SystemTime::now()
                                 .duration_since(UNIX_EPOCH)
@@ -134,8 +155,37 @@ pub fn listen_to_player_updates(
                     }
                 },
                 value = updates.recv() => {
-                    let Ok(command) = value else {
-                        continue;
+                    dbg!(&value);
+                    let command = match value {
+                        Ok(command) => command,
+                        Err(error) => match error {
+                            broadcast::error::RecvError::Closed => {
+                                let _ = socket.write(&serde_json::to_vec(&ServerRoomNetCommands::RoomClosed(CloseReason::InnerError)).unwrap()).await;
+                                let _ = send_commands.send(FirstLevelCommands::FatalFail).await;
+                                break;
+                            },
+                            broadcast::error::RecvError::Lagged(_) => {
+                                match updates.recv().await {
+                                    Ok(command) => command,
+                                    Err(error) => match error {
+                                        broadcast::error::RecvError::Lagged(_) => {
+                                            let Ok(command) = updates.recv().await else {
+                                                let _ = socket.write(&serde_json::to_vec(&ServerRoomNetCommands::RoomClosed(CloseReason::InnerError)).unwrap()).await;
+                                                let _ = send_commands.send(FirstLevelCommands::FatalFail).await;
+                                                break;
+                                            };
+                                            command
+                                        },
+                                        broadcast::error::RecvError::Closed => {
+                                            let _ = socket.write(&serde_json::to_vec(&ServerRoomNetCommands::RoomClosed(CloseReason::InnerError)).unwrap()).await;
+                                            let _ = send_commands.send(FirstLevelCommands::FatalFail).await;
+                                            break;
+                                        },
+                                    },
+                                }
+                            },
+
+                        },
                     };
                     match command {
                         Updates::PlayersUpdate(players) => {
@@ -147,10 +197,14 @@ pub fn listen_to_player_updates(
                         Updates::NameChanged(_) => todo!(),
                         Updates::PlayerLimitChanged(_) => todo!(),
                         Updates::RoomEnded => {
-                            let _ = socket.write(&serde_json::to_vec(&ServerRoomNetCommands::RoomClosed).expect("Reasonable")).await;
+                            let _ = socket.write(&serde_json::to_vec(&ServerRoomNetCommands::RoomClosed(CloseReason::ClosedByHost)).expect("Reasonable")).await;
                             break;
                         },
                         Updates::SendPing => {
+                            dbg!("sent_ping", check_ping);
+                            if check_ping {
+                                continue;
+                            }
                             let result = socket.write(&serde_json::to_vec(&ServerRoomNetCommands::PingRequest).expect("Reasonable to expect not to panic")).await;
                             if result.is_ok() {
                                 check_ping = true;
@@ -164,25 +218,6 @@ pub fn listen_to_player_updates(
                 },
                 _ = tokio::time::sleep(Duration::from_secs(PING_LIMIT_IN_SECONDS)) => {}
             }
-            if check_ping {
-                let cur_time = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .expect("Time went backwards 🗿🤙")
-                    .as_secs();
-                if cur_time - time_last_ping > PING_LIMIT_IN_SECONDS {
-                    let _ = send_commands
-                        .send(FirstLevelCommands::PlayerDisconnected(player.clone()))
-                        .await;
-                    let _ = socket
-                        .write(
-                            &serde_json::to_vec(&ServerRoomNetCommands::DisconnectedSignal)
-                                .expect("Reasonable"),
-                        )
-                        .await;
-                    break;
-                }
-            }
-            tokio::time::sleep(Duration::from_millis(UPDATES_IN_MILLIS)).await;
         }
     });
 }

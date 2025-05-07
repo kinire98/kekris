@@ -47,14 +47,16 @@ pub async fn listen_to_room_updates(
                                 ServerRoomNetCommands::PlayersUpdate(dummy_players) => {
                                     let _ = app.emit(PLAYERS_EMIT,dummy_players);
                                 }
-                                ServerRoomNetCommands::RoomClosed => {
+                                ServerRoomNetCommands::RoomClosed(_) => {
                                     app.emit(ROOM_CLOSED_EMIT,false).unwrap();
                                     break;
                                 },
                                 ServerRoomNetCommands::PingRequest => {
+                                    dbg!("ping_request_received");
                                     let result = stream
                                     .write(&serde_json::to_vec(&ClientRoomNetCommands::PingResponse)
                                     .expect("Reasonable to expect not to panic")).await;
+                                    dbg!(&result);
                                     if result.is_err() {
                                         let error = result.unwrap_err();
                                         match error.kind() {
@@ -78,6 +80,7 @@ pub async fn listen_to_room_updates(
                                             _ => (),
                                         }
                                     }
+                                    dbg!("ping_response_sent");
                                 },
                                 ServerRoomNetCommands::DisconnectedSignal => {
                                     let _ = app.emit(LOST_CONNECTION_EMIT, false);
@@ -90,7 +93,7 @@ pub async fn listen_to_room_updates(
                 value = stop_channel.recv() => {
                     if let Ok(value_recv) = value{
                         if value_recv {
-                            let Ok(value_result) = stream
+                            let Ok(_) = stream
                                 .write(
                                     &serde_json::to_vec(&ClientRoomNetCommands::LeaveRoom(player.clone()))
                                         .expect("Reasonable to expect not to panic"),

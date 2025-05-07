@@ -10,7 +10,7 @@ pub enum ServerRoomNetCommands {
     JoinRoomRequestAccepted(DummyRoom),
     JoinRoomRequestRejected(RejectReason),
     PlayersUpdate(Vec<DummyPlayer>),
-    RoomClosed,
+    RoomClosed(CloseReason),
     PingRequest,
     DisconnectedSignal,
 }
@@ -18,5 +18,10 @@ pub enum ServerRoomNetCommands {
 pub enum RejectReason {
     RoomFull,
     RoomClosed,
+    InnerError,
+}
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+pub enum CloseReason {
+    ClosedByHost,
     InnerError,
 }

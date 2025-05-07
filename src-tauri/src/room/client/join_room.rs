@@ -15,7 +15,6 @@ use crate::{
 };
 const CONNECTION_ERROR: &str = "connection_error";
 const CONNECTION_REJECTED: &str = "connection_rejected";
-const PLAYERS_EMIT: &str = "playersEmit";
 
 pub async fn join_room(
     room: RoomInfo,
@@ -45,18 +44,12 @@ pub async fn join_room(
     let Ok(command) = serde_json::from_slice::<ServerRoomNetCommands>(&buffer[..response]) else {
         return None;
     };
-    match command {
-        ServerRoomNetCommands::JoinRoomRequestAccepted(dummy_room) => {
-            Some((dummy_room, tcp_socket))
-        }
-        ServerRoomNetCommands::JoinRoomRequestRejected(reject_reason) => {
-            let _ = app.emit(CONNECTION_REJECTED, reject_reason);
-            None
-        }
-        ServerRoomNetCommands::RoomDiscoverResponse(_) => None,
-        ServerRoomNetCommands::PlayersUpdate(_) => None,
-        ServerRoomNetCommands::RoomClosed => None,
-        ServerRoomNetCommands::PingRequest => None,
-        ServerRoomNetCommands::DisconnectedSignal => None,
+    if let ServerRoomNetCommands::JoinRoomRequestAccepted(dummy_room) = command {
+        Some((dummy_room, tcp_socket))
+    } else if let ServerRoomNetCommands::JoinRoomRequestRejected(reject_reason) = command {
+        let _ = app.emit(CONNECTION_REJECTED, reject_reason);
+        None
+    } else {
+        None
     }
 }

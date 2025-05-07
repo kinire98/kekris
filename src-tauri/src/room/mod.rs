@@ -87,9 +87,6 @@ impl Room {
                     let Some(command) = result else {
                         continue;
                     };
-                    // if let FirstLevelCommands::PlayerDisconnected(player) = &command {
-                    //     dbg!("here");
-                    // }
                     match command {
                         FirstLevelCommands::FatalFail => todo!(),
                         FirstLevelCommands::PlayerConnected(player_info) => {
@@ -108,6 +105,7 @@ impl Room {
                             *value = (self.players.len() + 1) as u8;
                         }
                         FirstLevelCommands::PlayerDisconnected(dummy_player) => {
+                            dbg!("here");
                             let players: Vec<Player> = self
                                 .players
                                 .clone()
@@ -137,15 +135,18 @@ impl Room {
                 },
                 _ = tokio::time::sleep(Duration::from_millis(UPDATES_IN_MILLIS)) => {
                     self.updates();
+                    tokio::time::sleep(Duration::from_millis(UPDATES_IN_MILLIS)).await;
                     let result = self.send_updates.send(Updates::SendPing);
                     if result.is_err() {
-                        let _ = self.send_updates.send(Updates::SendPing);
+                        let result = self.send_updates.send(Updates::SendPing);
+                        dbg!(result);
+                    } else {
+                        dbg!("ping_update_sent");
                     }
                 }
             }
         }
     }
-
     pub fn players(&self) -> &[Player] {
         &self.players
     }
