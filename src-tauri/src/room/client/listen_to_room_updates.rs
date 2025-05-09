@@ -90,7 +90,7 @@ pub async fn listen_to_room_updates(
                 value = stop_channel.recv() => {
                     if let Ok(value_recv) = value{
                         if value_recv {
-                            let Ok(value_result) = stream
+                            let Ok(_) = stream
                                 .write(
                                     &serde_json::to_vec(&ClientRoomNetCommands::LeaveRoom(player.clone()))
                                         .expect("Reasonable to expect not to panic"),
