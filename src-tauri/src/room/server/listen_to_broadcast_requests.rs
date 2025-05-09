@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use tauri::{AppHandle, Emitter};
 use tokio::{
@@ -62,6 +62,7 @@ pub fn listen_to_request(
                     break;
                 }
             }
+            tokio::time::sleep(Duration::from_millis(100)).await;
         }
     });
 }

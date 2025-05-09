@@ -52,11 +52,9 @@ pub async fn listen_to_room_updates(
                                     break;
                                 },
                                 ServerRoomNetCommands::PingRequest => {
-                                    dbg!("ping_request_received");
                                     let result = stream
                                     .write(&serde_json::to_vec(&ClientRoomNetCommands::PingResponse)
                                     .expect("Reasonable to expect not to panic")).await;
-                                    dbg!(&result);
                                     if result.is_err() {
                                         let error = result.unwrap_err();
                                         match error.kind() {
@@ -80,7 +78,6 @@ pub async fn listen_to_room_updates(
                                             _ => (),
                                         }
                                     }
-                                    dbg!("ping_response_sent");
                                 },
                                 ServerRoomNetCommands::DisconnectedSignal => {
                                     let _ = app.emit(LOST_CONNECTION_EMIT, false);

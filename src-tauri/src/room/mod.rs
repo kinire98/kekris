@@ -10,8 +10,9 @@ use tauri::{AppHandle, Emitter};
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio::sync::{Mutex, broadcast};
+use tokio::time::Instant;
 
-use crate::globals::UPDATES_IN_MILLIS;
+use crate::globals::{PING_IN_MILLIS, UPDATES_IN_MILLIS};
 use crate::models::dummy_room::DummyPlayer;
 
 const PLAYERS_EMIT: &str = "playersEmit";
@@ -77,6 +78,7 @@ impl Room {
     }
     pub async fn room_start(&mut self) {
         self.players_emit();
+        let now = Instant::now();
         loop {
             tokio::select! {
                 _ = self.close_room.recv() => {
@@ -105,17 +107,12 @@ impl Room {
                             *value = (self.players.len() + 1) as u8;
                         }
                         FirstLevelCommands::PlayerDisconnected(dummy_player) => {
-                            dbg!("here");
-                            let players: Vec<Player> = self
+                            self
                                 .players
-                                .clone()
-                                .into_iter()
-                                .filter(|player| {
+                                .retain(|player| {
                                     let player: DummyPlayer = player.into();
                                     player != dummy_player
-                                })
-                                .collect();
-                            self.players = players;
+                                });
                             self.players_emit();
                             self.players_update();
                             let mut value = self.player_info.lock().await;
@@ -133,17 +130,17 @@ impl Room {
                         },
                     }
                 },
-                _ = tokio::time::sleep(Duration::from_millis(UPDATES_IN_MILLIS)) => {
-                    self.updates();
-                    tokio::time::sleep(Duration::from_millis(UPDATES_IN_MILLIS)).await;
+                _ = tokio::time::sleep(Duration::from_millis(PING_IN_MILLIS)) => {
                     let result = self.send_updates.send(Updates::SendPing);
                     if result.is_err() {
-                        let result = self.send_updates.send(Updates::SendPing);
-                        dbg!(result);
-                    } else {
-                        dbg!("ping_update_sent");
+                        let _ = self.send_updates.send(Updates::SendPing);
                     }
+                    self.players_emit();
                 }
+            }
+            tokio::time::sleep(Duration::from_millis(PING_IN_MILLIS)).await;
+            if now.elapsed() > Duration::from_millis(UPDATES_IN_MILLIS) {
+                self.players_update();
             }
         }
     }

@@ -111,7 +111,6 @@ pub fn listen_to_player_updates(
                     .expect("Time went backwards 🗿🤙")
                     .as_secs();
                 if cur_time - time_last_ping > PING_LIMIT_IN_SECONDS {
-                    dbg!("here");
                     let _ = send_commands
                         .send(FirstLevelCommands::PlayerDisconnected(player.clone()))
                         .await;
@@ -144,7 +143,6 @@ pub fn listen_to_player_updates(
                             break;
                         },
                         ClientRoomNetCommands::PingResponse => {
-                            dbg!("send_ping_response_received", check_ping);
                             check_ping = false;
                             let cur_time = SystemTime::now()
                                 .duration_since(UNIX_EPOCH)
@@ -155,7 +153,6 @@ pub fn listen_to_player_updates(
                     }
                 },
                 value = updates.recv() => {
-                    dbg!(&value);
                     let command = match value {
                         Ok(command) => command,
                         Err(error) => match error {
@@ -201,7 +198,6 @@ pub fn listen_to_player_updates(
                             break;
                         },
                         Updates::SendPing => {
-                            dbg!("sent_ping", check_ping);
                             if check_ping {
                                 continue;
                             }

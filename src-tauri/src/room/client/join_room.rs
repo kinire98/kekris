@@ -15,6 +15,7 @@ use crate::{
 };
 const CONNECTION_ERROR: &str = "connection_error";
 const CONNECTION_REJECTED: &str = "connection_rejected";
+// const PLAYERS_EMIT: &str = "playersEmit";
 
 pub async fn join_room(
     room: RoomInfo,
