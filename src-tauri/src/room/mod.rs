@@ -6,7 +6,7 @@ use player::Player;
 use serde::{Deserialize, Serialize};
 use server::listen_to_broadcast_requests::listen_to_request;
 use server::listen_to_room_requests::listen_to_room_requests;
-use server::send_receive_room_updates::listen_to_player_updates;
+use server::send_receive_room_updates::RoomPlayerListener;
 use tauri::{AppHandle, Emitter};
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::{Receiver, Sender};
@@ -36,7 +36,6 @@ pub struct Room {
     receive_commands: Receiver<FirstLevelCommands>,
     send_commands: Sender<FirstLevelCommands>, // Needed to clone for players listening
     send_updates: broadcast::Sender<Updates>,
-    game_starting_sender: broadcast::Sender<bool>,
     player_info: Arc<Mutex<u8>>,
     cur_game_playing: Arc<Mutex<bool>>,
 }
@@ -54,7 +53,6 @@ impl Room {
         let ip = local_ip().unwrap();
         let (tx_updates, _) = broadcast::channel(32);
         // let (tx_commands, rx_commands) = mpsc::channel(32);
-        let (tx_started, _) = broadcast::channel(32);
         let players_limit = 15;
         let players_info = Arc::new(Mutex::new(1));
         let info = Self {
@@ -70,7 +68,6 @@ impl Room {
             receive_commands: receiver_commands,
             send_commands: sender_commands.clone(),
             send_updates: tx_updates,
-            game_starting_sender: tx_started.clone(),
             player_info: players_info.clone(),
             cur_game_playing: Arc::new(Mutex::new(false)),
         };
@@ -170,13 +167,15 @@ impl Room {
         self.players_emit();
         self.players_update();
         let info: &Player = self.players.last().expect("Exists");
-        listen_to_player_updates(
-            self.send_commands.clone(),
-            info.stream().expect("Exists"),
-            info.into(),
-            self.game_starting_sender.subscribe(),
-            self.send_updates.subscribe(),
-        );
+        let stream = info.stream().unwrap();
+        let player: DummyPlayer = info.into();
+        let commands = self.send_commands.clone();
+        let updates = self.send_updates.subscribe();
+        tokio::spawn(async move {
+            RoomPlayerListener::new(commands, stream, player, updates)
+                .listen_to_player_updates()
+                .await;
+        });
         let mut value = self.player_info.lock().await;
         *value = (self.players.len() + 1) as u8;
     }

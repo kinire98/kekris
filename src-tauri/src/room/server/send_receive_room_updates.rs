@@ -21,14 +21,28 @@ use crate::{
 
 use super::super::{FirstLevelCommands, Updates};
 
-pub fn listen_to_player_updates(
+pub struct RoomPlayerListener {
     send_commands: Sender<FirstLevelCommands>,
     stream: Arc<Mutex<TcpStream>>,
     player: DummyPlayer,
-    mut game_starting: broadcast::Receiver<bool>,
-    mut updates: broadcast::Receiver<Updates>,
-) {
-    tokio::spawn(async move {
+    updates: broadcast::Receiver<Updates>,
+}
+impl RoomPlayerListener {
+    pub fn new(
+        send_commands: Sender<FirstLevelCommands>,
+        stream: Arc<Mutex<TcpStream>>,
+        player: DummyPlayer,
+        updates: broadcast::Receiver<Updates>,
+    ) -> Self {
+        Self {
+            send_commands,
+            stream,
+            player,
+            updates,
+        }
+    }
+
+    pub async fn listen_to_player_updates(&mut self) {
         let mut buffer = vec![0; SIZE_FOR_KB];
         let mut time_last_ping = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -37,15 +51,16 @@ pub fn listen_to_player_updates(
         let mut check_ping = false;
         let mut ping = 0;
         loop {
-            let mut socket = stream.lock().await;
+            let mut socket = self.stream.lock().await;
             if check_ping {
                 let cur_time = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .expect("Time went backwards 🗿🤙")
                     .as_secs();
                 if cur_time - time_last_ping > PING_LIMIT_IN_SECONDS {
-                    let _ = send_commands
-                        .send(FirstLevelCommands::PlayerDisconnected(player.clone()))
+                    let _ = self
+                        .send_commands
+                        .send(FirstLevelCommands::PlayerDisconnected(self.player.clone()))
                         .await;
                     let _ = socket
                         .write(
@@ -58,9 +73,6 @@ pub fn listen_to_player_updates(
             }
 
             tokio::select! {
-                _value = game_starting.recv() => {
-                    break;
-                },
                 value = socket.read(&mut buffer) => {
                     let Ok(content) = value else {
                         continue;
@@ -72,7 +84,7 @@ pub fn listen_to_player_updates(
                         ClientRoomNetCommands::RoomDiscover => (),
                         ClientRoomNetCommands::JoinRoomRequest(_) => (),
                         ClientRoomNetCommands::LeaveRoom(dummy_player) => {
-                            let _ = send_commands.send(FirstLevelCommands::PlayerDisconnected(dummy_player)).await;
+                            let _ = self.send_commands.send(FirstLevelCommands::PlayerDisconnected(dummy_player)).await;
                             break;
                         },
                         ClientRoomNetCommands::PingResponse => {
@@ -82,34 +94,34 @@ pub fn listen_to_player_updates(
                                 .expect("Time went backwards 🗿🤙")
                                 .as_secs();
                             ping = cur_time - time_last_ping;
-                            let _ = send_commands.send(FirstLevelCommands::PingReceived((player.clone(), ping))).await;
+                            let _ = self.send_commands.send(FirstLevelCommands::PingReceived((self.player.clone(), ping))).await;
                         },
                     }
                 },
-                value = updates.recv() => {
+                value = self.updates.recv() => {
                     let command = match value {
                         Ok(command) => command,
                         Err(error) => match error {
                             broadcast::error::RecvError::Closed => {
                                 let _ = socket.write(&serde_json::to_vec(&ServerRoomNetCommands::RoomClosed(CloseReason::InnerError)).unwrap()).await;
-                                let _ = send_commands.send(FirstLevelCommands::FatalFail).await;
+                                let _ = self.send_commands.send(FirstLevelCommands::FatalFail).await;
                                 break;
                             },
                             broadcast::error::RecvError::Lagged(_) => {
-                                match updates.recv().await {
+                                match self.updates.recv().await {
                                     Ok(command) => command,
                                     Err(error) => match error {
                                         broadcast::error::RecvError::Lagged(_) => {
-                                            let Ok(command) = updates.recv().await else {
+                                            let Ok(command) = self.updates.recv().await else {
                                                 let _ = socket.write(&serde_json::to_vec(&ServerRoomNetCommands::RoomClosed(CloseReason::InnerError)).unwrap()).await;
-                                                let _ = send_commands.send(FirstLevelCommands::FatalFail).await;
+                                                let _ = self.send_commands.send(FirstLevelCommands::FatalFail).await;
                                                 break;
                                             };
                                             command
                                         },
                                         broadcast::error::RecvError::Closed => {
                                             let _ = socket.write(&serde_json::to_vec(&ServerRoomNetCommands::RoomClosed(CloseReason::InnerError)).unwrap()).await;
-                                            let _ = send_commands.send(FirstLevelCommands::FatalFail).await;
+                                            let _ = self.send_commands.send(FirstLevelCommands::FatalFail).await;
                                             break;
                                         },
                                     },
@@ -153,5 +165,5 @@ pub fn listen_to_player_updates(
                 _ = tokio::time::sleep(Duration::from_secs(PING_LIMIT_IN_SECONDS)) => {}
             }
         }
-    });
+    }
 }
