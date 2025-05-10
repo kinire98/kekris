@@ -6,9 +6,13 @@ use tokio::sync::{
     mpsc::{self},
 };
 
-use super::{END_LISTEN_ROOM, END_ROOM};
+use super::{END_LISTEN_ROOM, END_ROOM, SEND_ROOM_UPDATES};
 
-use crate::{models::dummy_room::DummyRoom, room::Room};
+use crate::{
+    globals::SIZE_FOR_KB,
+    models::dummy_room::DummyRoom,
+    room::{FirstLevelCommands, Room},
+};
 
 // const ROOM_NAME_EMIT: &str = "roomNameEmit";
 
@@ -28,7 +32,16 @@ pub async fn create_room(app: AppHandle, name: String, player_name: String) -> D
     } else {
         END_ROOM.set(Arc::new(Mutex::new(tx_end))).unwrap();
     }
-    let mut room = Room::new(name, app, rx_end, rx, player_name).await;
+    let (tx_command, rx_command) = mpsc::channel(SIZE_FOR_KB);
+    if let Some(channel) = SEND_ROOM_UPDATES.get() {
+        let mut lock = channel.lock().await;
+        *lock = tx_command.clone();
+    } else {
+        SEND_ROOM_UPDATES
+            .set(Arc::new(Mutex::new(tx_command.clone())))
+            .unwrap();
+    }
+    let mut room = Room::new(name, app, rx_end, rx, player_name, tx_command, rx_command).await;
     let dummy_room = (&room).into();
     tokio::spawn(async move {
         room.room_start().await;
@@ -47,4 +60,12 @@ pub async fn close_room() {
 }
 
 #[tauri::command]
-pub async fn start_online_game() {}
+pub async fn start_online_game() {
+    if let Some(channel) = SEND_ROOM_UPDATES.get() {
+        let _ = channel
+            .lock()
+            .await
+            .send(FirstLevelCommands::GameStarts)
+            .await;
+    }
+}

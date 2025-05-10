@@ -4,7 +4,6 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use super::pieces::Piece;
 use super::queue::local_queue::LocalQueue;
 use super::sound::{
     play_line_clear, play_loss, play_piece_drop, play_right_left, play_soft_drop, play_tspin_tetris,
@@ -16,11 +15,16 @@ use super::{
     },
     queue::Queue,
 };
+use super::{pieces::Piece, strategy::Strategy};
 use tauri::{AppHandle, Emitter};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
 use crate::{
-    models::{game_info::GameInfo, game_options::GameOptions},
+    models::{
+        game_commands::{FirstLevelCommands, SecondLevelCommands},
+        game_info::GameInfo,
+        game_options::GameOptions,
+    },
     persistence::store_game_info,
 };
 
@@ -62,6 +66,7 @@ pub struct LocalGame {
     real_line_clears: u16,
     game_control: Receiver<GameControl>,
     first_level_commands: Receiver<FirstLevelCommands>,
+    second_level_commands: Option<Receiver<SecondLevelCommands>>,
     run: bool,
     last_piece: Piece,
     piece_lowest_y: i16,
@@ -75,7 +80,8 @@ impl LocalGame {
     pub fn new(
         options: GameOptions,
         app: AppHandle,
-        receiver: Receiver<FirstLevelCommands>,
+        first_level_commands: Receiver<FirstLevelCommands>,
+        second_level_commands: Option<Receiver<SecondLevelCommands>>,
         game_control_receiver: Receiver<GameControl>,
         queue: impl Queue + 'static,
     ) -> Self {
@@ -97,7 +103,8 @@ impl LocalGame {
             level: 1,
             line_clears: 0,
             real_line_clears: 0,
-            first_level_commands: receiver,
+            first_level_commands,
+            second_level_commands,
             game_control: game_control_receiver,
             run: true,
             last_piece: Piece::Ghost,
@@ -188,6 +195,13 @@ impl LocalGame {
             )
             .await;
 
+            self.second_level_checks(
+                &tx_points,
+                &mut rx_extended_lock,
+                tx_extended_lock.clone(),
+                &mut rx,
+            )
+            .await;
             // Makes sure that executes max 120 times per second, no need for more
             // and it avoids CPU overuse
             tokio::time::sleep(Duration::from_micros(8_333)).await;
@@ -322,6 +336,30 @@ impl LocalGame {
                 .await;
         }
     }
+
+    async fn second_level_checks(
+        &mut self,
+        tx_points: &Sender<u16>,
+        rx_extended_lock: &mut Receiver<i16>,
+        tx_extended_lock: Sender<i16>,
+        rx: &mut Receiver<bool>,
+    ) {
+        if self.second_level_commands.is_none() {
+            return;
+        }
+        if let Ok(command) = self.second_level_commands.as_mut().unwrap().try_recv() {
+            match command {
+                SecondLevelCommands::QueueSync => (),
+                SecondLevelCommands::TrashReceived(_) => (),
+                SecondLevelCommands::StrategyChange(strategy) => {
+                    todo!()
+                }
+            }
+            self.first_level_checks(tx_points, rx_extended_lock, tx_extended_lock, rx)
+                .await;
+        }
+    }
+
     /// Counts movements for the piece fixation
     fn count_movements(&mut self) {
         if self.count_movements_enabled {
@@ -598,19 +636,8 @@ pub enum GameControl {
     Retry,
     Forfeit,
 }
-#[derive(Debug)]
-pub enum FirstLevelCommands {
-    RightMove,
-    LeftMove,
-    ClockWiseRotation,
-    CounterClockWiseRotation,
-    HardDrop,
-    SoftDrop,
-    SavePiece,
-    FullRotation,
-}
-// enum SecondLevelCommands {}
-// enum ThirdLevelCommands {}
+
+//  pub enum ThirdLevelCommands {}
 // enum FourthLevelCommands {}
 // * Events to emit
 // * - Held piece -> Piece

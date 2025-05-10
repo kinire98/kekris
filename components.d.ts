@@ -27,6 +27,7 @@ declare module 'vue' {
     MenuBackLayout: typeof import('./src/layouts/MenuBackLayout.vue')['default']
     MenuButton: typeof import('./src/components/MenuButton.vue')['default']
     Multiplayer: typeof import('./src/pages/multiplayer/Multiplayer.vue')['default']
+    MultiplayerBoard: typeof import('./src/pages/multiplayer/MultiplayerBoard.vue')['default']
     Player: typeof import('./src/components/Player.vue')['default']
     Profile: typeof import('./src/components/Profile.vue')['default']
     ProfilePage: typeof import('./src/pages/ProfilePage.vue')['default']

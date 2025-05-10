@@ -46,7 +46,8 @@
                 "ended": "La sala fue cerrada por el anfitrión",
                 "ended-button": "<- Volver al menú principal",
                 "ended-connection-header": "Desconexión",
-                "ended-connection": "Se perdió la conexión con el anfitrión de la sala"
+                "ended-connection": "Se perdió la conexión con el anfitrión de la sala",
+                "wait-for-players": "Tienes que esperar a ser por lo menos dos jugadores"
             }
         },
         "settings": {

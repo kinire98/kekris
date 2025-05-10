@@ -1,15 +1,15 @@
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use crate::models::room_commands::server::{CloseReason, RejectReason};
+use crate::models::room_commands::server::CloseReason;
 
-use crate::globals::{LISTENING_DIRECTION_TCP, PING_LIMIT_IN_SECONDS, UPDATES_IN_MILLIS};
+use crate::globals::PING_LIMIT_IN_SECONDS;
 
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-use tokio::net::{TcpListener, TcpStream};
+use tokio::net::TcpStream;
 
-use crate::models::dummy_room::{DummyPlayer, DummyRoom};
+use crate::models::dummy_room::DummyPlayer;
 
 use tokio::sync::mpsc::Sender;
 use tokio::sync::{Mutex, broadcast};
@@ -20,74 +20,6 @@ use crate::{
 };
 
 use super::super::{FirstLevelCommands, Updates};
-
-pub fn listen_to_room_requests(
-    send_commands: Sender<FirstLevelCommands>,
-    room: DummyRoom,
-    receive_players: Arc<Mutex<u8>>,
-    limit_players: u8,
-) {
-    tokio::spawn(async move {
-        let Ok(listener) = TcpListener::bind(LISTENING_DIRECTION_TCP).await else {
-            send_commands
-                .send(FirstLevelCommands::FatalFail)
-                .await
-                .expect("Irrelevant");
-            return;
-        };
-        loop {
-            let Ok(mut socket) = listener.accept().await else {
-                continue;
-            };
-            let sender_copy = send_commands.clone();
-            let receive_players = receive_players.clone();
-            let room = room.clone();
-            tokio::spawn(async move {
-                let mut buffer = vec![0; SIZE_FOR_KB];
-                let Ok(content) = socket.0.read(&mut buffer).await else {
-                    return;
-                };
-                let Ok(command) =
-                    serde_json::from_slice::<ClientRoomNetCommands>(&buffer[..content])
-                else {
-                    return;
-                };
-                let ClientRoomNetCommands::JoinRoomRequest(dummy_player) = command else {
-                    return;
-                };
-                let number = *receive_players.lock().await;
-                if number >= limit_players {
-                    let _ = socket
-                        .0
-                        .write_all(
-                            &serde_json::to_vec(&ServerRoomNetCommands::JoinRoomRequestRejected(
-                                RejectReason::RoomFull,
-                            ))
-                            .expect("Won't panic in a reasonable amount of times"),
-                        )
-                        .await;
-                    return;
-                }
-                if (socket
-                    .0
-                    .write(
-                        &serde_json::to_vec(&ServerRoomNetCommands::JoinRoomRequestAccepted(room))
-                            .expect("Reasonable to think it won't panic"),
-                    )
-                    .await)
-                    .is_ok()
-                {
-                    let _ = sender_copy
-                        .send(FirstLevelCommands::PlayerConnected((
-                            dummy_player,
-                            socket.0,
-                        )))
-                        .await;
-                }
-            });
-        }
-    });
-}
 
 pub fn listen_to_player_updates(
     send_commands: Sender<FirstLevelCommands>,
@@ -103,6 +35,7 @@ pub fn listen_to_player_updates(
             .expect("Time went backwards 🗿🤙")
             .as_secs();
         let mut check_ping = false;
+        let mut ping = 0;
         loop {
             let mut socket = stream.lock().await;
             if check_ping {
@@ -148,7 +81,8 @@ pub fn listen_to_player_updates(
                                 .duration_since(UNIX_EPOCH)
                                 .expect("Time went backwards 🗿🤙")
                                 .as_secs();
-                            let _ = send_commands.send(FirstLevelCommands::PingReceived((player.clone(), cur_time - time_last_ping))).await;
+                            ping = cur_time - time_last_ping;
+                            let _ = send_commands.send(FirstLevelCommands::PingReceived((player.clone(), ping))).await;
                         },
                     }
                 },
@@ -197,11 +131,11 @@ pub fn listen_to_player_updates(
                             let _ = socket.write(&serde_json::to_vec(&ServerRoomNetCommands::RoomClosed(CloseReason::ClosedByHost)).expect("Reasonable")).await;
                             break;
                         },
-                        Updates::SendPing => {
+                        Updates::SendPing(playing) => {
                             if check_ping {
                                 continue;
                             }
-                            let result = socket.write(&serde_json::to_vec(&ServerRoomNetCommands::PingRequest).expect("Reasonable to expect not to panic")).await;
+                            let result = socket.write(&serde_json::to_vec(&ServerRoomNetCommands::PingRequest(playing)).expect("Reasonable to expect not to panic")).await;
                             if result.is_ok() {
                                 check_ping = true;
                                 time_last_ping = SystemTime::now()
@@ -209,6 +143,10 @@ pub fn listen_to_player_updates(
                                     .expect("Time went backwards 🗿🤙")
                                     .as_secs();
                             }
+                        },
+                        Updates::GameStarts(highest_ping) => {
+                            let _ = socket.write(&serde_json::to_vec(&ServerRoomNetCommands::GameStarts(highest_ping - ping)).expect("Reasonable")).await;
+                            break;
                         }
                     };
                 },

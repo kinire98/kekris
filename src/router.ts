@@ -14,6 +14,7 @@ import Again from './pages/Again.vue';
 import Internet from './pages/multiplayer/Internet.vue';
 import Local from './pages/multiplayer/Local.vue';
 import Room from './pages/multiplayer/Room.vue';
+import MultiplayerBoard from './pages/multiplayer/MultiplayerBoard.vue';
 
 const routes = [
     { path: '/', component: Index },
@@ -34,7 +35,7 @@ const routes = [
     { path: '/local', component: Local },
     { path: '/host', component: Room },
     { path: '/join', component: Room },
-    { path: '/mutliplayer', component: Multiplayer },
+    { path: '/mutliplayer-board', component: MultiplayerBoard },
 ]
 
 export const router = createRouter({

@@ -65,6 +65,7 @@
         @click="popUpConnectionClosed"
       ></Button>
     </Dialog>
+    <Toast class="unavailable" position="bottom-right" />
   </div>
 </template>
 
@@ -167,18 +168,20 @@ import { listen } from "@tauri-apps/api/event";
 import { onMounted, Ref, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { Player, Room, Visibility } from "../../types/Room";
-import { Button } from "primevue";
+import { Button, useToast } from "primevue";
 import { getUsername } from "../../helpers/username";
 import { useI18n } from "vue-i18n";
 import i18n from "../../i18n";
 import { default as PlayerComponent } from "../../components/Player.vue";
 import { router } from "../../router";
+import { Toast } from "primevue";
 import { Dialog } from "primevue";
 
 const playersEmit = "playersEmit";
 const roomNameEmit = "roomNameEmit";
 const roomClosedEmit = "roomClosed";
 const lostConnectionEmit = "connectionLost";
+const gameStartedEmit = "gameStartedEmit";
 
 useI18n();
 
@@ -193,6 +196,7 @@ let roomName: string =
     ? i18n.global.t("ui.multiplayer.room.room-of") + " " + getUsername()
     : "";
 const players: Ref<Player[]> = ref([]);
+const toast = useToast();
 let room: Room;
 if (name == "host") {
   room = (await invoke("create_room", {
@@ -225,6 +229,9 @@ listen(roomClosedEmit, () => {
 listen(lostConnectionEmit, () => {
   visiblePopUpConnection.value = true;
 });
+listen(gameStartedEmit, () => {
+  router.push("/mutliplayer-board");
+});
 function leaveRoom() {
   if (name == "host") {
     invoke("close_room");
@@ -234,8 +241,15 @@ function leaveRoom() {
   router.push("/main");
 }
 function startGame() {
-  invoke("start_online_game");
-  router.push("/multiplayer");
+  if (players.value.length >= 2) {
+    invoke("start_online_game");
+  } else {
+    toast.add({
+      severity: "contrast",
+      life: 2500,
+      summary: i18n.global.t("ui.multiplayer.room.wait-for-players"),
+    });
+  }
 }
 function popUpClosed() {
   visiblePopUp.value = false;

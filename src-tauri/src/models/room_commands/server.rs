@@ -11,8 +11,9 @@ pub enum ServerRoomNetCommands {
     JoinRoomRequestRejected(RejectReason),
     PlayersUpdate(Vec<DummyPlayer>),
     RoomClosed(CloseReason),
-    PingRequest,
+    PingRequest(bool),
     DisconnectedSignal,
+    GameStarts(u64),
 }
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub enum RejectReason {

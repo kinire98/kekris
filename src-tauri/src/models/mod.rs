@@ -11,3 +11,7 @@ pub mod room_info;
 pub mod dummy_room;
 
 pub mod room_commands;
+
+pub mod online_game_commands;
+
+pub mod game_commands;

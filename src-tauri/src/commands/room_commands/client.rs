@@ -10,9 +10,7 @@ use crate::{
         dummy_room::{DummyPlayer, DummyRoom},
         room_info::RoomInfo,
     },
-    room::client::{
-        listen_to_room_updates::listen_to_room_updates, listen_to_rooms::listen_to_rooms,
-    },
+    room::client::{client_room::ClientRoom, listen_to_rooms::listen_to_rooms},
 };
 
 // const ROOM_NAME_EMIT: &str = "roomNameEmit";
@@ -34,7 +32,9 @@ pub async fn join_room(app: AppHandle, room: RoomInfo, player: DummyPlayer) {
         return;
     };
 
-    listen_to_room_updates(stream, app, rx, player).await;
+    tokio::spawn(async move {
+        ClientRoom::new(stream, app, rx, player).listen().await;
+    });
     stop_search().await;
     if let Some(room_old) = ROOM_INFO.get() {
         let mut room_old = room_old.lock().await;

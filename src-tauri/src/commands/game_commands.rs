@@ -7,14 +7,19 @@ use tokio::sync::{
 };
 
 use crate::game::{
-    local_game::{FirstLevelCommands, GameControl, LocalGame},
+    local_game::{GameControl, LocalGame},
     queue::local_queue::LocalQueue,
+    strategy::Strategy,
 };
+use crate::models::game_commands::{FirstLevelCommands, SecondLevelCommands};
 use crate::models::game_options::GameOptions;
 
-static FIRST_LEVEL_CHANNEL: OnceCell<Arc<Mutex<Sender<FirstLevelCommands>>>> =
+pub static FIRST_LEVEL_CHANNEL: OnceCell<Arc<Mutex<Sender<FirstLevelCommands>>>> =
     OnceCell::const_new();
-static GAME_CONTROL_CHANNEL: OnceCell<Arc<Mutex<Sender<GameControl>>>> = OnceCell::const_new();
+
+pub static SECOND_LEVEL_CHANNEL: OnceCell<Arc<Mutex<Sender<SecondLevelCommands>>>> =
+    OnceCell::const_new();
+pub static GAME_CONTROL_CHANNEL: OnceCell<Arc<Mutex<Sender<GameControl>>>> = OnceCell::const_new();
 
 #[tauri::command]
 pub async fn clockwise_rotation() {
@@ -140,35 +145,51 @@ pub async fn start_game(app: AppHandle, options: GameOptions) {
             .unwrap();
     }
     tokio::spawn(async move {
-        let mut game = LocalGame::new(options, app, rx, control_rx, LocalQueue::default());
+        let mut game = LocalGame::new(options, app, rx, None, control_rx, LocalQueue::default());
         game.start_game().await;
     });
 }
 
 #[tauri::command]
 pub async fn targeting_strategy_eliminations() {
-    if let Some(_channel) = FIRST_LEVEL_CHANNEL.get() {
-        // channel.clone().send(FirstLevelCommands::SoftDrop);
+    if let Some(channel) = SECOND_LEVEL_CHANNEL.get() {
+        let _ = channel
+            .lock()
+            .await
+            .send(SecondLevelCommands::StrategyChange(Strategy::Elimination))
+            .await;
     }
 }
 
 #[tauri::command]
 pub async fn targeting_strategy_even() {
-    if let Some(_channel) = FIRST_LEVEL_CHANNEL.get() {
-        // channel.lock().await.targeting_strategy_elimination();
+    if let Some(channel) = SECOND_LEVEL_CHANNEL.get() {
+        let _ = channel
+            .lock()
+            .await
+            .send(SecondLevelCommands::StrategyChange(Strategy::Even))
+            .await;
     }
 }
 
 #[tauri::command]
 pub async fn targeting_strategy_payback() {
-    if let Some(_channel) = FIRST_LEVEL_CHANNEL.get() {
-        // channel.lock().await.targeting_strategy_elimination();
+    if let Some(channel) = SECOND_LEVEL_CHANNEL.get() {
+        let _ = channel
+            .lock()
+            .await
+            .send(SecondLevelCommands::StrategyChange(Strategy::PayBack))
+            .await;
     }
 }
 
 #[tauri::command]
 pub async fn targeting_strategy_random() {
-    if let Some(_channel) = FIRST_LEVEL_CHANNEL.get() {
-        // channel.lock().await.targeting_strategy_elimination();
+    if let Some(channel) = SECOND_LEVEL_CHANNEL.get() {
+        let _ = channel
+            .lock()
+            .await
+            .send(SecondLevelCommands::StrategyChange(Strategy::Random))
+            .await;
     }
 }

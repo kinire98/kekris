@@ -17,6 +17,9 @@ static ROOM_INFO: OnceCell<Arc<Mutex<Option<DummyRoom>>>> = OnceCell::const_new(
 static END_LISTEN_ROOM_UPDATES: OnceCell<Arc<Mutex<broadcast::Sender<bool>>>> =
     OnceCell::const_new();
 
+static SEND_ROOM_UPDATES: OnceCell<Arc<Mutex<Sender<crate::room::FirstLevelCommands>>>> =
+    OnceCell::const_new();
+
 #[tauri::command]
 #[cfg(target_os = "macos")]
 pub const fn can_host_room() -> bool {
