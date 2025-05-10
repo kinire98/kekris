@@ -1,7 +1,6 @@
 use std::sync::Arc;
-use std::{net::IpAddr, time::Duration};
+use std::time::Duration;
 
-use local_ip_address::local_ip;
 use player::Player;
 use serde::{Deserialize, Serialize};
 use server::listen_to_broadcast_requests::listen_to_request;
@@ -29,8 +28,6 @@ pub struct Room {
     name: String,
     limit_of_players: u8,
     games_played: u16,
-    #[allow(dead_code)]
-    ip: IpAddr,
     app: AppHandle,
     close_room: Receiver<bool>,
     receive_commands: Receiver<FirstLevelCommands>,
@@ -50,7 +47,6 @@ impl Room {
         sender_commands: Sender<FirstLevelCommands>,
         receiver_commands: Receiver<FirstLevelCommands>,
     ) -> Self {
-        let ip = local_ip().unwrap();
         let (tx_updates, _) = broadcast::channel(32);
         // let (tx_commands, rx_commands) = mpsc::channel(32);
         let players_limit = 15;
@@ -62,7 +58,6 @@ impl Room {
             name,
             limit_of_players: players_limit,
             games_played: 0,
-            ip,
             app: app.clone(),
             close_room,
             receive_commands: receiver_commands,
