@@ -1,6 +1,9 @@
-use crate::models::{
-    dummy_room::{DummyPlayer, DummyRoom},
-    room_info::RoomInfo,
+use crate::{
+    game::pieces::Piece,
+    models::{
+        dummy_room::{DummyPlayer, DummyRoom},
+        room_info::RoomInfo,
+    },
 };
 use serde::{Deserialize, Serialize};
 
@@ -13,7 +16,7 @@ pub enum ServerRoomNetCommands {
     RoomClosed(CloseReason),
     PingRequest(bool),
     DisconnectedSignal,
-    GameStarts(u64),
+    GameStarts((u64, Vec<Piece>)),
 }
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub enum RejectReason {

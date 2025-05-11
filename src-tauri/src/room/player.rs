@@ -2,7 +2,7 @@ use std::{net::IpAddr, sync::Arc};
 
 use tokio::{net::TcpStream, sync::Mutex};
 
-use crate::{game::remote_game::RemoteGame, models::dummy_room::DummyPlayer};
+use crate::{game::game_types::remote_game::RemoteGame, models::dummy_room::DummyPlayer};
 
 #[derive(Debug, Clone)]
 pub struct Player {

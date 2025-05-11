@@ -16,4 +16,5 @@ pub enum SecondLevelCommands {
     QueueSync,
     TrashReceived(u8),
     StrategyChange(Strategy),
+    Won,
 }

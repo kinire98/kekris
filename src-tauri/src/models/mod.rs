@@ -15,3 +15,7 @@ pub mod room_commands;
 pub mod online_game_commands;
 
 pub mod game_commands;
+
+pub mod online_remote_game_communication;
+
+pub mod game_responses;

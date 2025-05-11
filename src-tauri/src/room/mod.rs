@@ -5,14 +5,14 @@ use player::Player;
 use serde::{Deserialize, Serialize};
 use server::listen_to_broadcast_requests::listen_to_request;
 use server::listen_to_room_requests::listen_to_room_requests;
-use server::send_receive_room_updates::RoomPlayerListener;
+use server::room_player_listener::RoomPlayerListener;
 use tauri::{AppHandle, Emitter};
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::{Mutex, broadcast};
 use tokio::time::Instant;
 
-use crate::game::online_game::OnlineGame;
+use crate::game::game_types::online_game::OnlineGame;
 use crate::globals::{PING_IN_MILLIS, UPDATES_IN_MILLIS};
 use crate::models;
 use crate::models::dummy_room::DummyPlayer;

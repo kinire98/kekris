@@ -1,13 +1,20 @@
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::{
+    sync::Arc,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
 use tauri::{AppHandle, Emitter};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream,
-    sync::broadcast::{self, error::RecvError},
+    sync::{
+        Mutex,
+        broadcast::{self, error::RecvError},
+    },
 };
 
 use crate::{
+    game::game_types::client_online_game::ClientOnlineGame,
     globals::{PING_LIMIT_IN_SECONDS, SIZE_FOR_KB},
     models::{
         dummy_room::DummyPlayer,
@@ -21,7 +28,7 @@ const LOST_CONNECTION_EMIT: &str = "connectionLost";
 const GAME_STARTED_EMIT: &str = "gameStartedEmit";
 
 pub struct ClientRoom {
-    stream: TcpStream,
+    stream: Arc<Mutex<TcpStream>>,
     app: AppHandle,
     stop_channel: broadcast::Receiver<bool>,
     player: DummyPlayer,
@@ -35,7 +42,7 @@ impl ClientRoom {
         player: DummyPlayer,
     ) -> Self {
         Self {
-            stream,
+            stream: Arc::new(Mutex::new(stream)),
             app,
             stop_channel,
             player,
@@ -47,9 +54,12 @@ impl ClientRoom {
             .duration_since(UNIX_EPOCH)
             .expect("Time went backwards 🗿🤙")
             .as_secs();
+        let lock = self.stream.clone();
         loop {
+            let mut stream = lock.lock().await;
             tokio::select! {
-                content = self.stream.read(&mut buffer) => {
+                content = stream.read(&mut buffer) => {
+                    drop(stream);
                     time = SystemTime::now()
                         .duration_since(UNIX_EPOCH)
                         .expect("Time went backwards 🗿🤙")
@@ -57,6 +67,7 @@ impl ClientRoom {
                     self.handle_content(content, &buffer).await;
                 },
                 value = self.stop_channel.recv() => {
+                    drop(stream);
                     let break_loop = self.stop_listening(value).await;
                     if break_loop {
                         break;
@@ -100,9 +111,13 @@ impl ClientRoom {
                         let _ = self.app.emit(LOST_CONNECTION_EMIT, false);
                         return true;
                     }
-                    ServerRoomNetCommands::GameStarts(retard) => {
+                    ServerRoomNetCommands::GameStarts((retard, pieces)) => {
                         tokio::time::sleep(Duration::from_millis(retard)).await;
                         let _ = self.app.emit(GAME_STARTED_EMIT, true);
+                        let mut game = ClientOnlineGame::new(self.stream.clone());
+                        tokio::spawn(async move {
+                            game.start().await;
+                        });
                     }
                 }
             }
@@ -110,13 +125,15 @@ impl ClientRoom {
         false
     }
     async fn ping(&mut self) -> bool {
-        let result = self
-            .stream
+        let lock = self.stream.clone();
+        let mut stream = lock.lock().await;
+        let result = stream
             .write(
                 &serde_json::to_vec(&ClientRoomNetCommands::PingResponse)
                     .expect("Reasonable to expect not to panic"),
             )
             .await;
+        drop(stream);
         if result.is_err() {
             let error = result.unwrap_err();
             match error.kind() {
@@ -145,16 +162,19 @@ impl ClientRoom {
     async fn stop_listening(&mut self, value: Result<bool, RecvError>) -> bool {
         if let Ok(value_recv) = value {
             if value_recv {
-                let Ok(_) = self
-                    .stream
+                let lock = self.stream.clone();
+                let Ok(_) = lock
+                    .lock()
+                    .await
                     .write(
                         &serde_json::to_vec(&ClientRoomNetCommands::LeaveRoom(self.player.clone()))
                             .expect("Reasonable to expect not to panic"),
                     )
                     .await
                 else {
-                    let _ = self
-                        .stream
+                    let _ = lock
+                        .lock()
+                        .await
                         .write(
                             &serde_json::to_vec(&ClientRoomNetCommands::LeaveRoom(
                                 self.player.clone(),

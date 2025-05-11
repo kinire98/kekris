@@ -4,18 +4,18 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use super::queue::local_queue::LocalQueue;
-use super::sound::{
+use super::super::pieces::Piece;
+use super::super::queue::local_queue::LocalQueue;
+use super::super::sound::{
     play_line_clear, play_loss, play_piece_drop, play_right_left, play_soft_drop, play_tspin_tetris,
 };
-use super::{
+use super::super::{
     board::{
         Board, // remote_board::RemoteBoard,
         local_board::{ClearLinePattern, LocalBoard},
     },
     queue::Queue,
 };
-use super::{pieces::Piece, strategy::Strategy};
 use tauri::{AppHandle, Emitter};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
@@ -24,6 +24,7 @@ use crate::{
         game_commands::{FirstLevelCommands, SecondLevelCommands},
         game_info::GameInfo,
         game_options::GameOptions,
+        game_responses::GameResponses,
     },
     persistence::store_game_info,
 };
@@ -74,15 +75,17 @@ pub struct LocalGame {
     movements_left: u8,
     game_info: GameInfo,
     register_info: bool,
+    responder: Option<Sender<GameResponses>>,
 }
 
 impl LocalGame {
-    pub fn new(
+    pub async fn new(
         options: GameOptions,
         app: AppHandle,
         first_level_commands: Receiver<FirstLevelCommands>,
         second_level_commands: Option<Receiver<SecondLevelCommands>>,
         game_control_receiver: Receiver<GameControl>,
+        responder: Option<Sender<GameResponses>>,
         queue: impl Queue + 'static,
     ) -> Self {
         LocalGame {
@@ -113,6 +116,7 @@ impl LocalGame {
             movements_left: MOVEMENTS_LEFT_RESET,
             game_info: GameInfo::new(options),
             register_info: false,
+            responder,
         }
     }
 
@@ -351,9 +355,10 @@ impl LocalGame {
             match command {
                 SecondLevelCommands::QueueSync => (),
                 SecondLevelCommands::TrashReceived(_) => (),
-                SecondLevelCommands::StrategyChange(strategy) => {
+                SecondLevelCommands::StrategyChange(_strategy) => {
                     todo!()
                 }
+                SecondLevelCommands::Won => todo!(),
             }
             self.first_level_checks(tx_points, rx_extended_lock, tx_extended_lock, rx)
                 .await;

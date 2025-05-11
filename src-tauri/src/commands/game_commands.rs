@@ -7,7 +7,7 @@ use tokio::sync::{
 };
 
 use crate::game::{
-    local_game::{GameControl, LocalGame},
+    game_types::local_game::{GameControl, LocalGame},
     queue::local_queue::LocalQueue,
     strategy::Strategy,
 };
@@ -145,7 +145,15 @@ pub async fn start_game(app: AppHandle, options: GameOptions) {
             .unwrap();
     }
     tokio::spawn(async move {
-        let mut game = LocalGame::new(options, app, rx, None, control_rx, LocalQueue::default());
+        let mut game = LocalGame::new(
+            options,
+            app,
+            rx,
+            None,
+            control_rx,
+            None,
+            LocalQueue::default(),
+        );
         game.start_game().await;
     });
 }
