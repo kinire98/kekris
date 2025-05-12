@@ -230,12 +230,14 @@ impl RoomPlayerListener {
                         .as_secs();
                 }
             }
-            Updates::GameStarts(highest_ping) => {
+            Updates::GameStarts((highest_ping, options, pieces)) => {
                 let _ = socket
                     .write(
-                        &serde_json::to_vec(&ServerRoomNetCommands::GameStarts(
+                        &serde_json::to_vec(&ServerRoomNetCommands::GameStarts((
                             highest_ping - self.ping,
-                        ))
+                            pieces,
+                            options,
+                        )))
                         .expect("Reasonable"),
                     )
                     .await;

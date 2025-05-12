@@ -19,3 +19,5 @@ pub mod game_commands;
 pub mod online_remote_game_communication;
 
 pub mod game_responses;
+
+pub mod other_player_state;

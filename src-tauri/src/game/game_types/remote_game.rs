@@ -3,7 +3,6 @@ use std::{
     sync::Arc,
 };
 
-use color_eyre::owo_colors::colors::css::Sienna;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream,
@@ -39,6 +38,7 @@ pub struct RemoteGame {
     receiver: Receiver<OnlineToRemoteGameCommunication>,
     sender: Sender<RemoteToOnlineGameCommunication>,
     buffer: Vec<u8>,
+    player: DummyPlayer,
 }
 impl RemoteGame {
     pub fn new(
@@ -55,6 +55,7 @@ impl RemoteGame {
             sender,
             receiver,
             buffer: vec![0; SIZE_FOR_KB],
+            player: player.into(),
         }
     }
     fn lines_from(&mut self, player: DummyPlayer, lines: u32) {
@@ -92,12 +93,14 @@ impl RemoteGame {
             let mut socket = lock.lock().await;
             tokio::select! {
                 value = self.receiver.recv() => {
+                    drop(socket);
                     let Some(command) = value else {
                         continue;
                     };
                     self.handle_command(command).await;
                 }
                 content = socket.read(&mut self.buffer) => {
+                    drop(socket);
                     let Ok(content) = content else {
                         continue;
                     };
@@ -107,15 +110,50 @@ impl RemoteGame {
         }
     }
     async fn handle_command(&mut self, command: OnlineToRemoteGameCommunication) {
-        match command {
-            OnlineToRemoteGameCommunication::TrashReceived(dummy_player, _) => todo!(),
-            OnlineToRemoteGameCommunication::Queue(pieces) => todo!(),
-            OnlineToRemoteGameCommunication::BoardStateRequest => todo!(),
-            OnlineToRemoteGameCommunication::DangerLevelRequest => todo!(),
-            OnlineToRemoteGameCommunication::HighestReceivedPlayerRequest => todo!(),
-            OnlineToRemoteGameCommunication::Won => todo!(),
-            OnlineToRemoteGameCommunication::PlayerLost(dummy_player) => todo!(),
-        }
+        let command: Option<ServerOnlineGameCommands> = match command {
+            OnlineToRemoteGameCommunication::TrashReceived(dummy_player, amount) => {
+                self.lines_from(dummy_player, amount);
+                Some(ServerOnlineGameCommands::TrashSent(amount))
+            }
+            OnlineToRemoteGameCommunication::Queue(pieces) => {
+                Some(ServerOnlineGameCommands::Queue(pieces))
+            }
+            OnlineToRemoteGameCommunication::DangerLevelRequest => {
+                let _ = self
+                    .sender
+                    .send(RemoteToOnlineGameCommunication::DangerLevelResponse(
+                        self.player.clone(),
+                        self.danger_level,
+                    ))
+                    .await;
+                None
+            }
+            OnlineToRemoteGameCommunication::HighestReceivedPlayerRequest => {
+                let _ = self
+                    .sender
+                    .send(RemoteToOnlineGameCommunication::HighestReceivedPlayer(
+                        self.player.clone(),
+                        self.highest_sender(),
+                    ))
+                    .await;
+                None
+            }
+            OnlineToRemoteGameCommunication::Won => Some(ServerOnlineGameCommands::Won),
+            OnlineToRemoteGameCommunication::PlayerLost(dummy_player) => {
+                Some(ServerOnlineGameCommands::PlayerLost(dummy_player))
+            }
+            OnlineToRemoteGameCommunication::GameEnded(dummy_player) => {
+                Some(ServerOnlineGameCommands::GameEnded(dummy_player))
+            }
+            OnlineToRemoteGameCommunication::State(dummy_player, state) => {
+                Some(ServerOnlineGameCommands::State(dummy_player, state))
+            }
+        };
+        let Some(command) = command else {
+            return;
+        };
+        let mut socket = self.stream.lock().await;
+        let _ = socket.write(&serde_json::to_vec(&command).unwrap()).await;
     }
     async fn handle_network(&mut self, content: usize) {
         let Ok(command) =
@@ -124,11 +162,40 @@ impl RemoteGame {
             return;
         };
         match command {
-            ClientOnlineGameCommands::TrashSent(strategy, _) => todo!(),
-            ClientOnlineGameCommands::BoardState(_) => todo!(),
-            ClientOnlineGameCommands::DangerLevel(danger_level) => todo!(),
-            ClientOnlineGameCommands::Lost => todo!(),
-            ClientOnlineGameCommands::QueueRequest => todo!(),
+            ClientOnlineGameCommands::TrashSent(strategy, amount) => {
+                let _ = self
+                    .sender
+                    .send(RemoteToOnlineGameCommunication::TrashSent(
+                        self.player.clone(),
+                        strategy,
+                        amount,
+                    ))
+                    .await;
+            }
+            ClientOnlineGameCommands::BoardState(state) => {
+                let _ = self
+                    .sender
+                    .send(RemoteToOnlineGameCommunication::BoardState(
+                        self.player.clone(),
+                        state,
+                    ))
+                    .await;
+            }
+            ClientOnlineGameCommands::DangerLevel(danger_level) => {
+                self.danger_level = danger_level;
+            }
+            ClientOnlineGameCommands::Lost => {
+                let _ = self
+                    .sender
+                    .send(RemoteToOnlineGameCommunication::Lost(self.player.clone()))
+                    .await;
+            }
+            ClientOnlineGameCommands::QueueRequest => {
+                let _ = self
+                    .sender
+                    .send(RemoteToOnlineGameCommunication::QueueRequest)
+                    .await;
+            }
         }
     }
 }

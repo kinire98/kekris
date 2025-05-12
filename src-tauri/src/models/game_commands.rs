@@ -1,4 +1,4 @@
-use crate::game::strategy::Strategy;
+use crate::game::{pieces::Piece, strategy::Strategy};
 
 #[derive(Debug)]
 pub enum FirstLevelCommands {
@@ -13,8 +13,8 @@ pub enum FirstLevelCommands {
 }
 #[derive(Debug)]
 pub enum SecondLevelCommands {
-    QueueSync,
-    TrashReceived(u8),
+    QueueSync(Vec<Piece>),
+    TrashReceived(u32),
     StrategyChange(Strategy),
     Won,
 }

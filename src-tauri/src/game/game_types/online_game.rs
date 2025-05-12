@@ -8,6 +8,7 @@ use tokio::sync::{
 
 use crate::{
     commands::game_commands::{FIRST_LEVEL_CHANNEL, GAME_CONTROL_CHANNEL, SECOND_LEVEL_CHANNEL},
+    game::strategy::Strategy,
     globals::SIZE_FOR_KB,
     models::{
         dummy_room::DummyPlayer,
@@ -26,6 +27,10 @@ use super::{
     local_game::{GameControl, LocalGame},
     remote_game::RemoteGame,
 };
+
+const STATE_EMIT_OTHER_PLAYERS: &str = "stateEmitForOtherPlayers";
+const OTHER_PLAYER_LOST: &str = "stateEmitForOtherPlayers";
+const OTHER_PLAYER_WON: &str = "otherPlayerWon";
 
 pub struct OnlineGame {
     players: Vec<Player>,
@@ -153,7 +158,7 @@ impl OnlineGame {
     async fn handle_commands(&mut self, command: RemoteToOnlineGameCommunication) {
         match command {
             RemoteToOnlineGameCommunication::TrashSent(dummy_player, strategy, _) => todo!(),
-            RemoteToOnlineGameCommunication::BoardStateResponse(dummy_player, _) => todo!(),
+            RemoteToOnlineGameCommunication::BoardState(dummy_player, state) => todo!(),
             RemoteToOnlineGameCommunication::DangerLevelResponse(dummy_player, danger_level) => {
                 todo!()
             }
@@ -164,4 +169,5 @@ impl OnlineGame {
             RemoteToOnlineGameCommunication::QueueRequest => todo!(),
         }
     }
+    async fn send_state(&mut self, player: DummyPlayer, strategy: String) {}
 }

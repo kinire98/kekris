@@ -603,6 +603,10 @@ impl LocalBoard {
         todo!()
     }
 
+    pub fn counter_trash(&mut self, _lines_cleared: u8) -> u8 {
+        todo!()
+    }
+
     pub fn get_pieces(&mut self, r: Range<u128>) -> Vec<Piece> {
         let mut pieces = Vec::new();
         for i in r {
@@ -699,6 +703,9 @@ impl LocalBoard {
     }
     pub fn piece_y(&self) -> i16 {
         self.cur_piece.y()
+    }
+    pub fn insert_in_queue(&mut self, pieces: Vec<Piece>) {
+        self.queue.insert_pieces(pieces);
     }
 }
 

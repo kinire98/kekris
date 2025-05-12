@@ -4,8 +4,10 @@ use tokio::{net::TcpStream, sync::Mutex};
 
 use crate::{game::game_types::remote_game::RemoteGame, models::dummy_room::DummyPlayer};
 
+static mut ID: u16 = 1;
 #[derive(Debug, Clone)]
 pub struct Player {
+    id: u16,
     name: String,
     ip: IpAddr,
     games_won: u16,
@@ -16,6 +18,10 @@ pub struct Player {
     stream: Option<Arc<Mutex<TcpStream>>>,
 }
 impl Player {
+    pub fn id(&self) -> u16 {
+        self.id
+    }
+
     pub fn name(&self) -> &str {
         &self.name
     }
@@ -55,7 +61,12 @@ impl Player {
 
 impl From<(DummyPlayer, TcpStream)> for Player {
     fn from(value: (DummyPlayer, TcpStream)) -> Self {
+        let id = unsafe { ID };
+        unsafe {
+            ID += 1;
+        }
         Player {
+            id,
             name: value.0.name().to_string(),
             ip: value.0.ip(),
             games_won: value.0.games_won(),
@@ -70,7 +81,12 @@ impl From<(DummyPlayer, TcpStream)> for Player {
 
 impl From<String> for Player {
     fn from(value: String) -> Self {
+        let id = unsafe { ID };
+        unsafe {
+            ID += 1;
+        }
         Player {
+            id,
             name: value,
             ip: local_ip_address::local_ip().unwrap(),
             games_won: 0,

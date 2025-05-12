@@ -6,9 +6,7 @@ use std::{
 
 use super::super::pieces::Piece;
 use super::super::queue::local_queue::LocalQueue;
-use super::super::sound::{
-    play_line_clear, play_loss, play_piece_drop, play_right_left, play_soft_drop, play_tspin_tetris,
-};
+
 use super::super::{
     board::{
         Board, // remote_board::RemoteBoard,
@@ -79,7 +77,7 @@ pub struct LocalGame {
 }
 
 impl LocalGame {
-    pub async fn new(
+    pub fn new(
         options: GameOptions,
         app: AppHandle,
         first_level_commands: Receiver<FirstLevelCommands>,
@@ -156,7 +154,7 @@ impl LocalGame {
         let (tx_extended_lock, mut rx_extended_lock) = mpsc::channel(32);
         Self::tick_loop(tx, rx_points).await;
         self.queue_emit();
-        self.state_emit();
+        self.state_emit().await;
         self.game_started = true;
         let mut forfeited = false;
         self.start_time = SystemTime::now()
@@ -247,7 +245,7 @@ impl LocalGame {
         // If the movements left drop to 0 and are enabled, piece gets fixed
         if self.movements_left == 0 && self.count_movements_enabled {
             self.local_board.hard_drop();
-            self.state_emit();
+            self.state_emit().await;
             self.piece_fixed(tx_points).await;
         }
         // If the max time for the piece fixed has passed, and the current y coordinate is
@@ -255,7 +253,7 @@ impl LocalGame {
         while let Ok(y) = rx_extended_lock.try_recv() {
             if y >= self.piece_lowest_y && self.count_movements_enabled {
                 self.local_board.hard_drop();
-                self.state_emit();
+                self.state_emit().await;
                 self.piece_fixed(tx_points).await;
             }
         }
@@ -273,7 +271,7 @@ impl LocalGame {
             if self.local_board.next_tick() {
                 self.piece_fixed(tx_points).await;
             }
-            self.state_emit();
+            self.state_emit().await;
         }
     }
     /// Checks for piece movements
@@ -292,14 +290,12 @@ impl LocalGame {
                 FirstLevelCommands::RightMove => {
                     if self.local_board.move_right() {
                         self.count_movements();
-                        play_right_left(self.app.clone()).await;
                         self.game_info.piece_moved();
                     }
                 }
                 FirstLevelCommands::LeftMove => {
                     if self.local_board.move_left() {
                         self.count_movements();
-                        play_right_left(self.app.clone()).await;
                         self.game_info.piece_moved();
                     }
                 }
@@ -314,12 +310,10 @@ impl LocalGame {
                 FirstLevelCommands::HardDrop => {
                     self.local_board.hard_drop();
                     self.piece_fixed(tx_points).await;
-                    self.state_emit();
-                    play_piece_drop(self.app.clone()).await;
+                    self.state_emit().await;
                 }
                 FirstLevelCommands::SoftDrop => {
                     self.local_board.soft_drop();
-                    play_soft_drop(self.app.clone()).await;
                 }
                 FirstLevelCommands::SavePiece => {
                     let piece = self.local_board.held_piece();
@@ -335,7 +329,7 @@ impl LocalGame {
                     self.game_info.spinned();
                 }
             }
-            self.state_emit();
+            self.state_emit().await;
             self.critical_checks(tx_points, rx_extended_lock, tx_extended_lock.clone(), rx)
                 .await;
         }
@@ -353,12 +347,24 @@ impl LocalGame {
         }
         if let Ok(command) = self.second_level_commands.as_mut().unwrap().try_recv() {
             match command {
-                SecondLevelCommands::QueueSync => (),
-                SecondLevelCommands::TrashReceived(_) => (),
-                SecondLevelCommands::StrategyChange(_strategy) => {
-                    todo!()
+                SecondLevelCommands::QueueSync(pieces) => {
+                    self.local_board.insert_in_queue(pieces);
                 }
-                SecondLevelCommands::Won => todo!(),
+                SecondLevelCommands::TrashReceived(amount) => {
+                    self.local_board.insert_trash(amount as u8);
+                }
+                SecondLevelCommands::StrategyChange(strategy) => {
+                    self.responder
+                        .as_mut()
+                        .unwrap()
+                        .send(GameResponses::Strategy(strategy))
+                        .await
+                        .unwrap();
+                }
+                SecondLevelCommands::Won => {
+                    self.game_won_emit();
+                    self.run = false;
+                }
             }
             self.first_level_checks(tx_points, rx_extended_lock, tx_extended_lock, rx)
                 .await;
@@ -409,6 +415,15 @@ impl LocalGame {
         self.check_line_cleared().await;
         self.game_info.piece_used();
 
+        if self.responder.is_some() {
+            let _ = self
+                .responder
+                .as_mut()
+                .unwrap()
+                .send(GameResponses::DangerLevel(self.local_board.danger_level()))
+                .await;
+        }
+
         let game_over = self.local_board.game_over();
         let game_won = self.local_board.game_won(self.get_win_condition());
         if game_won {
@@ -422,7 +437,14 @@ impl LocalGame {
             self.game_info
                 .register_final_info(now_time - self.start_time, self.points, self.level);
         } else if game_over {
-            play_loss(self.app.clone()).await;
+            if self.responder.is_some() {
+                let _ = self
+                    .responder
+                    .as_mut()
+                    .unwrap()
+                    .send(GameResponses::Lost)
+                    .await;
+            }
             self.run = false;
             if self.normal {
                 self.game_over_emit(false);
@@ -476,7 +498,7 @@ impl LocalGame {
         let pattern = self.local_board.clear_line_pattern();
         if pattern != ClearLinePattern::None {
             self.points_calculation(pattern);
-            self.lines_awarded_calculation(pattern);
+            self.lines_awarded_calculation(pattern).await;
             if self.line_clears >= self.level * 5 {
                 self.level += 1;
                 self.line_clears = 0;
@@ -486,13 +508,7 @@ impl LocalGame {
             } else {
                 self.points_emit();
             }
-            match pattern {
-                ClearLinePattern::TSpinDouble
-                | ClearLinePattern::TSpinTriple
-                | ClearLinePattern::Tetris => play_tspin_tetris(self.app.clone()).await,
-                ClearLinePattern::None => (),
-                _ => play_line_clear(self.app.clone()).await,
-            }
+
             self.game_info.line_cleared(pattern);
         }
         self.prev_clear_line_pattern = pattern;
@@ -528,8 +544,8 @@ impl LocalGame {
             } * self.level as u32;
         }
     }
-    fn lines_awarded_calculation(&mut self, pattern: ClearLinePattern) {
-        self.line_clears += match pattern {
+    async fn lines_awarded_calculation(&mut self, pattern: ClearLinePattern) {
+        let mut lines_cleared = match pattern {
             ClearLinePattern::None => 0,
             ClearLinePattern::Single => 1,
             ClearLinePattern::Double => 3,
@@ -543,7 +559,7 @@ impl LocalGame {
             ClearLinePattern::MiniTSpinSingle => 2,
         };
         if pattern == self.prev_clear_line_pattern {
-            self.points += match pattern {
+            lines_cleared += match pattern {
                 ClearLinePattern::None => 0,
                 ClearLinePattern::Single => 1,
                 ClearLinePattern::Double => 2,
@@ -557,6 +573,17 @@ impl LocalGame {
                 ClearLinePattern::MiniTSpinSingle => 1,
             };
         }
+        self.line_clears = lines_cleared;
+        if self.responder.is_some() {
+            let send_lines = self.local_board.counter_trash(lines_cleared as u8);
+            let _ = self
+                .responder
+                .as_mut()
+                .unwrap()
+                .send(GameResponses::TrashSent(send_lines as u32))
+                .await;
+        }
+
         self.real_line_clears += match pattern {
             ClearLinePattern::None => 0,
             ClearLinePattern::Single => 1,
@@ -590,10 +617,17 @@ impl LocalGame {
             .emit(QUEUE_EMIT, self.local_board.get_pieces(range))
             .unwrap();
     }
-    fn state_emit(&self) {
-        self.app
-            .emit(BOARD_STATE_EMIT, self.local_board.board_state())
-            .unwrap();
+    async fn state_emit(&mut self) {
+        let state = self.local_board.board_state();
+        if self.responder.is_some() {
+            let _ = self
+                .responder
+                .as_mut()
+                .unwrap()
+                .send(GameResponses::BoardState(state.clone()))
+                .await;
+        }
+        self.app.emit(BOARD_STATE_EMIT, state).unwrap();
     }
     fn line_emit(&self, pattern: ClearLinePattern) {
         self.app.emit(LINE_CLEARED_EMIT, pattern).unwrap();

@@ -13,11 +13,17 @@ use tokio::sync::{Mutex, broadcast};
 use tokio::time::Instant;
 
 use crate::game::game_types::online_game::OnlineGame;
+use crate::game::pieces::Piece;
+use crate::game::queue::Queue;
+use crate::game::queue::local_queue::LocalQueue;
 use crate::globals::{PING_IN_MILLIS, UPDATES_IN_MILLIS};
 use crate::models;
 use crate::models::dummy_room::DummyPlayer;
+use crate::models::game_options::GameOptions;
 
 const PLAYERS_EMIT: &str = "playersEmit";
+
+const PIECES_TO_GENERATE: usize = 10000;
 
 // Can only be open for 4.85 hours
 #[derive(Debug)]
@@ -35,6 +41,7 @@ pub struct Room {
     send_updates: broadcast::Sender<Updates>,
     player_info: Arc<Mutex<u8>>,
     cur_game_playing: Arc<Mutex<bool>>,
+    options: GameOptions,
 }
 
 impl Room {
@@ -65,6 +72,7 @@ impl Room {
             send_updates: tx_updates,
             player_info: players_info.clone(),
             cur_game_playing: Arc::new(Mutex::new(false)),
+            options: GameOptions::default(),
         };
         listen_to_request(
             (&info).into(),
@@ -194,19 +202,30 @@ impl Room {
         }
         self.players = players;
     }
-    async fn start_game(&self) {
+    async fn start_game(&mut self) {
         let mut highest_ping = 0;
         self.players.iter().for_each(|player| {
             if player.ping() > highest_ping {
                 highest_ping = player.ping();
             }
         });
-        let _ = self.send_updates.send(Updates::GameStarts(highest_ping));
+        let mut queue = LocalQueue::default();
+        for i in 0..PIECES_TO_GENERATE {
+            let _ = queue.get_piece(i);
+        }
+        let pieces = queue.get_pieces();
+        self.options.multi_player(self.players.len() as u8);
+        let _ = self.send_updates.send(Updates::GameStarts((
+            highest_ping,
+            self.options.clone(),
+            pieces,
+        )));
         let mut online_game = OnlineGame::new(
             self.players.clone(),
             self.cur_game_playing.clone(),
             self.app.clone(),
             highest_ping,
+            queue,
         )
         .await;
         tokio::spawn(async move {
@@ -238,7 +257,7 @@ pub enum Updates {
     PlayerLimitChanged(u8),
     RoomEnded,
     SendPing(bool),
-    GameStarts(u64),
+    GameStarts((u64, GameOptions, Vec<Piece>)),
 }
 
 pub mod client;

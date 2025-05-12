@@ -14,6 +14,7 @@ pub struct DummyRoom {
 }
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct DummyPlayer {
+    id: u16,
     name: String,
     ip: IpAddr,
     games_won: u16,
@@ -74,6 +75,7 @@ impl DummyPlayer {
 impl From<&Player> for DummyPlayer {
     fn from(value: &Player) -> Self {
         DummyPlayer {
+            id: value.id(),
             name: value.name().to_string(),
             ip: value.ip(),
             games_won: value.games_won(),

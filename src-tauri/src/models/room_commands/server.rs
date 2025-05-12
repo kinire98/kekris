@@ -2,6 +2,7 @@ use crate::{
     game::pieces::Piece,
     models::{
         dummy_room::{DummyPlayer, DummyRoom},
+        game_options::GameOptions,
         room_info::RoomInfo,
     },
 };
@@ -16,7 +17,7 @@ pub enum ServerRoomNetCommands {
     RoomClosed(CloseReason),
     PingRequest(bool),
     DisconnectedSignal,
-    GameStarts((u64, Vec<Piece>)),
+    GameStarts((u64, Vec<Piece>, GameOptions)),
 }
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub enum RejectReason {

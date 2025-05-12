@@ -111,10 +111,17 @@ impl ClientRoom {
                         let _ = self.app.emit(LOST_CONNECTION_EMIT, false);
                         return true;
                     }
-                    ServerRoomNetCommands::GameStarts((retard, pieces)) => {
-                        tokio::time::sleep(Duration::from_millis(retard)).await;
+                    ServerRoomNetCommands::GameStarts((delay, pieces, options)) => {
+                        tokio::time::sleep(Duration::from_millis(delay)).await;
                         let _ = self.app.emit(GAME_STARTED_EMIT, true);
-                        let mut game = ClientOnlineGame::new(self.stream.clone());
+                        let mut game = ClientOnlineGame::new(
+                            self.stream.clone(),
+                            pieces,
+                            options,
+                            self.app.clone(),
+                            delay,
+                        )
+                        .await;
                         tokio::spawn(async move {
                             game.start().await;
                         });
