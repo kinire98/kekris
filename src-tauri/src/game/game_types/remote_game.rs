@@ -1,7 +1,4 @@
-use std::{
-    collections::{BinaryHeap, HashMap},
-    sync::Arc,
-};
+use std::sync::Arc;
 
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -51,21 +48,6 @@ impl RemoteGame {
         }
     }
 
-    fn send_lines_to_player(&self, lines: u32) {
-        let stream = self.stream.clone();
-        tokio::spawn(async move {
-            let mut socket = stream.lock().await;
-            let result = socket
-                .write(&serde_json::to_vec(&ServerOnlineGameCommands::TrashSent(lines)).unwrap())
-                .await;
-            if result.is_ok() {
-                return;
-            }
-            let _ = socket
-                .write(&serde_json::to_vec(&ServerOnlineGameCommands::TrashSent(lines)).unwrap())
-                .await;
-        });
-    }
     pub async fn start_game(&mut self) {
         let lock = self.stream.clone();
         loop {

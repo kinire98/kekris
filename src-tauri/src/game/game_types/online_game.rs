@@ -1,5 +1,5 @@
 use std::{
-    collections::{BinaryHeap, HashMap, HashSet},
+    collections::{HashMap, HashSet},
     sync::Arc,
     time::Duration,
 };
@@ -308,7 +308,7 @@ impl OnlineGame {
         let player = self
             .even_lines
             .iter()
-            .min_by(|a, b| a.1.cmp(&b.1))
+            .min_by(|a, b| a.1.cmp(b.1))
             .map(|(k, _v)| k)
             .cloned()
             .unwrap();
