@@ -98,3 +98,8 @@ impl From<String> for Player {
         }
     }
 }
+impl AsRef<Player> for Player {
+    fn as_ref(&self) -> &Player {
+        self
+    }
+}

@@ -707,6 +707,9 @@ impl LocalBoard {
     pub fn insert_in_queue(&mut self, pieces: Vec<Piece>) {
         self.queue.insert_pieces(pieces);
     }
+    pub fn get_queue(&mut self) -> Vec<Piece> {
+        self.queue.get_pieces()
+    }
 }
 
 #[derive(Debug, Clone, Copy)]

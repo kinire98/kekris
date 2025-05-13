@@ -365,6 +365,14 @@ impl LocalGame {
                     self.game_won_emit();
                     self.run = false;
                 }
+                SecondLevelCommands::AskForQueue => {
+                    let _ = self
+                        .responder
+                        .as_mut()
+                        .unwrap()
+                        .send(GameResponses::Queue(self.local_board.get_queue()))
+                        .await;
+                }
             }
             self.first_level_checks(tx_points, rx_extended_lock, tx_extended_lock, rx)
                 .await;

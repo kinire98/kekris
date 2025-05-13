@@ -24,6 +24,10 @@ impl Queue for RemoteQueue {
     fn insert_pieces(&mut self, pieces: Vec<Piece>) {
         self.pieces = pieces
     }
+
+    fn get_pieces(&mut self) -> Vec<Piece> {
+        panic!("SHOULD NEVER ARRIVE HERE");
+    }
 }
 impl RemoteQueue {
     pub fn new(pieces: Vec<Piece>, pieces_request: std::sync::mpsc::Sender<bool>) -> RemoteQueue {

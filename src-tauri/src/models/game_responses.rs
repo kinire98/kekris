@@ -1,4 +1,4 @@
-use crate::game::{board::danger_level::DangerLevel, strategy::Strategy};
+use crate::game::{board::danger_level::DangerLevel, pieces::Piece, strategy::Strategy};
 
 pub enum GameResponses {
     BoardState(String),
@@ -6,4 +6,5 @@ pub enum GameResponses {
     Strategy(Strategy),
     TrashSent(u32),
     Lost,
+    Queue(Vec<Piece>),
 }

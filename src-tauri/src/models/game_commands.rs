@@ -13,6 +13,7 @@ pub enum FirstLevelCommands {
 }
 #[derive(Debug)]
 pub enum SecondLevelCommands {
+    AskForQueue,
     QueueSync(Vec<Piece>),
     TrashReceived(u32),
     StrategyChange(Strategy),

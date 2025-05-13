@@ -26,19 +26,14 @@ use crate::{
     room::player::Player,
 };
 
-use super::super::board::danger_level::DangerLevel;
-
 #[derive(Debug)]
 pub struct RemoteGame {
-    danger_level: DangerLevel,
-    lines_received: HashMap<DummyPlayer, u32>,
-    max_lines: BinaryHeap<u32>,
-    reverse_search: HashMap<u32, DummyPlayer>,
     stream: Arc<Mutex<TcpStream>>,
     receiver: Receiver<OnlineToRemoteGameCommunication>,
     sender: Sender<RemoteToOnlineGameCommunication>,
     buffer: Vec<u8>,
     player: DummyPlayer,
+    most_recent_trash_received: Option<DummyPlayer>,
 }
 impl RemoteGame {
     pub fn new(
@@ -47,29 +42,13 @@ impl RemoteGame {
         sender: Sender<RemoteToOnlineGameCommunication>,
     ) -> Self {
         Self {
-            danger_level: DangerLevel::Empty,
-            lines_received: HashMap::new(),
-            max_lines: BinaryHeap::new(),
-            reverse_search: HashMap::new(),
             stream: player.stream().unwrap(),
             sender,
             receiver,
             buffer: vec![0; SIZE_FOR_KB],
             player: player.into(),
+            most_recent_trash_received: None,
         }
-    }
-    fn lines_from(&mut self, player: DummyPlayer, lines: u32) {
-        let stored_lines = *self.lines_received.get(&player).unwrap_or(&0);
-        let total = stored_lines + lines;
-        self.lines_received.insert(player.clone(), total);
-        self.max_lines.push(total);
-        self.reverse_search.insert(total, player);
-        self.send_lines_to_player(total);
-    }
-    fn highest_sender(&self) -> Option<DummyPlayer> {
-        let value = self.max_lines.peek()?;
-        let value = self.reverse_search.get(value)?;
-        Some(value.clone())
     }
 
     fn send_lines_to_player(&self, lines: u32) {
@@ -112,41 +91,40 @@ impl RemoteGame {
     async fn handle_command(&mut self, command: OnlineToRemoteGameCommunication) {
         let command: Option<ServerOnlineGameCommands> = match command {
             OnlineToRemoteGameCommunication::TrashReceived(dummy_player, amount) => {
-                self.lines_from(dummy_player, amount);
+                self.most_recent_trash_received = Some(dummy_player);
                 Some(ServerOnlineGameCommands::TrashSent(amount))
             }
             OnlineToRemoteGameCommunication::Queue(pieces) => {
                 Some(ServerOnlineGameCommands::Queue(pieces))
             }
-            OnlineToRemoteGameCommunication::DangerLevelRequest => {
-                let _ = self
-                    .sender
-                    .send(RemoteToOnlineGameCommunication::DangerLevelResponse(
-                        self.player.clone(),
-                        self.danger_level,
-                    ))
-                    .await;
-                None
-            }
-            OnlineToRemoteGameCommunication::HighestReceivedPlayerRequest => {
+
+            OnlineToRemoteGameCommunication::MostRecentReceivedPlayerRequest => {
                 let _ = self
                     .sender
                     .send(RemoteToOnlineGameCommunication::HighestReceivedPlayer(
                         self.player.clone(),
-                        self.highest_sender(),
+                        self.most_recent_trash_received.clone(),
                     ))
                     .await;
                 None
             }
             OnlineToRemoteGameCommunication::Won => Some(ServerOnlineGameCommands::Won),
             OnlineToRemoteGameCommunication::PlayerLost(dummy_player) => {
-                Some(ServerOnlineGameCommands::PlayerLost(dummy_player))
+                if self.player == dummy_player {
+                    None
+                } else {
+                    Some(ServerOnlineGameCommands::PlayerLost(dummy_player))
+                }
             }
             OnlineToRemoteGameCommunication::GameEnded(dummy_player) => {
                 Some(ServerOnlineGameCommands::GameEnded(dummy_player))
             }
             OnlineToRemoteGameCommunication::State(dummy_player, state) => {
-                Some(ServerOnlineGameCommands::State(dummy_player, state))
+                if dummy_player == self.player {
+                    None
+                } else {
+                    Some(ServerOnlineGameCommands::State(dummy_player, state))
+                }
             }
         };
         let Some(command) = command else {
@@ -182,7 +160,13 @@ impl RemoteGame {
                     .await;
             }
             ClientOnlineGameCommands::DangerLevel(danger_level) => {
-                self.danger_level = danger_level;
+                let _ = self
+                    .sender
+                    .send(RemoteToOnlineGameCommunication::DangerLevel(
+                        self.player.clone(),
+                        danger_level,
+                    ))
+                    .await;
             }
             ClientOnlineGameCommands::Lost => {
                 let _ = self

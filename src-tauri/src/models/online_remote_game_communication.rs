@@ -6,8 +6,7 @@ use super::dummy_room::DummyPlayer;
 pub enum OnlineToRemoteGameCommunication {
     TrashReceived(DummyPlayer, u32),
     Queue(Vec<Piece>),
-    DangerLevelRequest,
-    HighestReceivedPlayerRequest,
+    MostRecentReceivedPlayerRequest,
     Won,
     PlayerLost(DummyPlayer),
     GameEnded(DummyPlayer),
@@ -17,7 +16,7 @@ pub enum OnlineToRemoteGameCommunication {
 pub enum RemoteToOnlineGameCommunication {
     TrashSent(DummyPlayer, Strategy, u32),
     BoardState(DummyPlayer, String),
-    DangerLevelResponse(DummyPlayer, DangerLevel),
+    DangerLevel(DummyPlayer, DangerLevel),
     HighestReceivedPlayer(DummyPlayer, Option<DummyPlayer>),
     Lost(DummyPlayer),
     QueueRequest,

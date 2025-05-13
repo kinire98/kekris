@@ -197,6 +197,9 @@ impl ClientOnlineGame {
                 Some(ClientOnlineGameCommands::TrashSent(self.strategy, amount))
             }
             GameResponses::Lost => Some(ClientOnlineGameCommands::Lost),
+            GameResponses::Queue(_pieces) => {
+                panic!("SHOULDN'T BE HERE");
+            }
         };
         let Some(command) = command else {
             return;

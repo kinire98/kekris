@@ -2,11 +2,11 @@ use super::super::pieces::Piece;
 use super::Queue;
 use std::collections::HashSet;
 
-#[allow(dead_code)]
 const PIECES_SHOWN: usize = 5; // Used in the module, but marked as not used for an unknown reason
 
-#[allow(dead_code)]
 const PIECES_GENERATED_BY_CYCLE: usize = 7; // Used in the module, but marked as not used for an unknown reason
+
+const CICLES_OF_PIECES_GENERATED_WHEN_ASKED: usize = 1000;
 
 #[derive(Default, Debug)]
 pub struct LocalQueue {
@@ -45,6 +45,13 @@ impl Queue for LocalQueue {
 
     fn insert_pieces(&mut self, _pieces: Vec<Piece>) {
         panic!("SHOULD NEVER ARRIVE HERE")
+    }
+
+    fn get_pieces(&mut self) -> Vec<Piece> {
+        for _ in 0..CICLES_OF_PIECES_GENERATED_WHEN_ASKED {
+            self.generate_new_pieces();
+        }
+        self.pieces.clone()
     }
 }
 
