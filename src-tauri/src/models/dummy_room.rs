@@ -47,6 +47,10 @@ impl DummyPlayer {
         player
     }
 
+    pub fn id(&self) -> u16 {
+        self.id
+    }
+
     pub fn name(&self) -> &str {
         &self.name
     }

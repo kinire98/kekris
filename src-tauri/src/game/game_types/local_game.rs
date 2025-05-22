@@ -50,7 +50,6 @@ const MOVEMENTS_LEFT_RESET: u8 = 15;
 #[derive(Debug)]
 pub struct LocalGame {
     app: AppHandle,
-    number_of_players: u8,
     local_board: LocalBoard,
     // remote_boards: Vec<RemoteBoard>,
     normal: bool,
@@ -88,7 +87,6 @@ impl LocalGame {
     ) -> Self {
         LocalGame {
             app,
-            number_of_players: options.number_of_players(),
             local_board: LocalBoard::new(queue),
             // remote_boards: Vec::new(),
             normal: options.is_normal(),
@@ -180,9 +178,17 @@ impl LocalGame {
                     GameControl::Forfeit => {
                         forfeited = true;
                         self.run = false;
+                        if self.responder.is_some() {
+                            let _ = self
+                                .responder
+                                .as_mut()
+                                .unwrap()
+                                .send(GameResponses::Lost)
+                                .await;
+                        }
                     }
                     GameControl::Retry => {
-                        if self.number_of_players == 1 {
+                        if self.second_level_commands.is_none() {
                             self.run = false;
                         }
                     }
@@ -224,7 +230,7 @@ impl LocalGame {
         if forfeited {
             self.game_over_emit(true);
         }
-        if self.register_info {
+        if self.register_info && self.second_level_commands.is_none() {
             self.register_info().await;
         }
     }
@@ -290,22 +296,30 @@ impl LocalGame {
                 FirstLevelCommands::RightMove => {
                     if self.local_board.move_right() {
                         self.count_movements();
-                        self.game_info.piece_moved();
+                        if self.second_level_commands.is_none() {
+                            self.game_info.piece_moved();
+                        }
                     }
                 }
                 FirstLevelCommands::LeftMove => {
                     if self.local_board.move_left() {
                         self.count_movements();
-                        self.game_info.piece_moved();
+                        if self.second_level_commands.is_none() {
+                            self.game_info.piece_moved();
+                        }
                     }
                 }
                 FirstLevelCommands::ClockWiseRotation => {
                     self.local_board.rotation_clockwise();
-                    self.game_info.spinned();
+                    if self.second_level_commands.is_none() {
+                        self.game_info.spinned();
+                    }
                 }
                 FirstLevelCommands::CounterClockWiseRotation => {
                     self.local_board.rotation_counterclockwise();
-                    self.game_info.spinned();
+                    if self.second_level_commands.is_none() {
+                        self.game_info.spinned();
+                    }
                 }
                 FirstLevelCommands::HardDrop => {
                     self.local_board.hard_drop();
@@ -326,7 +340,9 @@ impl LocalGame {
                 }
                 FirstLevelCommands::FullRotation => {
                     self.local_board.rotation_full();
-                    self.game_info.spinned();
+                    if self.second_level_commands.is_none() {
+                        self.game_info.spinned();
+                    }
                 }
             }
             self.state_emit().await;
@@ -421,7 +437,9 @@ impl LocalGame {
         self.queue_emit();
         self.piece_fixed_emit();
         self.check_line_cleared().await;
-        self.game_info.piece_used();
+        if self.second_level_commands.is_none() {
+            self.game_info.piece_used();
+        }
 
         if self.responder.is_some() {
             let _ = self
@@ -442,8 +460,13 @@ impl LocalGame {
                 .duration_since(UNIX_EPOCH)
                 .expect("Time went backwards 🗿🤙")
                 .as_secs();
-            self.game_info
-                .register_final_info(now_time - self.start_time, self.points, self.level);
+            if self.second_level_commands.is_none() {
+                self.game_info.register_final_info(
+                    now_time - self.start_time,
+                    self.points,
+                    self.level,
+                );
+            }
         } else if game_over {
             if self.responder.is_some() {
                 let _ = self
@@ -461,11 +484,13 @@ impl LocalGame {
                     .duration_since(UNIX_EPOCH)
                     .expect("Time went backwards 🗿🤙")
                     .as_secs();
-                self.game_info.register_final_info(
-                    now_time - self.start_time,
-                    self.points,
-                    self.level,
-                );
+                if self.second_level_commands.is_none() {
+                    self.game_info.register_final_info(
+                        now_time - self.start_time,
+                        self.points,
+                        self.level,
+                    );
+                }
             } else {
                 self.game_over_emit(true);
             }
@@ -517,7 +542,9 @@ impl LocalGame {
                 self.points_emit();
             }
 
-            self.game_info.line_cleared(pattern);
+            if self.second_level_commands.is_none() {
+                self.game_info.line_cleared(pattern);
+            }
         }
         self.prev_clear_line_pattern = pattern;
     }
@@ -584,12 +611,14 @@ impl LocalGame {
         self.line_clears = lines_cleared;
         if self.responder.is_some() {
             let send_lines = self.local_board.counter_trash(lines_cleared as u8);
-            let _ = self
-                .responder
-                .as_mut()
-                .unwrap()
-                .send(GameResponses::TrashSent(send_lines as u32))
-                .await;
+            if send_lines > 0 {
+                let _ = self
+                    .responder
+                    .as_mut()
+                    .unwrap()
+                    .send(GameResponses::TrashSent(send_lines as u32))
+                    .await;
+            }
         }
 
         self.real_line_clears += match pattern {

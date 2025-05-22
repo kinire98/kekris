@@ -1,6 +1,7 @@
-use std::{cmp::Ordering, ops::Range};
+use std::{cmp::Ordering, collections::HashMap, ops::Range};
 
 use moving_piece::{MovingPiece, Orientation, moving_piece_t::MovingPieceT};
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 use crate::game::{pieces::Piece, queue::Queue, strategy::Strategy};
@@ -23,6 +24,7 @@ pub struct LocalBoard {
     cells: [Cell; (BOARD_HEIGHT * BOARD_WIDTH) as usize],
     buffer: [Cell; (BOARD_HEIGHT * BOARD_WIDTH) as usize],
     lock_out: bool,
+    top_out: bool,
     piece_blocked: bool,
     line_cleared: bool,
     lines_cleared: u32,
@@ -33,7 +35,7 @@ pub struct LocalBoard {
 }
 impl Board for LocalBoard {
     fn game_over(&self) -> bool {
-        self.top_out() || self.lock_out || self.block_out()
+        self.top_out || self.lock_out || self.block_out()
     }
 
     fn game_won(&self, win_condition: impl Fn(bool, u32) -> bool) -> bool {
@@ -130,6 +132,7 @@ impl LocalBoard {
             cells: [Cell::Empty; 200],
             buffer: [Cell::Empty; 200],
             lock_out: false,
+            top_out: false,
             piece_blocked: false,
             line_cleared: false,
             lines_cleared: 0,
@@ -376,6 +379,7 @@ impl LocalBoard {
                 });
             }
         }
+        self.set_trash_in_board();
     }
     fn is_line_cleared(&self) -> Option<[i16; 4]> {
         let mut lines = [-128; 4];
@@ -559,6 +563,70 @@ impl LocalBoard {
             _ => panic!("Shouldn't arrive here"),
         }
     }
+
+    fn set_trash_in_board(&mut self) {
+        if self.trash_lines_queue.is_empty() {
+            return;
+        }
+        let lines = self
+            .trash_lines_queue
+            .iter()
+            .fold(0, |acc, val| acc + val.0);
+        if self.top_out_check(lines) {
+            self.top_out = true;
+            return;
+        }
+        for (i, _) in self.buffer.clone().iter().enumerate() {
+            let modified = i + (BOARD_WIDTH as usize * lines as usize);
+            if modified >= ((BOARD_HEIGHT * BOARD_WIDTH) - 1) as usize {
+                self.buffer[i] = self.cells[modified - ((BOARD_HEIGHT * BOARD_WIDTH - 1) as usize)];
+            } else {
+                self.buffer[i] = self.buffer[modified];
+            }
+        }
+        for (i, _) in self.cells.clone().iter().enumerate() {
+            let modified = i + (BOARD_WIDTH as usize * lines as usize);
+            if modified >= ((BOARD_HEIGHT * BOARD_WIDTH) - 1) as usize {
+                break;
+            } else {
+                self.cells[i] = self.cells[modified];
+            }
+        }
+        let mut lines_added = 0;
+        for (number, column) in self.trash_lines_queue.clone() {
+            for i in 0..number {
+                self.add_lines(column as i16, BOARD_HEIGHT - 1 - lines_added - i as i16);
+            }
+            lines_added += number as i16;
+        }
+        self.trash_lines_queue.clear();
+    }
+    fn add_lines(&mut self, x: i16, y: i16) {
+        for i in 0..BOARD_WIDTH {
+            match (i == x, y < 0) {
+                (true, true) => self.set_cell_in_buffer_board(i, y, Cell::Empty),
+                (true, false) => self.set_cell_in_main_board(i, y, Cell::Empty),
+                (false, true) => self.set_cell_in_buffer_board(i, y, Cell::Full(Piece::Trash)),
+                (false, false) => self.set_cell_in_main_board(i, y, Cell::Full(Piece::Trash)),
+            }
+        }
+    }
+    fn top_out_check(&mut self, lines: u8) -> bool {
+        let highest_piece = self.get_highest_piece();
+        if let Some((_, y)) = highest_piece {
+            let remaining_pieces = if y < 0 {
+                BOARD_HEIGHT * 2 - (BOARD_HEIGHT + y)
+            } else if y > 0 {
+                y + BOARD_HEIGHT
+            } else {
+                BOARD_HEIGHT
+            };
+            lines as i16 >= remaining_pieces
+        } else {
+            false
+        }
+    }
+
     pub fn save_piece(&mut self) {
         if self.piece_blocked {
             return;
@@ -592,19 +660,67 @@ impl LocalBoard {
     }
 
     pub fn num_of_trash_lines(&self) -> u8 {
-        let mut lines = 0;
-        self.trash_lines_queue.iter().for_each(|tup| {
-            lines += tup.0;
-        });
-        lines
+        self.trash_lines_queue
+            .iter()
+            .fold(0, |acc, (lines, _)| acc + lines)
     }
 
-    pub fn insert_trash(&mut self, _number_of_trash_received: u8) {
-        todo!()
+    pub fn insert_trash(&mut self, number_of_trash_received: u8) {
+        if self.trash_lines_queue.is_empty() {
+            self.trash_lines_queue.push((
+                number_of_trash_received,
+                rand::rng().random_range(0..BOARD_WIDTH) as u8,
+            ));
+            return;
+        }
+        let sum = self
+            .trash_lines_queue
+            .iter()
+            .fold(0, |acc, val| acc + val.0);
+        if sum < 5 {
+            self.trash_lines_queue.push((
+                number_of_trash_received,
+                rand::rng().random_range(0..BOARD_WIDTH) as u8,
+            ));
+            return;
+        }
+        let mut repetitions: HashMap<u8, u8> = HashMap::new();
+        for (lines, column) in &self.trash_lines_queue {
+            *repetitions.entry(*column).or_insert(0) += lines;
+        }
+        if let Some((key, _)) = repetitions.iter().max_by_key(|entry| entry.1) {
+            self.trash_lines_queue
+                .push((number_of_trash_received, *key));
+        } else {
+            self.trash_lines_queue.push((
+                number_of_trash_received,
+                rand::rng().random_range(0..BOARD_WIDTH) as u8,
+            ));
+        }
     }
 
-    pub fn counter_trash(&mut self, _lines_cleared: u8) -> u8 {
-        todo!()
+    pub fn counter_trash(&mut self, lines_cleared: u8) -> u8 {
+        if self.trash_lines_queue.is_empty() {
+            return lines_cleared;
+        }
+        let mut lines_cleared = lines_cleared;
+        for (index, (lines, column)) in self.trash_lines_queue.clone().iter().enumerate() {
+            match lines_cleared.cmp(lines) {
+                Ordering::Less => {
+                    self.trash_lines_queue[index] = (lines - lines_cleared, *column);
+                    return 0;
+                }
+                Ordering::Equal => {
+                    let _ = self.trash_lines_queue.remove(index);
+                    return 0;
+                }
+                Ordering::Greater => {
+                    lines_cleared -= lines;
+                    let _ = self.trash_lines_queue.remove(index);
+                }
+            }
+        }
+        lines_cleared
     }
 
     pub fn get_pieces(&mut self, r: Range<u128>) -> Vec<Piece> {
@@ -625,16 +741,6 @@ impl LocalBoard {
 
     pub fn line_cleared(&self) -> bool {
         self.line_cleared
-    }
-
-    fn top_out(&self) -> bool {
-        // ! Probably needs a fix
-        let highest_coords = self.get_highest_piece();
-        if let Some(coord) = highest_coords {
-            (self.num_of_trash_lines() as isize - coord.1 as isize) < -20
-        } else {
-            false
-        }
     }
 
     fn block_out(&self) -> bool {

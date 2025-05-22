@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -10,7 +10,7 @@ use tokio::{
 };
 
 use crate::{
-    globals::SIZE_FOR_KB,
+    globals::{DELAY_FOR_COLISIONS, SIZE_FOR_KB},
     models::{
         dummy_room::DummyPlayer,
         online_game_commands::{
@@ -50,6 +50,7 @@ impl RemoteGame {
 
     pub async fn start_game(&mut self) {
         let lock = self.stream.clone();
+        tokio::time::sleep(Duration::from_millis(DELAY_FOR_COLISIONS)).await;
         loop {
             let mut socket = lock.lock().await;
             tokio::select! {
@@ -113,7 +114,9 @@ impl RemoteGame {
             return;
         };
         let mut socket = self.stream.lock().await;
-        let _ = socket.write(&serde_json::to_vec(&command).unwrap()).await;
+        let _ = socket
+            .write_all(&serde_json::to_vec(&command).unwrap())
+            .await;
     }
     async fn handle_network(&mut self, content: usize) {
         let Ok(command) =

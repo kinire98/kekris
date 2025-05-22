@@ -226,6 +226,7 @@ impl Room {
             self.app.clone(),
             highest_ping,
             queue,
+            (&self.local_player).into(),
         )
         .await;
         tokio::spawn(async move {

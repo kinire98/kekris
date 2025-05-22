@@ -78,7 +78,7 @@ impl ClientOnlineGame {
             needs_pieces: Arc::new(Mutex::new(rx_needs_pieces)),
             app,
             buffer: vec![0; SIZE_FOR_KB],
-            strategy: Strategy::Even,
+            strategy: Strategy::Random,
         }
     }
     async fn set_channels(
@@ -118,23 +118,24 @@ impl ClientOnlineGame {
             let ref_for_blocking = self.needs_pieces.clone();
             tokio::select! {
                 content = socket.read(&mut self.buffer) => {
-                    let Ok(content) = content else {
-                        continue;
+                    drop(socket);
+                    if let Ok(content) = content  {
+                        self.handle_network_content(content).await;
                     };
-                    self.handle_network_content(content).await;
                 },
                 response = self.game_responses.recv() => {
-                    let Some(response) = response else {
-                        continue;
+                    drop(socket);
+                    if let Some(response) = response  {
+                        self.handle_game_responses(response).await;
                     };
-                    self.handle_game_responses(response).await;
                 },
-                _ = tokio::task::spawn_blocking(move || {
-                    let ref_for_blocking = ref_for_blocking.lock().unwrap();
-                    ref_for_blocking.recv()
-                }) => {
-                    self.ask_for_pieces().await;
-                }
+                // _ = tokio::task::spawn_blocking(move || {
+                //     let ref_for_blocking = ref_for_blocking.lock().unwrap();
+                //     ref_for_blocking.recv()
+                // }) => {
+                //     drop(socket);
+                //     self.ask_for_pieces().await;
+                // }
             }
         }
     }
@@ -171,6 +172,7 @@ impl ClientOnlineGame {
             }
             ServerOnlineGameCommands::GameEnded(dummy_player) => {
                 let _ = self.app.emit(OTHER_PLAYER_WON, dummy_player);
+                self.running = false;
             }
             ServerOnlineGameCommands::State(dummy_player, state) => {
                 let _ = self.app.emit(
@@ -205,12 +207,17 @@ impl ClientOnlineGame {
             return;
         };
         let mut socket = self.socket.lock().await;
-        let _ = socket.write(&serde_json::to_vec(&command).unwrap()).await;
+        let _ = socket
+            .write_all(&serde_json::to_vec(&command).unwrap())
+            .await;
+        let _ = socket.flush().await;
     }
+    #[allow(dead_code)]
     async fn ask_for_pieces(&mut self) {
         let mut socket = self.socket.lock().await;
         let _ = socket
-            .write(&serde_json::to_vec(&ClientOnlineGameCommands::QueueRequest).unwrap())
+            .write_all(&serde_json::to_vec(&ClientOnlineGameCommands::QueueRequest).unwrap())
             .await;
+        let _ = socket.flush().await;
     }
 }

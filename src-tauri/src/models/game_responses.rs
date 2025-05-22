@@ -1,5 +1,6 @@
 use crate::game::{board::danger_level::DangerLevel, pieces::Piece, strategy::Strategy};
 
+#[derive(Debug)]
 pub enum GameResponses {
     BoardState(String),
     DangerLevel(DangerLevel),

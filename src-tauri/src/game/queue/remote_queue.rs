@@ -12,7 +12,8 @@ pub struct RemoteQueue {
 
 impl Queue for RemoteQueue {
     fn get_piece(&mut self, position: usize) -> Option<crate::game::pieces::Piece> {
-        if position < self.pieces.len() - PIECES_LIMIT {
+        dbg!(position, self.pieces.len(), PIECES_LIMIT);
+        if position > self.pieces.len() - PIECES_LIMIT {
             let sender = self.pieces_request.clone();
             tokio::task::spawn_blocking(move || {
                 let _ = sender.send(true);

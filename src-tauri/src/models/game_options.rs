@@ -37,7 +37,7 @@ impl GameOptions {
         self.number_of_players = 1;
     }
     pub fn multi_player(&mut self, players: u8) {
-        if players < 2 {
+        if players < 1 {
             panic!("In multiplayer should be more than one player");
         }
         self.number_of_players = players;

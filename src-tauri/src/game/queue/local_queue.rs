@@ -6,7 +6,7 @@ const PIECES_SHOWN: usize = 5; // Used in the module, but marked as not used for
 
 const PIECES_GENERATED_BY_CYCLE: usize = 7; // Used in the module, but marked as not used for an unknown reason
 
-const CICLES_OF_PIECES_GENERATED_WHEN_ASKED: usize = 1000;
+const CICLES_OF_PIECES_GENERATED_WHEN_ASKED: usize = 10;
 
 #[derive(Default, Debug)]
 pub struct LocalQueue {

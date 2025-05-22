@@ -17,7 +17,7 @@ use tokio_stream::{self as stream};
 use crate::{
     commands::game_commands::{FIRST_LEVEL_CHANNEL, GAME_CONTROL_CHANNEL, SECOND_LEVEL_CHANNEL},
     game::{board::danger_level::DangerLevel, pieces::Piece, strategy::Strategy},
-    globals::SIZE_FOR_KB,
+    globals::{DELAY_FOR_COLISIONS, SIZE_FOR_KB},
     models::{
         dummy_room::DummyPlayer,
         game_commands::{FirstLevelCommands, SecondLevelCommands},
@@ -41,6 +41,8 @@ use super::{
 const STATE_EMIT_OTHER_PLAYERS: &str = "stateEmitForOtherPlayers";
 const OTHER_PLAYER_LOST: &str = "stateEmitForOtherPlayers";
 const OTHER_PLAYER_WON: &str = "otherPlayerWon";
+
+const GAME_STARTED_EMIT: &str = "gameStartedEmit";
 
 pub struct OnlineGame {
     players: Vec<Player>,
@@ -66,6 +68,7 @@ impl OnlineGame {
         app: AppHandle,
         delay: u64,
         queue: LocalQueue,
+        local_player: DummyPlayer,
     ) -> Self {
         let mut options = GameOptions::default();
         options.multi_player(players.len() as u8);
@@ -86,6 +89,7 @@ impl OnlineGame {
         let mut remote_games: HashMap<DummyPlayer, Sender<OnlineToRemoteGameCommunication>> =
             HashMap::new();
         let (tx_remote_to_online, rx_remote_to_online) = mpsc::channel(SIZE_FOR_KB);
+        let mut even_lines = HashMap::new();
         players.iter().for_each(|player| {
             if player.stream().is_none() {
                 return;
@@ -93,20 +97,17 @@ impl OnlineGame {
             let (tx_online_to_remote, rx_online_to_remote) = mpsc::channel(SIZE_FOR_KB);
             let mut game =
                 RemoteGame::new(player, rx_online_to_remote, tx_remote_to_online.clone());
-            remote_games.insert(player.into(), tx_online_to_remote);
+            let dummy: DummyPlayer = player.into();
+            remote_games.insert(dummy.clone(), tx_online_to_remote);
+            even_lines.insert(dummy, 0);
             tokio::spawn(async move {
                 game.start_game().await;
             });
         });
         tokio::spawn(async move {
-            tokio::time::sleep(Duration::from_millis(delay)).await;
+            tokio::time::sleep(Duration::from_millis(delay + DELAY_FOR_COLISIONS)).await;
             local_game.start_game().await;
         });
-        let self_player: DummyPlayer = players
-            .iter()
-            .find(|player| player.stream().is_none())
-            .unwrap()
-            .into();
         let dummys: Vec<DummyPlayer> = players
             .iter()
             .filter(|player| player.stream().is_some())
@@ -120,14 +121,14 @@ impl OnlineGame {
             rx_remote_commands: rx_remote_to_online,
             game_responses: rx_responses,
             game_runnning: true,
-            self_player,
+            self_player: local_player,
             self_player_strategy: Strategy::Even,
             self_player_danger_level: DangerLevel::Empty,
             waiting_for_payback_lines: HashMap::new(),
             danger_levels: DangerTracker::new(dummys),
             app,
             players_lost: HashSet::new(),
-            even_lines: HashMap::new(),
+            even_lines,
         }
     }
     async fn set_channels(
@@ -161,6 +162,9 @@ impl OnlineGame {
         }
     }
     pub async fn start(&mut self) {
+        self.app
+            .emit(GAME_STARTED_EMIT, self.self_player.id())
+            .unwrap();
         {
             // Block for dropping value
             let mut value = self.playing.lock().await;
@@ -197,6 +201,7 @@ impl OnlineGame {
                 self.self_player_strategy = strategy;
             }
             GameResponses::TrashSent(lines) => {
+                dbg!(lines);
                 self.trash_received(self.self_player.clone(), self.self_player_strategy, lines)
                     .await;
             }

@@ -17,7 +17,7 @@ pub enum ServerRoomNetCommands {
     RoomClosed(CloseReason),
     PingRequest(bool),
     DisconnectedSignal,
-    GameStarts((u64, Vec<Piece>, GameOptions)),
+    GameStarts((u64, Vec<Piece>, GameOptions, u16)),
 }
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub enum RejectReason {

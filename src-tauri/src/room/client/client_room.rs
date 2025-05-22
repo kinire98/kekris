@@ -32,6 +32,7 @@ pub struct ClientRoom {
     app: AppHandle,
     stop_channel: broadcast::Receiver<bool>,
     player: DummyPlayer,
+    listening: bool,
 }
 
 impl ClientRoom {
@@ -46,6 +47,7 @@ impl ClientRoom {
             app,
             stop_channel,
             player,
+            listening: true,
         }
     }
     pub async fn listen(&mut self) {
@@ -55,7 +57,7 @@ impl ClientRoom {
             .expect("Time went backwards 🗿🤙")
             .as_secs();
         let lock = self.stream.clone();
-        loop {
+        while self.listening {
             let mut stream = lock.lock().await;
             tokio::select! {
                 content = stream.read(&mut buffer) => {
@@ -64,7 +66,9 @@ impl ClientRoom {
                         .duration_since(UNIX_EPOCH)
                         .expect("Time went backwards 🗿🤙")
                         .as_secs();
-                    self.handle_content(content, &buffer).await;
+                    if let Ok(content) = content {
+                        self.handle_content(content, &buffer).await;
+                    }
                 },
                 value = self.stop_channel.recv() => {
                     drop(stream);
@@ -85,61 +89,55 @@ impl ClientRoom {
             }
         }
     }
-    async fn handle_content(
-        &mut self,
-        content: Result<usize, std::io::Error>,
-        buffer: &[u8],
-    ) -> bool {
-        if let Ok(content) = content {
-            if let Ok(command) = serde_json::from_slice::<ServerRoomNetCommands>(&buffer[..content])
-            {
-                match command {
-                    ServerRoomNetCommands::RoomDiscoverResponse(_) => (),
-                    ServerRoomNetCommands::JoinRoomRequestAccepted(_) => (),
-                    ServerRoomNetCommands::JoinRoomRequestRejected(_) => (),
-                    ServerRoomNetCommands::PlayersUpdate(dummy_players) => {
-                        let _ = self.app.emit(PLAYERS_EMIT, dummy_players);
-                    }
-                    ServerRoomNetCommands::RoomClosed(_) => {
-                        self.app.emit(ROOM_CLOSED_EMIT, false).unwrap();
-                        return true;
-                    }
-                    ServerRoomNetCommands::PingRequest(_) => {
-                        return self.ping().await;
-                    }
-                    ServerRoomNetCommands::DisconnectedSignal => {
-                        let _ = self.app.emit(LOST_CONNECTION_EMIT, false);
-                        return true;
-                    }
-                    ServerRoomNetCommands::GameStarts((delay, pieces, options)) => {
-                        tokio::time::sleep(Duration::from_millis(delay)).await;
-                        let _ = self.app.emit(GAME_STARTED_EMIT, true);
-                        let mut game = ClientOnlineGame::new(
-                            self.stream.clone(),
-                            pieces,
-                            options,
-                            self.app.clone(),
-                            delay,
-                        )
-                        .await;
-                        tokio::spawn(async move {
-                            game.start().await;
-                        });
-                    }
+    async fn handle_content(&mut self, content: usize, buffer: &[u8]) {
+        if let Ok(command) = serde_json::from_slice::<ServerRoomNetCommands>(&buffer[..content]) {
+            match command {
+                ServerRoomNetCommands::RoomDiscoverResponse(_) => (),
+                ServerRoomNetCommands::JoinRoomRequestAccepted(_) => (),
+                ServerRoomNetCommands::JoinRoomRequestRejected(_) => (),
+                ServerRoomNetCommands::PlayersUpdate(dummy_players) => {
+                    let _ = self.app.emit(PLAYERS_EMIT, dummy_players);
+                }
+                ServerRoomNetCommands::RoomClosed(_) => {
+                    self.app.emit(ROOM_CLOSED_EMIT, false).unwrap();
+                    self.listening = false;
+                }
+                ServerRoomNetCommands::PingRequest(_) => {
+                    self.listening = !self.ping().await;
+                }
+                ServerRoomNetCommands::DisconnectedSignal => {
+                    let _ = self.app.emit(LOST_CONNECTION_EMIT, false);
+                    self.listening = false;
+                }
+                ServerRoomNetCommands::GameStarts((delay, pieces, options, id)) => {
+                    let _ = self.app.emit(GAME_STARTED_EMIT, id);
+                    tokio::time::sleep(Duration::from_millis(delay)).await;
+                    let mut game = ClientOnlineGame::new(
+                        self.stream.clone(),
+                        pieces,
+                        options,
+                        self.app.clone(),
+                        delay,
+                    )
+                    .await;
+                    tokio::spawn(async move {
+                        game.start().await;
+                    });
+                    self.listening = false;
                 }
             }
         }
-        false
     }
     async fn ping(&mut self) -> bool {
         let lock = self.stream.clone();
         let mut stream = lock.lock().await;
         let result = stream
-            .write(
+            .write_all(
                 &serde_json::to_vec(&ClientRoomNetCommands::PingResponse)
                     .expect("Reasonable to expect not to panic"),
             )
             .await;
+        let _ = stream.flush().await;
         drop(stream);
         if result.is_err() {
             let error = result.unwrap_err();
@@ -170,25 +168,24 @@ impl ClientRoom {
         if let Ok(value_recv) = value {
             if value_recv {
                 let lock = self.stream.clone();
-                let Ok(_) = lock
-                    .lock()
-                    .await
-                    .write(
+                let mut lock = lock.lock().await;
+                let result = lock
+                    .write_all(
                         &serde_json::to_vec(&ClientRoomNetCommands::LeaveRoom(self.player.clone()))
                             .expect("Reasonable to expect not to panic"),
                     )
-                    .await
-                else {
+                    .await;
+                let _ = lock.flush().await;
+                let Ok(_) = result else {
                     let _ = lock
-                        .lock()
-                        .await
-                        .write(
+                        .write_all(
                             &serde_json::to_vec(&ClientRoomNetCommands::LeaveRoom(
                                 self.player.clone(),
                             ))
                             .expect("Reasonable to expect not to panic"),
                         )
                         .await;
+                    let _ = lock.flush().await;
                     return true;
                 };
                 return true;

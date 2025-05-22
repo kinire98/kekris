@@ -67,7 +67,7 @@ pub fn listen_to_room_requests(
                 }
                 if (socket
                     .0
-                    .write(
+                    .write_all(
                         &serde_json::to_vec(&ServerRoomNetCommands::JoinRoomRequestAccepted(room))
                             .expect("Reasonable to think it won't panic"),
                     )
