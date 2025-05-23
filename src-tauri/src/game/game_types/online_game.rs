@@ -16,8 +16,8 @@ use tokio_stream::{self as stream};
 
 use crate::{
     commands::game_commands::{FIRST_LEVEL_CHANNEL, GAME_CONTROL_CHANNEL, SECOND_LEVEL_CHANNEL},
-    game::{board::danger_level::DangerLevel, pieces::Piece, strategy::Strategy},
-    globals::{DELAY_FOR_COLISIONS, SIZE_FOR_KB},
+    game::{pieces::Piece, strategy::Strategy},
+    globals::SIZE_FOR_KB,
     models::{
         dummy_room::DummyPlayer,
         game_commands::{FirstLevelCommands, SecondLevelCommands},
@@ -27,6 +27,7 @@ use crate::{
             OnlineToRemoteGameCommunication, RemoteToOnlineGameCommunication,
         },
         other_player_state::OtherPlayerState,
+        won_signal::WonSignal,
     },
     room::player::Player,
 };
@@ -39,7 +40,7 @@ use super::{
 };
 
 const STATE_EMIT_OTHER_PLAYERS: &str = "stateEmitForOtherPlayers";
-const OTHER_PLAYER_LOST: &str = "stateEmitForOtherPlayers";
+const OTHER_PLAYER_LOST: &str = "otherPlayerLostEmit";
 const OTHER_PLAYER_WON: &str = "otherPlayerWon";
 
 const GAME_STARTED_EMIT: &str = "gameStartedEmit";
@@ -54,7 +55,6 @@ pub struct OnlineGame {
     game_runnning: bool,
     self_player: DummyPlayer,
     self_player_strategy: Strategy,
-    self_player_danger_level: DangerLevel,
     waiting_for_payback_lines: HashMap<DummyPlayer, u32>,
     danger_levels: DangerTracker,
     app: AppHandle,
@@ -104,8 +104,9 @@ impl OnlineGame {
                 game.start_game().await;
             });
         });
+        even_lines.insert(local_player.clone(), 0);
         tokio::spawn(async move {
-            tokio::time::sleep(Duration::from_millis(delay + DELAY_FOR_COLISIONS)).await;
+            tokio::time::sleep(Duration::from_millis(delay)).await;
             local_game.start_game().await;
         });
         let dummys: Vec<DummyPlayer> = players
@@ -122,8 +123,7 @@ impl OnlineGame {
             game_responses: rx_responses,
             game_runnning: true,
             self_player: local_player,
-            self_player_strategy: Strategy::Even,
-            self_player_danger_level: DangerLevel::Empty,
+            self_player_strategy: Strategy::Random,
             waiting_for_payback_lines: HashMap::new(),
             danger_levels: DangerTracker::new(dummys),
             app,
@@ -195,13 +195,13 @@ impl OnlineGame {
                 self.send_state(self.self_player.clone(), state).await;
             }
             GameResponses::DangerLevel(danger_level) => {
-                self.self_player_danger_level = danger_level;
+                self.danger_levels
+                    .insert(self.self_player.clone(), danger_level);
             }
             GameResponses::Strategy(strategy) => {
                 self.self_player_strategy = strategy;
             }
             GameResponses::TrashSent(lines) => {
-                dbg!(lines);
                 self.trash_received(self.self_player.clone(), self.self_player_strategy, lines)
                     .await;
             }
@@ -220,8 +220,8 @@ impl OnlineGame {
                 self.trash_received(dummy_player, strategy, received).await;
             }
             RemoteToOnlineGameCommunication::BoardState(dummy_player, state) => {
-                self.send_state(dummy_player.clone(), state.clone()).await;
-                self.other_player_state_emit(dummy_player, state);
+                self.other_player_state_emit(dummy_player.clone(), state.clone());
+                self.send_state(dummy_player, state).await;
             }
             RemoteToOnlineGameCommunication::DangerLevel(dummy_player, danger_level) => {
                 self.danger_levels.insert(dummy_player, danger_level);
@@ -231,8 +231,8 @@ impl OnlineGame {
                     .await;
             }
             RemoteToOnlineGameCommunication::Lost(dummy_player) => {
-                self.lost(dummy_player.clone()).await;
                 self.other_player_lost(dummy_player.clone());
+                self.lost(dummy_player.clone()).await;
                 self.lost_checks(dummy_player).await;
             }
             RemoteToOnlineGameCommunication::QueueRequest => {
@@ -313,20 +313,32 @@ impl OnlineGame {
         let player = self
             .even_lines
             .iter()
-            .min_by(|a, b| a.1.cmp(b.1))
+            .min_by(|a, b| {
+                if a.0 == &dummy_player || b.0 == &dummy_player {
+                    1.cmp(&0)
+                } else {
+                    a.1.cmp(b.1)
+                }
+            })
             .map(|(k, _v)| k)
             .cloned()
             .unwrap();
-
-        let _ = self
-            .remote_games
-            .get(&player)
-            .unwrap()
-            .send(OnlineToRemoteGameCommunication::TrashReceived(
-                dummy_player,
-                received,
-            ))
-            .await;
+        if player == self.self_player {
+            let _ = self
+                .tx_commands_second
+                .send(SecondLevelCommands::TrashReceived(received))
+                .await;
+        } else {
+            let _ = self
+                .remote_games
+                .get(&player)
+                .unwrap()
+                .send(OnlineToRemoteGameCommunication::TrashReceived(
+                    dummy_player,
+                    received,
+                ))
+                .await;
+        }
         self.store_lines(player, received);
     }
     async fn payback_lines(&mut self, dummy_player: DummyPlayer, received: u32) {
@@ -345,21 +357,31 @@ impl OnlineGame {
     }
     async fn random_lines(&mut self, dummy_player: DummyPlayer, received: u32) {
         let player_receiving = {
-            let sender = self
-                .remote_games
-                .iter()
-                .nth(rand::rng().random_range(0..self.remote_games.len()))
-                .unwrap();
-            let player_receiving = sender.0;
-            let _ = sender
-                .1
-                .send(OnlineToRemoteGameCommunication::TrashReceived(
-                    dummy_player.clone(),
-                    received,
-                ))
-                .await;
-            player_receiving.clone()
+            let mut range = rand::rng().random_range(0..self.remote_games.len() + 1);
+            if range == self.remote_games.len() && dummy_player != self.self_player {
+                let _ = self
+                    .tx_commands_second
+                    .send(SecondLevelCommands::TrashReceived(received))
+                    .await;
+                self.self_player.clone()
+            } else {
+                if range == self.remote_games.len() {
+                    range -= 1;
+                }
+                let sender = self.remote_games.iter().nth(range).unwrap();
+                let player_receiving = sender.0;
+                let _ = sender
+                    .1
+                    .send(OnlineToRemoteGameCommunication::TrashReceived(
+                        dummy_player.clone(),
+                        received,
+                    ))
+                    .await;
+                player_receiving.clone()
+            }
         };
+        dbg!("from", dummy_player.id());
+        dbg!("to", player_receiving.id());
 
         self.store_lines(player_receiving, received);
     }
@@ -406,7 +428,7 @@ impl OnlineGame {
     }
     async fn lost_checks(&mut self, dummy_player: DummyPlayer) {
         self.players_lost.insert(dummy_player);
-        if self.players_lost.len() == self.players.len() - 1 {
+        if self.players_lost.len() == self.players.len() {
             let winner = self.get_winner();
             if winner == self.self_player {
                 let _ = self.tx_commands_second.send(SecondLevelCommands::Won).await;
@@ -417,25 +439,37 @@ impl OnlineGame {
         }
     }
     fn other_player_won(&self, dummy_player: DummyPlayer) {
-        let _ = self.app.emit(OTHER_PLAYER_WON, dummy_player);
+        let _ = self.app.emit(
+            OTHER_PLAYER_WON,
+            WonSignal {
+                player: dummy_player,
+                is_hosting: true,
+            },
+        );
     }
     fn get_winner(&self) -> DummyPlayer {
-        self.players
+        match self
+            .players
             .iter()
             .map(|player| {
                 let player: DummyPlayer = player.into();
                 player
             })
             .find(|player| !self.players_lost.contains(player))
-            .unwrap()
+        {
+            Some(value) => value,
+            None => self.self_player.clone(),
+        }
     }
     async fn send_winner(&self, winner: DummyPlayer) {
-        let _ = self
-            .remote_games
-            .get(&winner)
-            .unwrap()
-            .send(OnlineToRemoteGameCommunication::Won)
-            .await;
+        match self.remote_games.get(&winner) {
+            Some(channel) => {
+                let _ = channel.send(OnlineToRemoteGameCommunication::Won).await;
+            }
+            None => {
+                let _ = self.tx_commands_second.send(SecondLevelCommands::Won).await;
+            }
+        };
         stream::iter(self.remote_games.values().cloned())
             .for_each_concurrent(self.players.len(), |tx| {
                 let player = winner.clone();

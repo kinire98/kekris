@@ -1,7 +1,6 @@
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 
 use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream,
     sync::{
         Mutex,
@@ -10,7 +9,7 @@ use tokio::{
 };
 
 use crate::{
-    globals::{DELAY_FOR_COLISIONS, SIZE_FOR_KB},
+    helpers::game_net_helpers::{read_enum_from_client, send_enum_from_server},
     models::{
         dummy_room::DummyPlayer,
         online_game_commands::{
@@ -28,9 +27,9 @@ pub struct RemoteGame {
     stream: Arc<Mutex<TcpStream>>,
     receiver: Receiver<OnlineToRemoteGameCommunication>,
     sender: Sender<RemoteToOnlineGameCommunication>,
-    buffer: Vec<u8>,
     player: DummyPlayer,
     most_recent_trash_received: Option<DummyPlayer>,
+    lost: bool,
 }
 impl RemoteGame {
     pub fn new(
@@ -42,28 +41,24 @@ impl RemoteGame {
             stream: player.stream().unwrap(),
             sender,
             receiver,
-            buffer: vec![0; SIZE_FOR_KB],
             player: player.into(),
             most_recent_trash_received: None,
+            lost: false,
         }
     }
 
     pub async fn start_game(&mut self) {
         let lock = self.stream.clone();
-        tokio::time::sleep(Duration::from_millis(DELAY_FOR_COLISIONS)).await;
         loop {
-            let mut socket = lock.lock().await;
             tokio::select! {
                 value = self.receiver.recv() => {
-                    drop(socket);
                     let Some(command) = value else {
                         continue;
                     };
                     self.handle_command(command).await;
                 }
-                content = socket.read(&mut self.buffer) => {
-                    drop(socket);
-                    let Ok(content) = content else {
+                result = read_enum_from_client(&lock) => {
+                    let Ok(content) = result else {
                         continue;
                     };
                     self.handle_network(content).await;
@@ -91,9 +86,9 @@ impl RemoteGame {
                     .await;
                 None
             }
-            OnlineToRemoteGameCommunication::Won => Some(ServerOnlineGameCommands::Won),
+            OnlineToRemoteGameCommunication::Won => Some(ServerOnlineGameCommands::Won(0)),
             OnlineToRemoteGameCommunication::PlayerLost(dummy_player) => {
-                if self.player == dummy_player {
+                if self.lost {
                     None
                 } else {
                     Some(ServerOnlineGameCommands::PlayerLost(dummy_player))
@@ -113,58 +108,27 @@ impl RemoteGame {
         let Some(command) = command else {
             return;
         };
-        let mut socket = self.stream.lock().await;
-        let _ = socket
-            .write_all(&serde_json::to_vec(&command).unwrap())
-            .await;
+        send_enum_from_server(&self.stream, &command).await.unwrap();
     }
-    async fn handle_network(&mut self, content: usize) {
-        let Ok(command) =
-            serde_json::from_slice::<ClientOnlineGameCommands>(&self.buffer[..content])
-        else {
-            return;
-        };
-        match command {
+    async fn handle_network(&mut self, command: ClientOnlineGameCommands) {
+        let message = match command {
             ClientOnlineGameCommands::TrashSent(strategy, amount) => {
-                let _ = self
-                    .sender
-                    .send(RemoteToOnlineGameCommunication::TrashSent(
-                        self.player.clone(),
-                        strategy,
-                        amount,
-                    ))
-                    .await;
+                RemoteToOnlineGameCommunication::TrashSent(self.player.clone(), strategy, amount)
             }
             ClientOnlineGameCommands::BoardState(state) => {
-                let _ = self
-                    .sender
-                    .send(RemoteToOnlineGameCommunication::BoardState(
-                        self.player.clone(),
-                        state,
-                    ))
-                    .await;
+                RemoteToOnlineGameCommunication::BoardState(self.player.clone(), state)
             }
             ClientOnlineGameCommands::DangerLevel(danger_level) => {
-                let _ = self
-                    .sender
-                    .send(RemoteToOnlineGameCommunication::DangerLevel(
-                        self.player.clone(),
-                        danger_level,
-                    ))
-                    .await;
+                RemoteToOnlineGameCommunication::DangerLevel(self.player.clone(), danger_level)
             }
-            ClientOnlineGameCommands::Lost => {
-                let _ = self
-                    .sender
-                    .send(RemoteToOnlineGameCommunication::Lost(self.player.clone()))
-                    .await;
+            ClientOnlineGameCommands::Lost(_) => {
+                self.lost = true;
+                RemoteToOnlineGameCommunication::Lost(self.player.clone())
             }
-            ClientOnlineGameCommands::QueueRequest => {
-                let _ = self
-                    .sender
-                    .send(RemoteToOnlineGameCommunication::QueueRequest)
-                    .await;
+            ClientOnlineGameCommands::QueueRequest(_) => {
+                RemoteToOnlineGameCommunication::QueueRequest
             }
-        }
+        };
+        let _ = self.sender.send(message).await;
     }
 }

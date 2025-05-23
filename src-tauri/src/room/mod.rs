@@ -220,6 +220,7 @@ impl Room {
             self.options.clone(),
             pieces,
         )));
+        tokio::time::sleep(Duration::from_millis(highest_ping)).await;
         let mut online_game = OnlineGame::new(
             self.players.clone(),
             self.cur_game_playing.clone(),

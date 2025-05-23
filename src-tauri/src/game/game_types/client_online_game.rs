@@ -5,7 +5,7 @@ use std::{
 
 use tauri::{AppHandle, Emitter};
 use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
+    io::AsyncWriteExt,
     net::TcpStream,
     sync::mpsc::{self, Receiver, Sender},
 };
@@ -14,6 +14,7 @@ use crate::{
     commands::game_commands::{FIRST_LEVEL_CHANNEL, GAME_CONTROL_CHANNEL, SECOND_LEVEL_CHANNEL},
     game::{pieces::Piece, queue::remote_queue::RemoteQueue, strategy::Strategy},
     globals::SIZE_FOR_KB,
+    helpers::game_net_helpers::{read_enum_from_server, send_enum_from_client},
     models::{
         game_commands::{FirstLevelCommands, SecondLevelCommands},
         game_options::GameOptions,
@@ -22,11 +23,12 @@ use crate::{
             client::ClientOnlineGameCommands, server::ServerOnlineGameCommands,
         },
         other_player_state::OtherPlayerState,
+        won_signal::WonSignal,
     },
 };
 
 const STATE_EMIT_OTHER_PLAYERS: &str = "stateEmitForOtherPlayers";
-const OTHER_PLAYER_LOST: &str = "stateEmitForOtherPlayers";
+const OTHER_PLAYER_LOST: &str = "otherPlayerLostEmit";
 const OTHER_PLAYER_WON: &str = "otherPlayerWon";
 
 use super::local_game::{GameControl, LocalGame};
@@ -36,9 +38,9 @@ pub struct ClientOnlineGame {
     running: bool,
     game_responses: Receiver<GameResponses>,
     tx_commands_second: Sender<SecondLevelCommands>,
+    #[allow(dead_code)]
     needs_pieces: Arc<Mutex<std::sync::mpsc::Receiver<bool>>>,
     app: AppHandle,
-    buffer: Vec<u8>,
     strategy: Strategy,
 }
 
@@ -77,7 +79,6 @@ impl ClientOnlineGame {
             game_responses: rx_responses,
             needs_pieces: Arc::new(Mutex::new(rx_needs_pieces)),
             app,
-            buffer: vec![0; SIZE_FOR_KB],
             strategy: Strategy::Random,
         }
     }
@@ -114,11 +115,9 @@ impl ClientOnlineGame {
     pub async fn start(&mut self) {
         while self.running {
             let socket = self.socket.clone();
-            let mut socket = socket.lock().await;
-            let ref_for_blocking = self.needs_pieces.clone();
+            // let ref_for_blocking = self.needs_pieces.clone();
             tokio::select! {
-                content = socket.read(&mut self.buffer) => {
-                    drop(socket);
+                content = read_enum_from_server(&socket) => {
                     if let Ok(content) = content  {
                         self.handle_network_content(content).await;
                     };
@@ -139,13 +138,8 @@ impl ClientOnlineGame {
             }
         }
     }
-    async fn handle_network_content(&mut self, content: usize) {
-        let Ok(command) =
-            serde_json::from_slice::<ServerOnlineGameCommands>(&self.buffer[..content])
-        else {
-            return;
-        };
-        match command {
+    async fn handle_network_content(&mut self, content: ServerOnlineGameCommands) {
+        match content {
             ServerOnlineGameCommands::TrashSent(amount) => {
                 let _ = self
                     .tx_commands_second
@@ -164,14 +158,20 @@ impl ClientOnlineGame {
                         .await;
                 }
             }
-            ServerOnlineGameCommands::Won => {
+            ServerOnlineGameCommands::Won(_) => {
                 let _ = self.tx_commands_second.send(SecondLevelCommands::Won).await;
             }
             ServerOnlineGameCommands::PlayerLost(dummy_player) => {
                 let _ = self.app.emit(OTHER_PLAYER_LOST, dummy_player);
             }
             ServerOnlineGameCommands::GameEnded(dummy_player) => {
-                let _ = self.app.emit(OTHER_PLAYER_WON, dummy_player);
+                let _ = self.app.emit(
+                    OTHER_PLAYER_WON,
+                    WonSignal {
+                        player: dummy_player,
+                        is_hosting: false,
+                    },
+                );
                 self.running = false;
             }
             ServerOnlineGameCommands::State(dummy_player, state) => {
@@ -198,7 +198,7 @@ impl ClientOnlineGame {
             GameResponses::TrashSent(amount) => {
                 Some(ClientOnlineGameCommands::TrashSent(self.strategy, amount))
             }
-            GameResponses::Lost => Some(ClientOnlineGameCommands::Lost),
+            GameResponses::Lost => Some(ClientOnlineGameCommands::Lost(0)),
             GameResponses::Queue(_pieces) => {
                 panic!("SHOULDN'T BE HERE");
             }
@@ -206,17 +206,13 @@ impl ClientOnlineGame {
         let Some(command) = command else {
             return;
         };
-        let mut socket = self.socket.lock().await;
-        let _ = socket
-            .write_all(&serde_json::to_vec(&command).unwrap())
-            .await;
-        let _ = socket.flush().await;
+        send_enum_from_client(&self.socket, &command).await.unwrap();
     }
     #[allow(dead_code)]
     async fn ask_for_pieces(&mut self) {
         let mut socket = self.socket.lock().await;
         let _ = socket
-            .write_all(&serde_json::to_vec(&ClientOnlineGameCommands::QueueRequest).unwrap())
+            .write_all(&serde_json::to_vec(&ClientOnlineGameCommands::QueueRequest(0)).unwrap())
             .await;
         let _ = socket.flush().await;
     }

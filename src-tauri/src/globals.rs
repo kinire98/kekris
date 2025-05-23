@@ -16,4 +16,3 @@ pub const PING_LIMIT_IN_SECONDS: u64 = 5;
 
 pub const UPDATES_IN_MILLIS: u64 = 500;
 pub const PING_IN_MILLIS: u64 = 300;
-pub const DELAY_FOR_COLISIONS: u64 = 500;

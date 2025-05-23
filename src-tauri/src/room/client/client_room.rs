@@ -5,7 +5,7 @@ use std::{
 
 use tauri::{AppHandle, Emitter};
 use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
+    io::AsyncWriteExt,
     net::TcpStream,
     sync::{
         Mutex,
@@ -15,7 +15,8 @@ use tokio::{
 
 use crate::{
     game::game_types::client_online_game::ClientOnlineGame,
-    globals::{PING_LIMIT_IN_SECONDS, SIZE_FOR_KB},
+    globals::PING_LIMIT_IN_SECONDS,
+    helpers::room_net_helpers::{read_enum_from_server, send_enum_from_client},
     models::{
         dummy_room::DummyPlayer,
         room_commands::{client::ClientRoomNetCommands, server::ServerRoomNetCommands},
@@ -51,27 +52,23 @@ impl ClientRoom {
         }
     }
     pub async fn listen(&mut self) {
-        let mut buffer = vec![0; SIZE_FOR_KB];
         let mut time = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("Time went backwards 🗿🤙")
             .as_secs();
         let lock = self.stream.clone();
         while self.listening {
-            let mut stream = lock.lock().await;
             tokio::select! {
-                content = stream.read(&mut buffer) => {
-                    drop(stream);
+                command = read_enum_from_server(&lock) => {
                     time = SystemTime::now()
                         .duration_since(UNIX_EPOCH)
                         .expect("Time went backwards 🗿🤙")
                         .as_secs();
-                    if let Ok(content) = content {
-                        self.handle_content(content, &buffer).await;
+                    if let Ok(content) = command {
+                        self.handle_content(content).await;
                     }
                 },
                 value = self.stop_channel.recv() => {
-                    drop(stream);
                     let break_loop = self.stop_listening(value).await;
                     if break_loop {
                         break;
@@ -89,56 +86,46 @@ impl ClientRoom {
             }
         }
     }
-    async fn handle_content(&mut self, content: usize, buffer: &[u8]) {
-        if let Ok(command) = serde_json::from_slice::<ServerRoomNetCommands>(&buffer[..content]) {
-            match command {
-                ServerRoomNetCommands::RoomDiscoverResponse(_) => (),
-                ServerRoomNetCommands::JoinRoomRequestAccepted(_) => (),
-                ServerRoomNetCommands::JoinRoomRequestRejected(_) => (),
-                ServerRoomNetCommands::PlayersUpdate(dummy_players) => {
-                    let _ = self.app.emit(PLAYERS_EMIT, dummy_players);
-                }
-                ServerRoomNetCommands::RoomClosed(_) => {
-                    self.app.emit(ROOM_CLOSED_EMIT, false).unwrap();
-                    self.listening = false;
-                }
-                ServerRoomNetCommands::PingRequest(_) => {
-                    self.listening = !self.ping().await;
-                }
-                ServerRoomNetCommands::DisconnectedSignal => {
-                    let _ = self.app.emit(LOST_CONNECTION_EMIT, false);
-                    self.listening = false;
-                }
-                ServerRoomNetCommands::GameStarts((delay, pieces, options, id)) => {
-                    let _ = self.app.emit(GAME_STARTED_EMIT, id);
-                    tokio::time::sleep(Duration::from_millis(delay)).await;
-                    let mut game = ClientOnlineGame::new(
-                        self.stream.clone(),
-                        pieces,
-                        options,
-                        self.app.clone(),
-                        delay,
-                    )
-                    .await;
-                    tokio::spawn(async move {
-                        game.start().await;
-                    });
-                    self.listening = false;
-                }
+    async fn handle_content(&mut self, content: ServerRoomNetCommands) {
+        match content {
+            ServerRoomNetCommands::RoomDiscoverResponse(_) => (),
+            ServerRoomNetCommands::JoinRoomRequestAccepted(_) => (),
+            ServerRoomNetCommands::JoinRoomRequestRejected(_) => (),
+            ServerRoomNetCommands::PlayersUpdate(dummy_players) => {
+                let _ = self.app.emit(PLAYERS_EMIT, dummy_players);
+            }
+            ServerRoomNetCommands::RoomClosed(_) => {
+                self.app.emit(ROOM_CLOSED_EMIT, false).unwrap();
+                self.listening = false;
+            }
+            ServerRoomNetCommands::PingRequest(_) => {
+                self.listening = !self.ping().await;
+            }
+            ServerRoomNetCommands::DisconnectedSignal => {
+                let _ = self.app.emit(LOST_CONNECTION_EMIT, false);
+                self.listening = false;
+            }
+            ServerRoomNetCommands::GameStarts((delay, pieces, options, id)) => {
+                let _ = self.app.emit(GAME_STARTED_EMIT, id);
+                tokio::time::sleep(Duration::from_millis(delay)).await;
+                let mut game = ClientOnlineGame::new(
+                    self.stream.clone(),
+                    pieces,
+                    options,
+                    self.app.clone(),
+                    delay,
+                )
+                .await;
+                tokio::spawn(async move {
+                    game.start().await;
+                });
+                self.listening = false;
             }
         }
     }
     async fn ping(&mut self) -> bool {
         let lock = self.stream.clone();
-        let mut stream = lock.lock().await;
-        let result = stream
-            .write_all(
-                &serde_json::to_vec(&ClientRoomNetCommands::PingResponse)
-                    .expect("Reasonable to expect not to panic"),
-            )
-            .await;
-        let _ = stream.flush().await;
-        drop(stream);
+        let result = send_enum_from_client(&lock, &ClientRoomNetCommands::PingResponse).await;
         if result.is_err() {
             let error = result.unwrap_err();
             match error.kind() {

@@ -6,7 +6,7 @@ use crate::{game::pieces::Piece, models::dummy_room::DummyPlayer};
 pub enum ServerOnlineGameCommands {
     TrashSent(u32),
     Queue(Vec<Piece>),
-    Won,
+    Won(u8),
     PlayerLost(DummyPlayer),
     GameEnded(DummyPlayer),
     State(DummyPlayer, String),

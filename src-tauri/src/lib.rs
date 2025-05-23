@@ -4,6 +4,7 @@ use tauri::Manager;
 mod commands;
 pub mod game;
 pub mod globals;
+pub mod helpers;
 mod init_trace;
 pub mod models;
 pub mod persistence;
