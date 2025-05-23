@@ -378,6 +378,7 @@ impl LocalGame {
                         .unwrap();
                 }
                 SecondLevelCommands::Won => {
+                    dbg!("i win");
                     self.game_won_emit();
                     self.run = false;
                 }

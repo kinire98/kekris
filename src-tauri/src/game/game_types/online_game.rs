@@ -60,6 +60,7 @@ pub struct OnlineGame {
     app: AppHandle,
     players_lost: HashSet<DummyPlayer>,
     even_lines: HashMap<DummyPlayer, u32>,
+    self_lost: bool,
 }
 impl OnlineGame {
     pub async fn new(
@@ -129,6 +130,7 @@ impl OnlineGame {
             app,
             players_lost: HashSet::new(),
             even_lines,
+            self_lost: false,
         }
     }
     async fn set_channels(
@@ -206,6 +208,7 @@ impl OnlineGame {
                     .await;
             }
             GameResponses::Lost => {
+                self.self_lost = true;
                 self.lost(self.self_player.clone()).await;
                 self.lost_checks(self.self_player.clone()).await;
             }
@@ -231,6 +234,7 @@ impl OnlineGame {
                     .await;
             }
             RemoteToOnlineGameCommunication::Lost(dummy_player) => {
+                dbg!("player lost");
                 self.other_player_lost(dummy_player.clone());
                 self.lost(dummy_player.clone()).await;
                 self.lost_checks(dummy_player).await;
@@ -284,12 +288,97 @@ impl OnlineGame {
         strategy: Strategy,
         received: u32,
     ) {
+        if self.players.len() == 1 {
+            if dummy_player == self.self_player {
+                let _ = self
+                    .remote_games
+                    .iter()
+                    .nth(0)
+                    .unwrap()
+                    .1
+                    .send(OnlineToRemoteGameCommunication::TrashReceived(
+                        dummy_player,
+                        received,
+                    ))
+                    .await;
+            } else {
+                let _ = self
+                    .tx_commands_second
+                    .send(SecondLevelCommands::TrashReceived(received))
+                    .await;
+            }
+            return;
+        }
+        if self.players_lost.len() == self.players.len() - 1 && !self.self_lost {
+            if dummy_player == self.self_player {
+                let _ = self
+                    .remote_games
+                    .get(&self.get_remaining_player())
+                    .unwrap()
+                    .send(OnlineToRemoteGameCommunication::TrashReceived(
+                        dummy_player,
+                        received,
+                    ))
+                    .await;
+            } else {
+                let _ = self
+                    .tx_commands_second
+                    .send(SecondLevelCommands::TrashReceived(received))
+                    .await;
+            }
+            return;
+        }
+        if self.players_lost.len() == self.players.len() - 1 && self.self_lost {
+            let remaining = self.get_remaining_remote_players();
+            if dummy_player == remaining[0] {
+                let _ = self
+                    .remote_games
+                    .get(&remaining[1])
+                    .unwrap()
+                    .send(OnlineToRemoteGameCommunication::TrashReceived(
+                        dummy_player,
+                        received,
+                    ))
+                    .await;
+            } else {
+                let _ = self
+                    .remote_games
+                    .get(&remaining[0])
+                    .unwrap()
+                    .send(OnlineToRemoteGameCommunication::TrashReceived(
+                        dummy_player,
+                        received,
+                    ))
+                    .await;
+            }
+            return;
+        }
         match strategy {
             Strategy::Elimination => self.elimination_lines(dummy_player, received).await,
             Strategy::Even => self.even_lines(dummy_player, received).await,
             Strategy::PayBack => self.payback_lines(dummy_player, received).await,
             Strategy::Random => self.random_lines(dummy_player, received).await,
         }
+    }
+    fn get_remaining_player(&self) -> DummyPlayer {
+        self.players
+            .iter()
+            .map(|player| {
+                let player: DummyPlayer = player.into();
+                player
+            })
+            .find(|player| !self.players_lost.contains(player))
+            .unwrap()
+    }
+    fn get_remaining_remote_players(&self) -> Vec<DummyPlayer> {
+        self.players
+            .iter()
+            .map(|player| {
+                let player: DummyPlayer = player.into();
+                player
+            })
+            .filter(|player| !self.players_lost.contains(player))
+            .collect()
     }
     async fn elimination_lines(&mut self, dummy_player: DummyPlayer, received: u32) {
         let more_endangered_players = self.danger_levels.get_highest();
@@ -298,6 +387,10 @@ impl OnlineGame {
             .nth(rand::rng().random_range(0..more_endangered_players.len()))
             .cloned()
             .unwrap();
+        if random_endangered_player == dummy_player {
+            self.random_lines(dummy_player, received).await;
+            return;
+        }
         let _ = self
             .remote_games
             .get(&random_endangered_player)
@@ -314,7 +407,7 @@ impl OnlineGame {
             .even_lines
             .iter()
             .min_by(|a, b| {
-                if a.0 == &dummy_player || b.0 == &dummy_player {
+                if a.0 == &dummy_player {
                     1.cmp(&0)
                 } else {
                     a.1.cmp(b.1)
@@ -368,7 +461,14 @@ impl OnlineGame {
                 if range == self.remote_games.len() {
                     range -= 1;
                 }
-                let sender = self.remote_games.iter().nth(range).unwrap();
+                let mut sender = self.remote_games.iter().nth(range).unwrap();
+                while sender.0 == &dummy_player {
+                    sender = self
+                        .remote_games
+                        .iter()
+                        .nth(rand::rng().random_range(0..self.remote_games.len()))
+                        .unwrap();
+                }
                 let player_receiving = sender.0;
                 let _ = sender
                     .1
@@ -380,8 +480,6 @@ impl OnlineGame {
                 player_receiving.clone()
             }
         };
-        dbg!("from", dummy_player.id());
-        dbg!("to", player_receiving.id());
 
         self.store_lines(player_receiving, received);
     }
@@ -427,12 +525,11 @@ impl OnlineGame {
         let _ = self.app.emit(OTHER_PLAYER_LOST, dummy_player);
     }
     async fn lost_checks(&mut self, dummy_player: DummyPlayer) {
+        dbg!("a player has lost");
         self.players_lost.insert(dummy_player);
         if self.players_lost.len() == self.players.len() {
             let winner = self.get_winner();
-            if winner == self.self_player {
-                let _ = self.tx_commands_second.send(SecondLevelCommands::Won).await;
-            } else {
+            if winner != self.self_player {
                 self.other_player_won(winner.clone());
             }
             self.send_winner(winner).await;
@@ -457,8 +554,14 @@ impl OnlineGame {
             })
             .find(|player| !self.players_lost.contains(player))
         {
-            Some(value) => value,
-            None => self.self_player.clone(),
+            Some(value) => {
+                dbg!("other player");
+                value
+            }
+            None => {
+                dbg!("self player");
+                self.self_player.clone()
+            }
         }
     }
     async fn send_winner(&self, winner: DummyPlayer) {
