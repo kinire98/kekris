@@ -27,6 +27,7 @@ pub struct RoomPlayerListener {
     ping: u64,
     time_last_ping: u64,
     playing: Arc<Mutex<bool>>,
+    played: bool,
 }
 impl RoomPlayerListener {
     pub fn new(
@@ -45,6 +46,7 @@ impl RoomPlayerListener {
             ping: 0,
             time_last_ping: 0,
             playing,
+            played: false,
         }
     }
 
@@ -94,6 +96,7 @@ impl RoomPlayerListener {
                 drop(lock);
                 tokio::time::sleep(Duration::from_millis(300)).await;
                 self.check_ping = false;
+                self.played = true;
             }
         }
     }
@@ -202,7 +205,9 @@ impl RoomPlayerListener {
                     send_enum_from_server(socket, &ServerRoomNetCommands::PingRequest(playing))
                         .await;
                 if result.is_ok() {
-                    dbg!("ping sent");
+                    if self.played {
+                        dbg!("ping sent");
+                    }
                     self.check_ping = true;
                     self.time_last_ping = SystemTime::now()
                         .duration_since(UNIX_EPOCH)

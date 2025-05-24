@@ -42,6 +42,7 @@ pub struct Room {
     player_info: Arc<Mutex<u8>>,
     cur_game_playing: Arc<Mutex<bool>>,
     options: GameOptions,
+    played: bool,
 }
 
 impl Room {
@@ -73,6 +74,7 @@ impl Room {
             player_info: players_info.clone(),
             cur_game_playing: Arc::new(Mutex::new(false)),
             options: GameOptions::default(),
+            played: false,
         };
         listen_to_request(
             (&info).into(),
@@ -112,11 +114,14 @@ impl Room {
                             },
                             FirstLevelCommands::GameStarts => {
                                 self.start_game().await;
+                                self.played = true;
                             }
                         }
                     },
                     _ = tokio::time::sleep(Duration::from_millis(PING_IN_MILLIS)) => {
-                        dbg!("send ping");
+                        if self.played {
+                            dbg!("send ping");
+                        }
                         let playing = self.cur_game_playing.lock().await;
                         let result = self.send_updates.send(Updates::SendPing(*playing));
                         if result.is_err() {
@@ -224,7 +229,7 @@ impl Room {
             let _ = queue.get_piece(i);
         }
         let pieces = queue.get_pieces();
-        self.options.multi_player(self.players.len() as u8);
+        self.options.multi_player((self.players.len() + 1) as u8);
         let _ = self.send_updates.send(Updates::GameStarts((
             highest_ping,
             self.options.clone(),
