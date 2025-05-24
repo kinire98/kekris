@@ -9,6 +9,7 @@ export type RoomInfo = {
 export type Visibility = "LocalNetwork" | "Internet";
 
 export type Player = {
+    id: number;
     name: string;
     ip: string;
     games_won: number;
@@ -24,3 +25,12 @@ export type Room = {
     limit_of_players: number;
     games_played: number;
 };
+export type OtherPlayerState = {
+    player: Player;
+    state: string;
+};
+export type WonSignal = {
+    player: Player;
+    is_hosting: boolean;
+};
+

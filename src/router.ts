@@ -35,7 +35,9 @@ const routes = [
     { path: '/local', component: Local },
     { path: '/host', component: Room },
     { path: '/join', component: Room },
-    { path: '/mutliplayer-board', component: MultiplayerBoard },
+    { path: '/rehost', component: Room },
+    { path: '/rejoin', component: Room },
+    { path: '/mutliplayer-board/:players/:id', component: MultiplayerBoard },
 ]
 
 export const router = createRouter({

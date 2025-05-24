@@ -127,6 +127,7 @@ impl Room {
             }
         }
     }
+
     pub fn players(&self) -> &[Player] {
         &self.players
     }
@@ -159,7 +160,7 @@ impl Room {
         players.push(self.local_player.clone());
         let _ = self.send_updates.send(Updates::PlayersUpdate(players));
     }
-    fn close_room(&mut self) {
+    fn close_room(&self) {
         let _ = self.send_updates.send(Updates::RoomEnded).unwrap();
     }
     async fn player_connected(

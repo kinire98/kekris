@@ -83,6 +83,7 @@ async function join(room: RoomInfo) {
     playing: false,
     last_time: 0,
     ping: 0,
+    id: 0,
   };
   await invoke("join_room", {
     room: room,

@@ -119,7 +119,6 @@ impl ClientRoom {
                 tokio::spawn(async move {
                     game.start().await;
                 });
-                self.listening = false;
             }
         }
     }

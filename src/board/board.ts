@@ -1,3 +1,4 @@
+
 import { listen } from "@tauri-apps/api/event";
 import {
   getBorderColor, getIPieceColor, getIPieceDarkColor, getJPieceColor,
@@ -10,12 +11,14 @@ import {
 } from "./colors";
 import { invoke } from "@tauri-apps/api/core";
 import type { GameOptions } from "../types/GameOptions";
-import { gameWonEffect, lineClearedEffect, lostEffect, pieceFixedEffect } from "./effects";
+import { lineClearedEffect, lostEffect, pieceFixedEffect } from "./effects";
 import type { ClearLinePattern } from "../types/ClearLinePattern";
 import { removeInputListeners } from "../controls/keyboard";
 import { UnlistenFn } from "@tauri-apps/api/event";
 import { Piece } from "../types/Piece";
 import { router } from "../router";
+import { todo } from "node:test";
+import { OtherPlayerState, Player, WonSignal } from "../types/Room";
 
 const canvasHeight = 760;
 const canvasWidth = 380;
@@ -24,8 +27,8 @@ const columnNumber = 10;
 const rowNumber = 20;
 
 const spacing = 38;
-const pieceWidth = 38;
-const pieceHeight = 38;
+const pieceWidth = canvasWidth / 10;
+const pieceHeight = canvasHeight / 20;
 
 
 const boardSize = columnNumber * rowNumber;
@@ -38,7 +41,12 @@ const gameWonEmit = "game_won";
 const lineClearedInfoEmit = "line_cleared_info";
 const timeEmit = "time_emit";
 
+const stateEmitForOtherPlayers = "stateEmitForOtherPlayers";
+const otherPlayerLostEmit = "otherPlayerLostEmit";
+const otherPlayerWonEmit = "otherPlayerWon";
+
 const unlisteners: UnlistenFn[] = [];
+const multiplayerUnlisteners: UnlistenFn[] = [];
 // E -> Empty
 // C -> Clear
 // G -> Ghost
@@ -61,9 +69,15 @@ export default function startDraw(canvas: HTMLCanvasElement, secondCanvas: HTMLC
   bufferCanvas = secondCanvas;
   drawLines(ctx);
   startBoardChangeEventListener();
-  invoke("start_game", {
-    options: options
-  });
+  if (options.number_of_players == 1) {
+    invoke("start_game", {
+      options: options
+    });
+  } else {
+    boards();
+    otherPlayerLost();
+    otherPlayerWon();
+  }
   gameLost();
   lineCleared();
   pieceFixedEvent();
@@ -72,8 +86,10 @@ export default function startDraw(canvas: HTMLCanvasElement, secondCanvas: HTMLC
   } else {
     pointsInfo();
   }
-  if (!options.normal) {
+  if (!options.normal || options.number_of_players > 1) {
     gameWon();
+  }
+  if (!options.normal) {
     timer();
   }
 }
@@ -235,13 +251,15 @@ async function gameLost() {
   unlisteners.push(await listen(gameOverEmit, (e) => {
     lostEffect();
 
-    setTimeout(() => {
-      if (e.payload == true) {
-        router.push("/again");
-      } else {
-        router.push("/stats");
-      }
-    }, 1500);
+    if (currentGameOptions.number_of_players == 1) {
+      setTimeout(() => {
+        if (e.payload == true) {
+          router.push("/again");
+        } else {
+          router.push("/stats");
+        }
+      }, 1500);
+    }
     removeInputListeners();
     unlisteners.forEach(el => {
       el()
@@ -264,15 +282,20 @@ async function pieceFixedEvent() {
 
 async function gameWon() {
   unlisteners.push(await listen(gameWonEmit, () => {
-    gameWonEffect();
-    setTimeout(() => {
-      router.push("/stats");
-    }, 1500);
+    const $board = document.getElementById("wrap")! as HTMLElement;
+    $board.classList.add("won");
+    if (currentGameOptions.number_of_players == 1) {
+      setTimeout(() => {
+        router.push("/stats");
+      }, 1500);
+    }
     removeInputListeners();
     unlisteners.forEach(el => {
       el()
     });
     unlisteners.length = 0;
+    multiplayerUnlisteners.forEach(el => el());
+    multiplayerUnlisteners.length = 0;
   }));
 }
 
@@ -294,3 +317,86 @@ async function timer() {
     $points.innerText = e.payload as string;
   }));
 }
+
+async function boards() {
+  multiplayerUnlisteners.push(await listen(stateEmitForOtherPlayers, (e) => {
+    let player = e.payload as OtherPlayerState;
+    let state = player.state.substring(200, 400);
+    let board = document.getElementById("board-player-" + player.player.id)! as HTMLCanvasElement;
+    drawMultiplayer(state, board.getContext("2d")!, false, board.width, board.height);
+  }))
+}
+
+async function otherPlayerLost() {
+  multiplayerUnlisteners.push(await listen(otherPlayerLostEmit, (e) => {
+    let player = e.payload as Player;
+    let board = document.getElementById("board-player-" + player.id) as HTMLCanvasElement;
+    console.log("lost: board-player-" + player.id);
+    if (board != null) {
+      board.style.transform = "rotate(-15deg)";
+      board.style.animation = "drop_board 1.5s ease-in forwards";
+    }
+  }))
+}
+async function otherPlayerWon() {
+  console.log("event added");
+  multiplayerUnlisteners.push(await listen(otherPlayerWonEmit, (e) => {
+    let player = e.payload as WonSignal;
+    console.log("won: board-player-" + player.player.id);
+    unlisteners.forEach(el => {
+      el()
+    });
+    unlisteners.length = 0;
+    multiplayerUnlisteners.forEach(el => el());
+    let board = document.getElementById("board-player-" + player.player.id) as HTMLCanvasElement;
+    console.log(board);
+    if (board != null) {
+      board.classList.add("won");
+    } else {
+      const $board = document.getElementById("wrap")! as HTMLElement;
+      $board.classList.add("won");
+    }
+    if (player.is_hosting) {
+      setTimeout(() => {
+        router.push("/rehost");
+      }, 1500);
+    } else {
+      setTimeout(() => {
+        router.push("/rejoin");
+      }, 1500);
+    }
+
+  }));
+}
+
+function drawMultiplayer(board: string, ctx: CanvasRenderingContext2D, drawLDivisories: boolean, width: number, height: number) {
+  clearCanvas(ctx);
+  if (drawLDivisories) {
+    drawLines(ctx);
+  }
+  let pieceWidth = width / 10;
+  let pieceHeight = height / 20;
+  for (let i = boardSize - 1; i > -1; i--) {
+    const piece: Piece = board[i]! as Piece;
+    if (piece == Piece.Empty)
+      continue;
+    const y = Math.floor(i / columnNumber);
+    const x = i % columnNumber;
+
+    if (piece == Piece.Ghost) {
+      continue;
+    }
+
+    let color;
+    if (piece == Piece.Trash) {
+      color = trashColor();
+    } else {
+      color = getColor(piece) != "transparent" ? getColor(piece) : getDarkColor(piece)
+    }
+
+    ctx.fillStyle = color;
+    ctx.fillRect(pieceWidth * x, pieceHeight * y, pieceWidth, pieceHeight);
+
+  }
+}
+
