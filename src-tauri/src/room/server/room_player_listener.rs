@@ -176,7 +176,6 @@ impl RoomPlayerListener {
         }
     }
     async fn handle_updates(&mut self, update: Updates, socket: &Arc<Mutex<TcpStream>>) -> bool {
-        dbg!("send update");
         match update {
             Updates::PlayersUpdate(players) => {
                 let players: Vec<DummyPlayer> =
@@ -203,6 +202,7 @@ impl RoomPlayerListener {
                     send_enum_from_server(socket, &ServerRoomNetCommands::PingRequest(playing))
                         .await;
                 if result.is_ok() {
+                    dbg!("ping sent");
                     self.check_ping = true;
                     self.time_last_ping = SystemTime::now()
                         .duration_since(UNIX_EPOCH)
