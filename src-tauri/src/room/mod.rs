@@ -87,43 +87,51 @@ impl Room {
         self.players_emit();
         let now = Instant::now();
         loop {
-            tokio::select! {
-                _ = self.close_room.recv() => {
-                    self.close_room();
-                    break;
-                },
-                result = self.receive_commands.recv() => {
-                    let Some(command) = result else {
-                        continue;
-                    };
-                    match command {
-                        FirstLevelCommands::FatalFail => todo!(),
-                        FirstLevelCommands::PlayerConnected(player_info) => {
-                            self.player_connected(player_info).await;
+            let lock = self.cur_game_playing.lock().await;
+            if !*lock {
+                drop(lock);
+                tokio::select! {
+                    _ = self.close_room.recv() => {
+                        self.close_room();
+                        break;
+                    },
+                    result = self.receive_commands.recv() => {
+                        let Some(command) = result else {
+                            continue;
+                        };
+                        match command {
+                            FirstLevelCommands::FatalFail => todo!(),
+                            FirstLevelCommands::PlayerConnected(player_info) => {
+                                self.player_connected(player_info).await;
+                            }
+                            FirstLevelCommands::PlayerDisconnected(dummy_player) => {
+                                self.player_disconnected(dummy_player).await;
+                            },
+                            FirstLevelCommands::PingReceived((dummy_player, ping)) => {
+                                self.ping_received(dummy_player, ping).await;
+                            },
+                            FirstLevelCommands::GameStarts => {
+                                self.start_game().await;
+                            }
                         }
-                        FirstLevelCommands::PlayerDisconnected(dummy_player) => {
-                            self.player_disconnected(dummy_player).await;
-                        },
-                        FirstLevelCommands::PingReceived((dummy_player, ping)) => {
-                            self.ping_received(dummy_player, ping).await;
-                        },
-                        FirstLevelCommands::GameStarts => {
-                            self.start_game().await;
+                    },
+                    _ = tokio::time::sleep(Duration::from_millis(PING_IN_MILLIS)) => {
+                        dbg!("send ping");
+                        let playing = self.cur_game_playing.lock().await;
+                        let result = self.send_updates.send(Updates::SendPing(*playing));
+                        if result.is_err() {
+                            let _ = self.send_updates.send(Updates::SendPing(*playing));
                         }
+                        self.players_emit();
                     }
-                },
-                _ = tokio::time::sleep(Duration::from_millis(PING_IN_MILLIS)) => {
-                    let playing = self.cur_game_playing.lock().await;
-                    let result = self.send_updates.send(Updates::SendPing(*playing));
-                    if result.is_err() {
-                        let _ = self.send_updates.send(Updates::SendPing(*playing));
-                    }
-                    self.players_emit();
                 }
-            }
-            tokio::time::sleep(Duration::from_millis(PING_IN_MILLIS)).await;
-            if now.elapsed() > Duration::from_millis(UPDATES_IN_MILLIS) {
-                self.players_update();
+                tokio::time::sleep(Duration::from_millis(PING_IN_MILLIS)).await;
+                if now.elapsed() > Duration::from_millis(UPDATES_IN_MILLIS) {
+                    self.players_update();
+                }
+            } else {
+                drop(lock);
+                tokio::time::sleep(Duration::from_millis(300)).await;
             }
         }
     }

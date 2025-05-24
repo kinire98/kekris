@@ -72,7 +72,6 @@ impl RoomPlayerListener {
                         break;
                     }
                 }
-                dbg!("listening to clients in room");
                 tokio::select! {
                     value = read_enum_from_client(&lock) => {
                         let Ok(content) = value else {
@@ -94,7 +93,7 @@ impl RoomPlayerListener {
             } else {
                 drop(lock);
                 tokio::time::sleep(Duration::from_millis(300)).await;
-                self.check_ping = false;
+                self.check_ping = true;
             }
         }
     }
