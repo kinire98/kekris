@@ -7,6 +7,7 @@ use tokio::{
     sync::mpsc::{self, Receiver, Sender},
 };
 
+use crate::commands::room_commands::client::join_room;
 use crate::{
     commands::game_commands::{FIRST_LEVEL_CHANNEL, GAME_CONTROL_CHANNEL, SECOND_LEVEL_CHANNEL},
     game::{pieces::Piece, queue::remote_queue::RemoteQueue, strategy::Strategy},
