@@ -30,12 +30,13 @@
           />
         </div>
       </div>
-      <div id="room-controls" v-if="name == 'host'">
+      <div id="room-controls" v-if="name == 'host' || name == 'rehost'">
         <Button
           :label="$t('ui.multiplayer.room.play')"
           variant="outlined"
           id="play"
           @click="startGame"
+          :disabled="players.length < 2"
         />
       </div>
     </div>
@@ -107,10 +108,11 @@
 #player-list {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: start;
   flex-direction: column;
-  height: 80%;
+  height: 60%;
   width: 100%;
+  overflow-y: scroll;
 }
 #room-controls {
   display: flex;
@@ -204,7 +206,7 @@ if (name == "host") {
     playerName: getUsername()!,
   })) as Room;
   players.value = room.players;
-} else {
+} else if (name == "join") {
   let tmpRoom = (await invoke("room_info")) as Room | null;
   if (tmpRoom == null) {
     router.back();
@@ -219,6 +221,10 @@ if (name == "host") {
     room = tmpRoom!;
     roomName = room.name;
   }
+} else if (name == "rehost") {
+  console.log("rehost");
+} else if (name == "rejoin") {
+  console.log("rejoin");
 }
 listen(playersEmit, (e) => {
   players.value = e.payload as Player[];
@@ -229,8 +235,9 @@ listen(roomClosedEmit, () => {
 listen(lostConnectionEmit, () => {
   visiblePopUpConnection.value = true;
 });
-listen(gameStartedEmit, () => {
-  router.push("/mutliplayer-board");
+listen(gameStartedEmit, (e) => {
+  let id = e.payload as number;
+  router.push(`/mutliplayer-board/${players.value.length}/${id}`);
 });
 function leaveRoom() {
   if (name == "host") {
