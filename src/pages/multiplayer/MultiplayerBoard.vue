@@ -28,15 +28,7 @@
                     : $t("board.lines")
                 }}
               </p>
-              <p id="write-lines">
-                {{
-                  $route.path.substring(1) === "classic"
-                    ? "0/5"
-                    : $route.path.substring(1) === "lines"
-                    ? "0/40"
-                    : "0"
-                }}
-              </p>
+              <p id="write-lines">0/5</p>
             </div>
           </div>
         </div>
