@@ -46,7 +46,7 @@ pub fn listen_to_request(
                         return;
                     };
                     addr.set_port(LISTENING_RESPONSE_PORT_BROADCAST);
-                    if let ClientRoomNetCommands::RoomDiscover = net_command {
+                    if let ClientRoomNetCommands::RoomDiscover(_) = net_command {
                         let _ = socket
                             .send_to(
                                 &serde_json::to_vec(&ServerRoomNetCommands::RoomDiscoverResponse(

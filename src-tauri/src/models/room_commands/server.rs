@@ -16,7 +16,7 @@ pub enum ServerRoomNetCommands {
     PlayersUpdate(Vec<DummyPlayer>),
     RoomClosed(CloseReason),
     PingRequest(bool),
-    DisconnectedSignal,
+    DisconnectedSignal(bool),
     GameStarts((u64, Vec<Piece>, GameOptions, u16)),
 }
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]

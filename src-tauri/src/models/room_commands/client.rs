@@ -5,8 +5,8 @@ use crate::models::dummy_room::DummyPlayer;
 /// Commands send by the client
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ClientRoomNetCommands {
-    RoomDiscover,
+    RoomDiscover(bool),
     JoinRoomRequest(DummyPlayer),
     LeaveRoom(DummyPlayer),
-    PingResponse,
+    PingResponse(bool),
 }

@@ -30,7 +30,7 @@ pub async fn listen_to_rooms(app: AppHandle, mut channel: tokio::sync::mpsc::Rec
         let addr: SocketAddr = SENDING_BROADCAST.parse().unwrap();
         send_socket
             .send_to(
-                &serde_json::to_vec(&ClientRoomNetCommands::RoomDiscover).unwrap(),
+                &serde_json::to_vec(&ClientRoomNetCommands::RoomDiscover(false)).unwrap(),
                 addr,
             )
             .await

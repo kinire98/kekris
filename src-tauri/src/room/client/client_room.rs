@@ -35,6 +35,7 @@ pub struct ClientRoom {
     player: DummyPlayer,
     listening: bool,
     playing: Arc<Mutex<bool>>,
+    played: bool,
 }
 
 impl ClientRoom {
@@ -51,6 +52,7 @@ impl ClientRoom {
             player,
             listening: true,
             playing: Arc::new(Mutex::new(false)),
+            played: false,
         }
     }
     pub async fn listen(&mut self) {
@@ -58,12 +60,19 @@ impl ClientRoom {
             .duration_since(UNIX_EPOCH)
             .expect("Time went backwards 🗿🤙")
             .as_secs();
+        let mut i = 0;
         let lock = self.stream.clone();
         while self.listening {
             let lock_loop = self.playing.lock().await;
+            if self.played {
+                i += 1;
+                dbg!(i);
+            }
             if !*lock_loop {
                 drop(lock_loop);
-                dbg!("listening update");
+                if self.played {
+                    dbg!("listening update");
+                }
                 tokio::select! {
                     command = read_enum_from_server(&lock) => {
                         time = SystemTime::now()
@@ -72,6 +81,8 @@ impl ClientRoom {
                             .as_secs();
                         if let Ok(content) = command {
                             self.handle_content(content).await;
+                        } else {
+                            dbg!(&command);
                         }
                     },
                     value = self.stop_channel.recv() => {
@@ -80,7 +91,10 @@ impl ClientRoom {
                             break;
                         }
                     },
-                    _ = tokio::time::sleep(Duration::from_secs(PING_LIMIT_IN_SECONDS)) => {}
+                    _ = tokio::time::sleep(Duration::from_secs(1)) => {}
+                }
+                if self.played {
+                    dbg!("here");
                 }
                 let cur_time = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
@@ -91,13 +105,17 @@ impl ClientRoom {
                     break;
                 }
             } else {
+                self.played = true;
                 drop(lock_loop);
                 tokio::time::sleep(Duration::from_millis(300)).await;
+                time = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .expect("Time went backwards 🗿🤙")
+                    .as_secs()
             }
         }
     }
     async fn handle_content(&mut self, content: ServerRoomNetCommands) {
-        println!("{:?}", &content);
         match content {
             ServerRoomNetCommands::RoomDiscoverResponse(_) => (),
             ServerRoomNetCommands::JoinRoomRequestAccepted(_) => (),
@@ -112,7 +130,7 @@ impl ClientRoom {
             ServerRoomNetCommands::PingRequest(_) => {
                 self.listening = !self.ping().await;
             }
-            ServerRoomNetCommands::DisconnectedSignal => {
+            ServerRoomNetCommands::DisconnectedSignal(_) => {
                 let _ = self.app.emit(LOST_CONNECTION_EMIT, false);
                 self.listening = false;
             }
@@ -137,7 +155,8 @@ impl ClientRoom {
     }
     async fn ping(&mut self) -> bool {
         let lock = self.stream.clone();
-        let result = send_enum_from_client(&lock, &ClientRoomNetCommands::PingResponse).await;
+        let result =
+            send_enum_from_client(&lock, &ClientRoomNetCommands::PingResponse(false)).await;
         if result.is_err() {
             let error = result.unwrap_err();
             match error.kind() {

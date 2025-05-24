@@ -27,7 +27,6 @@ pub struct RoomPlayerListener {
     ping: u64,
     time_last_ping: u64,
     playing: Arc<Mutex<bool>>,
-    played: bool,
 }
 impl RoomPlayerListener {
     pub fn new(
@@ -46,7 +45,6 @@ impl RoomPlayerListener {
             ping: 0,
             time_last_ping: 0,
             playing,
-            played: false,
         }
     }
 
@@ -68,7 +66,7 @@ impl RoomPlayerListener {
                             .await;
                         let _ = send_enum_from_server(
                             &lock,
-                            &ServerRoomNetCommands::DisconnectedSignal,
+                            &ServerRoomNetCommands::DisconnectedSignal(false),
                         )
                         .await;
                         break;
@@ -96,13 +94,12 @@ impl RoomPlayerListener {
                 drop(lock);
                 tokio::time::sleep(Duration::from_millis(300)).await;
                 self.check_ping = false;
-                self.played = true;
             }
         }
     }
     async fn handle_client(&mut self, content: ClientRoomNetCommands) -> bool {
         match content {
-            ClientRoomNetCommands::RoomDiscover => (),
+            ClientRoomNetCommands::RoomDiscover(_) => (),
             ClientRoomNetCommands::JoinRoomRequest(_) => (),
             ClientRoomNetCommands::LeaveRoom(dummy_player) => {
                 let _ = self
@@ -111,7 +108,7 @@ impl RoomPlayerListener {
                     .await;
                 return true;
             }
-            ClientRoomNetCommands::PingResponse => {
+            ClientRoomNetCommands::PingResponse(_) => {
                 self.check_ping = false;
                 let cur_time = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
@@ -205,9 +202,6 @@ impl RoomPlayerListener {
                     send_enum_from_server(socket, &ServerRoomNetCommands::PingRequest(playing))
                         .await;
                 if result.is_ok() {
-                    if self.played {
-                        dbg!("ping sent");
-                    }
                     self.check_ping = true;
                     self.time_last_ping = SystemTime::now()
                         .duration_since(UNIX_EPOCH)
