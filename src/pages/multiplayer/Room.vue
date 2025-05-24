@@ -214,7 +214,7 @@ if (name == "host") {
       players: [],
       name: "",
       visibility: "LocalNetwork",
-      limit_of_players: 0,
+      limit_of_players: 15,
       games_played: 0,
     };
   } else {
@@ -227,7 +227,7 @@ if (name == "host") {
     players: [],
     name: "",
     visibility: "LocalNetwork",
-    limit_of_players: 0,
+    limit_of_players: 15,
     games_played: 0,
   };
 }

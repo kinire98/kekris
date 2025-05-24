@@ -66,7 +66,6 @@ impl ClientRoom {
                 dbg!("listening update");
                 tokio::select! {
                     command = read_enum_from_server(&lock) => {
-                        dbg!("read content from network");
                         time = SystemTime::now()
                             .duration_since(UNIX_EPOCH)
                             .expect("Time went backwards 🗿🤙")
@@ -98,6 +97,7 @@ impl ClientRoom {
         }
     }
     async fn handle_content(&mut self, content: ServerRoomNetCommands) {
+        println!("{:?}", &content);
         match content {
             ServerRoomNetCommands::RoomDiscoverResponse(_) => (),
             ServerRoomNetCommands::JoinRoomRequestAccepted(_) => (),
