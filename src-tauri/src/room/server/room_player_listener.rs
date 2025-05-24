@@ -26,6 +26,7 @@ pub struct RoomPlayerListener {
     check_ping: bool,
     ping: u64,
     time_last_ping: u64,
+    playing: Arc<Mutex<bool>>,
 }
 impl RoomPlayerListener {
     pub fn new(
@@ -33,6 +34,7 @@ impl RoomPlayerListener {
         stream: Arc<Mutex<TcpStream>>,
         player: DummyPlayer,
         updates: broadcast::Receiver<Updates>,
+        playing: Arc<Mutex<bool>>,
     ) -> Self {
         Self {
             send_commands,
@@ -42,46 +44,53 @@ impl RoomPlayerListener {
             check_ping: false,
             ping: 0,
             time_last_ping: 0,
+            playing,
         }
     }
 
     pub async fn listen_to_player_updates(&mut self) {
         loop {
-            let lock = self.stream.clone();
-            if self.check_ping {
-                let cur_time = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .expect("Time went backwards 🗿🤙")
-                    .as_secs();
-                if cur_time - self.time_last_ping > PING_LIMIT_IN_SECONDS {
-                    let _ = self
-                        .send_commands
-                        .send(FirstLevelCommands::PlayerDisconnected(self.player.clone()))
-                        .await;
-                    let _ =
-                        send_enum_from_server(&lock, &ServerRoomNetCommands::DisconnectedSignal)
+            if !*self.playing.lock().await {
+                let lock = self.stream.clone();
+                if self.check_ping {
+                    let cur_time = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .expect("Time went backwards 🗿🤙")
+                        .as_secs();
+                    if cur_time - self.time_last_ping > PING_LIMIT_IN_SECONDS {
+                        let _ = self
+                            .send_commands
+                            .send(FirstLevelCommands::PlayerDisconnected(self.player.clone()))
                             .await;
-                    break;
+                        let _ = send_enum_from_server(
+                            &lock,
+                            &ServerRoomNetCommands::DisconnectedSignal,
+                        )
+                        .await;
+                        break;
+                    }
                 }
-            }
-
-            tokio::select! {
-                value = read_enum_from_client(&lock) => {
-                    let Ok(content) = value else {
-                        continue;
-                    };
-                    if self.handle_client(content).await {
-                        break;
-                    }
-                },
-                value = self.updates.recv() => {
-                    let command = self.handle_receive_update_error(value, &lock).await;
-                    if command.is_none() {
-                        break;
-                    }
-                    self.handle_updates(command.unwrap(), &lock).await;
-                },
-                _ = tokio::time::sleep(Duration::from_secs(PING_LIMIT_IN_SECONDS)) => {}
+                dbg!("listening to clients in room");
+                tokio::select! {
+                    value = read_enum_from_client(&lock) => {
+                        let Ok(content) = value else {
+                            continue;
+                        };
+                        if self.handle_client(content).await {
+                            break;
+                        }
+                    },
+                    value = self.updates.recv() => {
+                        let command = self.handle_receive_update_error(value, &lock).await;
+                        if command.is_none() {
+                            break;
+                        }
+                        self.handle_updates(command.unwrap(), &lock).await;
+                    },
+                    _ = tokio::time::sleep(Duration::from_secs(PING_LIMIT_IN_SECONDS)) => {}
+                }
+            } else {
+                tokio::time::sleep(Duration::from_millis(300)).await;
             }
         }
     }
@@ -164,6 +173,7 @@ impl RoomPlayerListener {
         }
     }
     async fn handle_updates(&mut self, update: Updates, socket: &Arc<Mutex<TcpStream>>) -> bool {
+        dbg!("send update");
         match update {
             Updates::PlayersUpdate(players) => {
                 let players: Vec<DummyPlayer> =

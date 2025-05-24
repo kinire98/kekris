@@ -86,9 +86,10 @@ export default function startDraw(canvas: HTMLCanvasElement, secondCanvas: HTMLC
   } else {
     pointsInfo();
   }
-
-  if (!options.normal) {
+  if (!options.normal || options.number_of_players > 1) {
     gameWon();
+  }
+  if (!options.normal) {
     timer();
   }
 }
@@ -258,12 +259,12 @@ async function gameLost() {
           router.push("/stats");
         }
       }, 1500);
+      removeInputListeners();
+      unlisteners.forEach(el => {
+        el()
+      });
+      unlisteners.length = 0;
     }
-    removeInputListeners();
-    unlisteners.forEach(el => {
-      el()
-    });
-    unlisteners.length = 0;
   }));
 }
 
@@ -287,14 +288,14 @@ async function gameWon() {
       setTimeout(() => {
         router.push("/stats");
       }, 1500);
+      unlisteners.forEach(el => {
+        el()
+      });
+      unlisteners.length = 0;
+      multiplayerUnlisteners.forEach(el => el());
+      multiplayerUnlisteners.length = 0;
     }
     removeInputListeners();
-    unlisteners.forEach(el => {
-      el()
-    });
-    unlisteners.length = 0;
-    multiplayerUnlisteners.forEach(el => el());
-    multiplayerUnlisteners.length = 0;
   }));
 }
 
@@ -342,11 +343,7 @@ async function otherPlayerWon() {
   multiplayerUnlisteners.push(await listen(otherPlayerWonEmit, (e) => {
     let player = e.payload as WonSignal;
     console.log("won: board-player-" + player.player.id);
-    unlisteners.forEach(el => {
-      el()
-    });
-    unlisteners.length = 0;
-    multiplayerUnlisteners.forEach(el => el());
+
     let board = document.getElementById("board-player-" + player.player.id) as HTMLCanvasElement;
     console.log(board);
     if (board != null) {
@@ -365,6 +362,10 @@ async function otherPlayerWon() {
       }, 1500);
     }
 
+    unlisteners.forEach(el => el());
+    unlisteners.length = 0;
+    multiplayerUnlisteners.forEach(el => el());
+    multiplayerUnlisteners.length = 0;
   }));
 }
 

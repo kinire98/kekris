@@ -570,6 +570,7 @@ impl OnlineGame {
                 let _ = channel.send(OnlineToRemoteGameCommunication::Won).await;
             }
             None => {
+                dbg!("here");
                 let _ = self.tx_commands_second.send(SecondLevelCommands::Won).await;
             }
         };
@@ -583,6 +584,15 @@ impl OnlineGame {
                 }
             })
             .await;
+        dbg!("here");
+        let _ = self.app.emit(
+            OTHER_PLAYER_WON,
+            WonSignal {
+                player: winner,
+                is_hosting: true,
+            },
+        );
+        *self.playing.lock().await = false;
     }
     fn store_lines(&mut self, receiver: DummyPlayer, lines: u32) {
         self.even_lines.insert(receiver, lines);

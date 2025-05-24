@@ -1,11 +1,8 @@
-use std::{
-    sync::{Arc, Mutex},
-    time::Duration,
-};
+use std::{sync::Arc, time::Duration};
 
 use tauri::{AppHandle, Emitter};
+use tokio::sync::Mutex;
 use tokio::{
-    io::AsyncWriteExt,
     net::TcpStream,
     sync::mpsc::{self, Receiver, Sender},
 };
@@ -38,10 +35,9 @@ pub struct ClientOnlineGame {
     running: bool,
     game_responses: Receiver<GameResponses>,
     tx_commands_second: Sender<SecondLevelCommands>,
-    #[allow(dead_code)]
-    needs_pieces: Arc<Mutex<std::sync::mpsc::Receiver<bool>>>,
     app: AppHandle,
     strategy: Strategy,
+    playing: Arc<Mutex<bool>>,
 }
 
 impl ClientOnlineGame {
@@ -51,8 +47,9 @@ impl ClientOnlineGame {
         game_options: GameOptions,
         app: AppHandle,
         delay: u64,
+        playing: Arc<Mutex<bool>>,
     ) -> Self {
-        let (tx_needs_pieces, rx_needs_pieces) = std::sync::mpsc::channel();
+        let (tx_needs_pieces, _) = std::sync::mpsc::channel();
         let queue = RemoteQueue::new(pieces_buffer, tx_needs_pieces);
         let (tx_first_level, rx_first_level) = mpsc::channel(SIZE_FOR_KB);
         let (tx_second_level, rx_second_level) = mpsc::channel(SIZE_FOR_KB);
@@ -77,9 +74,9 @@ impl ClientOnlineGame {
             running: true,
             tx_commands_second: tx_second_level,
             game_responses: rx_responses,
-            needs_pieces: Arc::new(Mutex::new(rx_needs_pieces)),
             app,
             strategy: Strategy::Random,
+            playing,
         }
     }
     async fn set_channels(
@@ -113,13 +110,17 @@ impl ClientOnlineGame {
         }
     }
     pub async fn start(&mut self) {
+        let mut lock = self.playing.lock().await;
+        *lock = true;
+        drop(lock);
         while self.running {
             let socket = self.socket.clone();
-            // let ref_for_blocking = self.needs_pieces.clone();
             tokio::select! {
                 content = read_enum_from_server(&socket) => {
                     if let Ok(content) = content  {
                         self.handle_network_content(content).await;
+                    } else {
+                        dbg!(&content);
                     };
                 },
                 response = self.game_responses.recv() => {
@@ -128,15 +129,12 @@ impl ClientOnlineGame {
                         self.handle_game_responses(response).await;
                     };
                 },
-                // _ = tokio::task::spawn_blocking(move || {
-                //     let ref_for_blocking = ref_for_blocking.lock().unwrap();
-                //     ref_for_blocking.recv()
-                // }) => {
-                //     drop(socket);
-                //     self.ask_for_pieces().await;
-                // }
+
             }
         }
+        let mut lock = self.playing.lock().await;
+        *lock = false;
+        drop(lock);
     }
     async fn handle_network_content(&mut self, content: ServerOnlineGameCommands) {
         match content {
@@ -165,6 +163,7 @@ impl ClientOnlineGame {
                 let _ = self.app.emit(OTHER_PLAYER_LOST, dummy_player);
             }
             ServerOnlineGameCommands::GameEnded(dummy_player) => {
+                dbg!("here");
                 let _ = self.app.emit(
                     OTHER_PLAYER_WON,
                     WonSignal {
@@ -207,13 +206,5 @@ impl ClientOnlineGame {
             return;
         };
         send_enum_from_client(&self.socket, &command).await.unwrap();
-    }
-    #[allow(dead_code)]
-    async fn ask_for_pieces(&mut self) {
-        let mut socket = self.socket.lock().await;
-        let _ = socket
-            .write_all(&serde_json::to_vec(&ClientOnlineGameCommands::QueueRequest(0)).unwrap())
-            .await;
-        let _ = socket.flush().await;
     }
 }

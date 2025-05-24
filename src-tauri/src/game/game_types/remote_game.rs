@@ -95,6 +95,7 @@ impl RemoteGame {
                 }
             }
             OnlineToRemoteGameCommunication::GameEnded(dummy_player) => {
+                dbg!("here");
                 Some(ServerOnlineGameCommands::GameEnded(dummy_player))
             }
             OnlineToRemoteGameCommunication::State(dummy_player, state) => {
@@ -111,6 +112,7 @@ impl RemoteGame {
         send_enum_from_server(&self.stream, &command).await.unwrap();
     }
     async fn handle_network(&mut self, command: ClientOnlineGameCommands) {
+        dbg!(&command);
         let message = match command {
             ClientOnlineGameCommands::TrashSent(strategy, amount) => {
                 RemoteToOnlineGameCommunication::TrashSent(self.player.clone(), strategy, amount)

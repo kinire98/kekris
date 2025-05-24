@@ -34,6 +34,7 @@ pub struct ClientRoom {
     stop_channel: broadcast::Receiver<bool>,
     player: DummyPlayer,
     listening: bool,
+    playing: Arc<Mutex<bool>>,
 }
 
 impl ClientRoom {
@@ -49,6 +50,7 @@ impl ClientRoom {
             stop_channel,
             player,
             listening: true,
+            playing: Arc::new(Mutex::new(false)),
         }
     }
     pub async fn listen(&mut self) {
@@ -58,31 +60,36 @@ impl ClientRoom {
             .as_secs();
         let lock = self.stream.clone();
         while self.listening {
-            tokio::select! {
-                command = read_enum_from_server(&lock) => {
-                    time = SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .expect("Time went backwards 🗿🤙")
-                        .as_secs();
-                    if let Ok(content) = command {
-                        self.handle_content(content).await;
-                    }
-                },
-                value = self.stop_channel.recv() => {
-                    let break_loop = self.stop_listening(value).await;
-                    if break_loop {
-                        break;
-                    }
-                },
-                _ = tokio::time::sleep(Duration::from_secs(PING_LIMIT_IN_SECONDS)) => {}
-            }
-            let cur_time = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .expect("Time went backwards 🗿🤙")
-                .as_secs();
-            if cur_time - time > PING_LIMIT_IN_SECONDS {
-                let _ = self.app.emit(LOST_CONNECTION_EMIT, false);
-                break;
+            if !*self.playing.lock().await {
+                dbg!("listening update");
+                tokio::select! {
+                    command = read_enum_from_server(&lock) => {
+                        time = SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .expect("Time went backwards 🗿🤙")
+                            .as_secs();
+                        if let Ok(content) = command {
+                            self.handle_content(content).await;
+                        }
+                    },
+                    value = self.stop_channel.recv() => {
+                        let break_loop = self.stop_listening(value).await;
+                        if break_loop {
+                            break;
+                        }
+                    },
+                    _ = tokio::time::sleep(Duration::from_secs(PING_LIMIT_IN_SECONDS)) => {}
+                }
+                let cur_time = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .expect("Time went backwards 🗿🤙")
+                    .as_secs();
+                if cur_time - time > PING_LIMIT_IN_SECONDS {
+                    let _ = self.app.emit(LOST_CONNECTION_EMIT, false);
+                    break;
+                }
+            } else {
+                tokio::time::sleep(Duration::from_millis(300)).await;
             }
         }
     }
@@ -114,6 +121,7 @@ impl ClientRoom {
                     options,
                     self.app.clone(),
                     delay,
+                    self.playing.clone(),
                 )
                 .await;
                 tokio::spawn(async move {

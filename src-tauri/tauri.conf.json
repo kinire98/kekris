@@ -76,15 +76,13 @@
       "icons/icon.ico"
     ],
     "resources": [
-      "./assets",
       "./migrations"
     ],
     "linux": {
       "appimage": {
         "bundleMediaFramework": false,
         "files": {
-          "/usr/share/README.md": "../README.md",
-          "/usr/assets": "./assets/"
+          "/usr/share/README.md": "../README.md"
         }
       }
     }

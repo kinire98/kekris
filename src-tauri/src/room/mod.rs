@@ -175,8 +175,9 @@ impl Room {
         let player: DummyPlayer = info.into();
         let commands = self.send_commands.clone();
         let updates = self.send_updates.subscribe();
+        let playing = self.cur_game_playing.clone();
         tokio::spawn(async move {
-            RoomPlayerListener::new(commands, stream, player, updates)
+            RoomPlayerListener::new(commands, stream, player, updates, playing)
                 .listen_to_player_updates()
                 .await;
         });
