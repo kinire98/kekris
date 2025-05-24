@@ -89,4 +89,9 @@ import forbidReload from "./helpers/forbidReload";
 
 forbidBack();
 forbidReload();
+if (import.meta.env.MODE === "production") {
+  document.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+  });
+}
 </script>
