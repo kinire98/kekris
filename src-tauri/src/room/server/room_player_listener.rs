@@ -50,7 +50,9 @@ impl RoomPlayerListener {
 
     pub async fn listen_to_player_updates(&mut self) {
         loop {
-            if !*self.playing.lock().await {
+            let lock = self.playing.lock().await;
+            if !*lock {
+                drop(lock);
                 let lock = self.stream.clone();
                 if self.check_ping {
                     let cur_time = SystemTime::now()
@@ -90,7 +92,9 @@ impl RoomPlayerListener {
                     _ = tokio::time::sleep(Duration::from_secs(PING_LIMIT_IN_SECONDS)) => {}
                 }
             } else {
+                drop(lock);
                 tokio::time::sleep(Duration::from_millis(300)).await;
+                self.check_ping = false;
             }
         }
     }

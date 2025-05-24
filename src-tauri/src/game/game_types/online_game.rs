@@ -167,11 +167,9 @@ impl OnlineGame {
         self.app
             .emit(GAME_STARTED_EMIT, self.self_player.id())
             .unwrap();
-        {
-            // Block for dropping value
-            let mut value = self.playing.lock().await;
-            *value = true;
-        }
+        let mut value = self.playing.lock().await;
+        *value = true;
+        drop(value);
         while self.game_runnning {
             tokio::select! {
                 response = self.game_responses.recv() => {
@@ -234,7 +232,6 @@ impl OnlineGame {
                     .await;
             }
             RemoteToOnlineGameCommunication::Lost(dummy_player) => {
-                dbg!("player lost");
                 self.other_player_lost(dummy_player.clone());
                 self.lost(dummy_player.clone()).await;
                 self.lost_checks(dummy_player).await;
@@ -525,7 +522,6 @@ impl OnlineGame {
         let _ = self.app.emit(OTHER_PLAYER_LOST, dummy_player);
     }
     async fn lost_checks(&mut self, dummy_player: DummyPlayer) {
-        dbg!("a player has lost");
         self.players_lost.insert(dummy_player);
         if self.players_lost.len() == self.players.len() {
             let winner = self.get_winner();
@@ -554,14 +550,8 @@ impl OnlineGame {
             })
             .find(|player| !self.players_lost.contains(player))
         {
-            Some(value) => {
-                dbg!("other player");
-                value
-            }
-            None => {
-                dbg!("self player");
-                self.self_player.clone()
-            }
+            Some(value) => value,
+            None => self.self_player.clone(),
         }
     }
     async fn send_winner(&self, winner: DummyPlayer) {
@@ -570,7 +560,6 @@ impl OnlineGame {
                 let _ = channel.send(OnlineToRemoteGameCommunication::Won).await;
             }
             None => {
-                dbg!("here");
                 let _ = self.tx_commands_second.send(SecondLevelCommands::Won).await;
             }
         };
@@ -584,7 +573,6 @@ impl OnlineGame {
                 }
             })
             .await;
-        dbg!("here");
         let _ = self.app.emit(
             OTHER_PLAYER_WON,
             WonSignal {

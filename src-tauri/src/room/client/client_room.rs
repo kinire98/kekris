@@ -60,7 +60,9 @@ impl ClientRoom {
             .as_secs();
         let lock = self.stream.clone();
         while self.listening {
-            if !*self.playing.lock().await {
+            let lock_loop = self.playing.lock().await;
+            if !*lock_loop {
+                drop(lock_loop);
                 dbg!("listening update");
                 tokio::select! {
                     command = read_enum_from_server(&lock) => {
@@ -89,6 +91,7 @@ impl ClientRoom {
                     break;
                 }
             } else {
+                drop(lock_loop);
                 tokio::time::sleep(Duration::from_millis(300)).await;
             }
         }
@@ -124,6 +127,7 @@ impl ClientRoom {
                     self.playing.clone(),
                 )
                 .await;
+                *self.playing.lock().await = true;
                 tokio::spawn(async move {
                     game.start().await;
                 });
