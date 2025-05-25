@@ -30,6 +30,7 @@ pub struct RemoteGame {
     player: DummyPlayer,
     most_recent_trash_received: Option<DummyPlayer>,
     lost: bool,
+    running: bool,
 }
 impl RemoteGame {
     pub fn new(
@@ -44,12 +45,13 @@ impl RemoteGame {
             player: player.into(),
             most_recent_trash_received: None,
             lost: false,
+            running: true,
         }
     }
 
     pub async fn start_game(&mut self) {
         let lock = self.stream.clone();
-        loop {
+        while self.running {
             tokio::select! {
                 value = self.receiver.recv() => {
                     let Some(command) = value else {
@@ -96,6 +98,7 @@ impl RemoteGame {
             }
             OnlineToRemoteGameCommunication::GameEnded(dummy_player) => {
                 dbg!("here");
+                self.running = false;
                 Some(ServerOnlineGameCommands::GameEnded(dummy_player))
             }
             OnlineToRemoteGameCommunication::State(dummy_player, state) => {
