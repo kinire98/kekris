@@ -52,19 +52,27 @@ impl RemoteGame {
     pub async fn start_game(&mut self) {
         let lock = self.stream.clone();
         while self.running {
-            tokio::select! {
-                value = self.receiver.recv() => {
-                    let Some(command) = value else {
-                        continue;
-                    };
-                    self.handle_command(command).await;
+            if !self.lost {
+                tokio::select! {
+                    value = self.receiver.recv() => {
+                        let Some(command) = value else {
+                            continue;
+                        };
+                        self.handle_command(command).await;
+                    }
+                    result = read_enum_from_client(&lock) => {
+                        let Ok(content) = result else {
+                            continue;
+                        };
+                        self.handle_network(content).await;
+                    }
                 }
-                result = read_enum_from_client(&lock) => {
-                    let Ok(content) = result else {
-                        continue;
-                    };
-                    self.handle_network(content).await;
-                }
+            } else {
+                let value = self.receiver.recv().await;
+                let Some(command) = value else {
+                    continue;
+                };
+                self.handle_command(command).await;
             }
         }
     }
@@ -135,6 +143,7 @@ impl RemoteGame {
                 RemoteToOnlineGameCommunication::DangerLevel(self.player.clone(), danger_level)
             }
             ClientOnlineGameCommands::Lost(_) => {
+                dbg!("here");
                 self.lost = true;
                 RemoteToOnlineGameCommunication::Lost(self.player.clone())
             }
