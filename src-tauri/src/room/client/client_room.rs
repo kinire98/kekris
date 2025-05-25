@@ -136,7 +136,6 @@ impl ClientRoom {
                 )
                 .await;
                 *self.playing.lock().await = true;
-                dbg!("here");
                 tokio::spawn(async move {
                     tokio::time::sleep(Duration::from_millis(delay)).await;
                     game.start().await;

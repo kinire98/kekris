@@ -99,8 +99,17 @@ impl RemoteGame {
             OnlineToRemoteGameCommunication::GameEnded(dummy_player) => {
                 dbg!("here");
                 self.running = false;
-                Some(ServerOnlineGameCommands::GameEnded(dummy_player))
+                for _ in 0..3 {
+                    send_enum_from_server(
+                        &self.stream,
+                        &ServerOnlineGameCommands::GameEnded(dummy_player.clone()),
+                    )
+                    .await
+                    .unwrap();
+                }
+                None
             }
+
             OnlineToRemoteGameCommunication::State(dummy_player, state) => {
                 if dummy_player == self.player {
                     None
