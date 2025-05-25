@@ -45,6 +45,8 @@ const stateEmitForOtherPlayers = "stateEmitForOtherPlayers";
 const otherPlayerLostEmit = "otherPlayerLostEmit";
 const otherPlayerWonEmit = "otherPlayerWon";
 
+const otherPlayerWonUnknown = "otherPlayerWonUnknown";
+
 const unlisteners: UnlistenFn[] = [];
 const multiplayerUnlisteners: UnlistenFn[] = [];
 // E -> Empty
@@ -367,7 +369,18 @@ async function otherPlayerWon() {
     multiplayerUnlisteners.forEach(el => el());
     multiplayerUnlisteners.length = 0;
   }));
+  multiplayerUnlisteners.push(await listen(otherPlayerWonUnknown, () => {
+    setTimeout(() => {
+      router.push("/rejoin");
+    }, 1500);
+
+    unlisteners.forEach(el => el());
+    unlisteners.length = 0;
+    multiplayerUnlisteners.forEach(el => el());
+    multiplayerUnlisteners.length = 0;
+  }));
 }
+
 
 function drawMultiplayer(board: string, ctx: CanvasRenderingContext2D, drawLDivisories: boolean, width: number, height: number) {
   clearCanvas(ctx);

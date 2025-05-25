@@ -27,6 +27,7 @@ use crate::{
 const STATE_EMIT_OTHER_PLAYERS: &str = "stateEmitForOtherPlayers";
 const OTHER_PLAYER_LOST: &str = "otherPlayerLostEmit";
 const OTHER_PLAYER_WON: &str = "otherPlayerWon";
+const OTHER_PLAYER_WON_UNKNOWN: &str = "otherPlayerWonUnknown";
 
 use super::local_game::{GameControl, LocalGame};
 
@@ -215,6 +216,7 @@ impl ClientOnlineGame {
         if let Some(e) = error.downcast_ref::<serde_json::Error>() {
             if e.is_data() && self.received_first_game_command {
                 self.running = false;
+                let _ = self.app.emit(OTHER_PLAYER_WON_UNKNOWN, false);
             }
         }
     }
