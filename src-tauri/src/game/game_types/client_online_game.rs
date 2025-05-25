@@ -7,7 +7,6 @@ use tokio::{
     sync::mpsc::{self, Receiver, Sender},
 };
 
-use crate::commands::room_commands::client::join_room;
 use crate::{
     commands::game_commands::{FIRST_LEVEL_CHANNEL, GAME_CONTROL_CHANNEL, SECOND_LEVEL_CHANNEL},
     game::{pieces::Piece, queue::remote_queue::RemoteQueue, strategy::Strategy},
@@ -156,12 +155,14 @@ impl ClientOnlineGame {
                 }
             }
             ServerOnlineGameCommands::Won(_) => {
+                dbg!("here");
                 let _ = self.tx_commands_second.send(SecondLevelCommands::Won).await;
             }
             ServerOnlineGameCommands::PlayerLost(dummy_player) => {
                 let _ = self.app.emit(OTHER_PLAYER_LOST, dummy_player);
             }
             ServerOnlineGameCommands::GameEnded(dummy_player) => {
+                dbg!("here");
                 let _ = self.app.emit(
                     OTHER_PLAYER_WON,
                     WonSignal {

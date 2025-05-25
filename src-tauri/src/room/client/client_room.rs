@@ -60,14 +60,9 @@ impl ClientRoom {
             .duration_since(UNIX_EPOCH)
             .expect("Time went backwards 🗿🤙")
             .as_secs();
-        let mut i = 0;
         let lock = self.stream.clone();
         while self.listening {
             let lock_loop = self.playing.lock().await;
-            if self.played {
-                i += 1;
-                dbg!(i);
-            }
             if !*lock_loop {
                 drop(lock_loop);
                 if self.played {

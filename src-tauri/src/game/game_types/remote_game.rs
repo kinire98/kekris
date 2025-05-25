@@ -95,6 +95,7 @@ impl RemoteGame {
                 }
             }
             OnlineToRemoteGameCommunication::GameEnded(dummy_player) => {
+                dbg!("here");
                 Some(ServerOnlineGameCommands::GameEnded(dummy_player))
             }
             OnlineToRemoteGameCommunication::State(dummy_player, state) => {
