@@ -370,6 +370,7 @@ async function otherPlayerWon() {
     multiplayerUnlisteners.length = 0;
   }));
   multiplayerUnlisteners.push(await listen(otherPlayerWonUnknown, () => {
+    console.log("here");
     setTimeout(() => {
       router.push("/rejoin");
     }, 1500);
