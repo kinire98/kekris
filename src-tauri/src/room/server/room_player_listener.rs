@@ -210,8 +210,7 @@ impl RoomPlayerListener {
                 }
             }
             Updates::GameStarts((highest_ping, options, pieces)) => {
-                dbg!("here");
-                let result = send_enum_from_server(
+                send_enum_from_server(
                     socket,
                     &ServerRoomNetCommands::GameStarts((
                         highest_ping - self.ping,
@@ -220,8 +219,8 @@ impl RoomPlayerListener {
                         self.player.id(),
                     )),
                 )
-                .await;
-                dbg!(result);
+                .await
+                .unwrap();
                 return true;
             }
         };
