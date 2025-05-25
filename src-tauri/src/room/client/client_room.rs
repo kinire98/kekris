@@ -35,7 +35,6 @@ pub struct ClientRoom {
     player: DummyPlayer,
     listening: bool,
     playing: Arc<Mutex<bool>>,
-    played: bool,
 }
 
 impl ClientRoom {
@@ -52,7 +51,6 @@ impl ClientRoom {
             player,
             listening: true,
             playing: Arc::new(Mutex::new(false)),
-            played: false,
         }
     }
     pub async fn listen(&mut self) {
@@ -65,9 +63,7 @@ impl ClientRoom {
             let lock_loop = self.playing.lock().await;
             if !*lock_loop {
                 drop(lock_loop);
-                if self.played {
-                    dbg!("listening update");
-                }
+
                 tokio::select! {
                     command = read_enum_from_server(&lock) => {
                         time = SystemTime::now()
@@ -88,9 +84,7 @@ impl ClientRoom {
                     },
                     _ = tokio::time::sleep(Duration::from_secs(1)) => {}
                 }
-                if self.played {
-                    dbg!("here");
-                }
+
                 let cur_time = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .expect("Time went backwards 🗿🤙")
@@ -101,7 +95,6 @@ impl ClientRoom {
                 }
                 tokio::time::sleep(Duration::from_millis(300)).await;
             } else {
-                self.played = true;
                 drop(lock_loop);
                 tokio::time::sleep(Duration::from_millis(300)).await;
                 time = SystemTime::now()
@@ -143,6 +136,7 @@ impl ClientRoom {
                 )
                 .await;
                 *self.playing.lock().await = true;
+                dbg!("here");
                 tokio::spawn(async move {
                     game.start().await;
                 });
