@@ -104,6 +104,7 @@ impl ClientRoom {
                     let _ = self.app.emit(LOST_CONNECTION_EMIT, false);
                     break;
                 }
+                tokio::time::sleep(Duration::from_millis(300)).await;
             } else {
                 self.played = true;
                 drop(lock_loop);
