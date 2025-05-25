@@ -202,7 +202,6 @@ impl RoomPlayerListener {
                 let result =
                     send_enum_from_server(socket, &ServerRoomNetCommands::PingRequest(playing))
                         .await;
-                dbg!(&result);
                 if result.is_ok() {
                     self.check_ping = true;
                     self.time_last_ping = SystemTime::now()
@@ -212,7 +211,8 @@ impl RoomPlayerListener {
                 }
             }
             Updates::GameStarts((highest_ping, options, pieces)) => {
-                let _ = send_enum_from_server(
+                dbg!("here");
+                let result = send_enum_from_server(
                     socket,
                     &ServerRoomNetCommands::GameStarts((
                         highest_ping - self.ping,
@@ -222,6 +222,7 @@ impl RoomPlayerListener {
                     )),
                 )
                 .await;
+                dbg!(result);
                 return true;
             }
         };
