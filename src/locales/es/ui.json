@@ -6,7 +6,8 @@
             "multiplayer": "Multijugador",
             "multiplayer-desc": "Compite con tus amigos",
             "settings": "Ajustes",
-            "settings-desc": "Personaliza tu experiencia"
+            "settings-desc": "Personaliza tu experiencia",
+            "not-available-mac": "No disponible en MacOS"
         },
         "index": {
             "click": "Haz click en cualquier lugar"

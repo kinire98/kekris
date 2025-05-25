@@ -18,17 +18,27 @@
     />
   </MenuBackLayout>
 </template>
-<script lang="ts">
+<script lang="ts" setup>
 import MenuBackLayout from "../layouts/MenuBackLayout.vue";
 import MenuButton from "../components/MenuButton.vue";
-import { Toast } from "primevue";
+import { Toast, useToast } from "primevue";
 import { useI18n } from "vue-i18n";
-export default {
-  setup() {
-    const t = useI18n();
-    return {
-      t,
-    };
-  },
-};
+import { invoke } from "@tauri-apps/api/core";
+import { onBeforeRouteLeave } from "vue-router";
+import i18n from "../i18n";
+useI18n();
+const toast = useToast();
+let show = await invoke("can_host_room");
+onBeforeRouteLeave((to, _from, next) => {
+  if (!show && to.path == "/multiplayer") {
+    toast.add({
+      severity: "contrast",
+      life: 2500,
+      summary: i18n.global.t("ui.main.not-available-mac"),
+    });
+    next(false);
+    return;
+  }
+  next(true);
+});
 </script>

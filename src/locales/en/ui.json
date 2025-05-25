@@ -6,7 +6,8 @@
             "settings": "Settings",
             "singleplayer-desc": "Break your own records, practice or relax",
             "multiplayer-desc": "Challenge your friends",
-            "settings-desc": "Customize your experience"
+            "settings-desc": "Customize your experience",
+            "not-available-mac": "Not available in MacOS"
         },
         "index": {
             "click": "Click anywhere"
