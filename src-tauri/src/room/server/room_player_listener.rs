@@ -201,6 +201,7 @@ impl RoomPlayerListener {
                 let result =
                     send_enum_from_server(socket, &ServerRoomNetCommands::PingRequest(playing))
                         .await;
+                dbg!(&result);
                 if result.is_ok() {
                     self.check_ping = true;
                     self.time_last_ping = SystemTime::now()

@@ -74,7 +74,7 @@ impl ClientRoom {
                     dbg!("listening update");
                 }
                 tokio::select! {
-                    command = read_enum_from_server(&lock, self.played) => {
+                    command = read_enum_from_server(&lock) => {
                         time = SystemTime::now()
                             .duration_since(UNIX_EPOCH)
                             .expect("Time went backwards 🗿🤙")
