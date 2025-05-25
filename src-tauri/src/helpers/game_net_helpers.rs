@@ -45,8 +45,8 @@ pub async fn send_enum_from_server(
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
 
     let mut guard = stream.lock().await;
+    dbg!(&(bytes.len() as u32).to_be_bytes());
     guard.write_all(&(bytes.len() as u32).to_be_bytes()).await?;
-    guard.flush().await?;
     guard.write_all(&bytes).await?;
     guard.flush().await?;
     Ok(())
