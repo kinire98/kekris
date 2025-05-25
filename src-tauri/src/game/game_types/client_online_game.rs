@@ -120,7 +120,7 @@ impl ClientOnlineGame {
                     if let Ok(content) = content  {
                         self.handle_network_content(content).await;
                     } else {
-                        dbg!(content);
+                        self.handle_error(content.unwrap_err());
                     };
                 },
                 response = self.game_responses.recv() => {
@@ -207,5 +207,12 @@ impl ClientOnlineGame {
             return;
         };
         send_enum_from_client(&self.socket, &command).await.unwrap();
+    }
+    fn handle_error(&mut self, error: Box<dyn std::error::Error + Send + Sync>) {
+        if let Some(e) = error.downcast_ref::<serde_json::Error>() {
+            if e.is_data() {
+                self.running = false;
+            }
+        }
     }
 }
