@@ -28,7 +28,7 @@ use crate::{
 const STATE_EMIT_OTHER_PLAYERS: &str = "stateEmitForOtherPlayers";
 const OTHER_PLAYER_LOST: &str = "otherPlayerLostEmit";
 const OTHER_PLAYER_WON: &str = "otherPlayerWon";
-const OTHER_PLAYER_WON_UNKNOWN: &str = "otherPlayerWonUnknown";
+// const OTHER_PLAYER_WON_UNKNOWN: &str = "otherPlayerWonUnknown";
 
 use super::local_game::{GameControl, LocalGame};
 
@@ -41,9 +41,9 @@ pub struct ClientOnlineGame {
     strategy: Strategy,
     playing: Arc<Mutex<bool>>,
     received_first_game_command: bool,
-    options: GameOptions,
+    // options: GameOptions,
     deaths: u8,
-    self_player: DummyPlayer,
+    // self_player: DummyPlayer,
     dead: bool,
 }
 
@@ -86,9 +86,9 @@ impl ClientOnlineGame {
             strategy: Strategy::Random,
             playing,
             received_first_game_command: false,
-            options: game_options,
+            // options: game_options,
             deaths: 0,
-            self_player: player,
+            // self_player: player,
             dead: false,
         }
     }
@@ -133,21 +133,14 @@ impl ClientOnlineGame {
                     if let Ok(content) = content  {
                         self.handle_network_content(content).await;
                         self.received_first_game_command = true;
-                    } else {
-                        self.handle_error(content.unwrap_err());
-                    };
+                    }
                 },
                 response = self.game_responses.recv() => {
                     if let Some(response) = response  {
                         self.handle_game_responses(response).await;
                     };
                 },
-                _ = tokio::time::sleep(Duration::from_millis(100)) => {
-                    dbg!("here");
-                    if self.deaths >= self.options.number_of_players() - 1 {
-                        self.compute_lost_player().await;
-                    }
-                }
+
 
             }
         }
@@ -232,27 +225,27 @@ impl ClientOnlineGame {
         };
         send_enum_from_client(&self.socket, &command).await.unwrap();
     }
-    fn handle_error(&mut self, error: Box<dyn std::error::Error + Send + Sync>) {
-        if let Some(e) = error.downcast_ref::<serde_json::Error>() {
-            if e.is_data() && self.received_first_game_command {
-                self.running = false;
-                let _ = self.app.emit(OTHER_PLAYER_WON_UNKNOWN, false);
-            }
-        }
-    }
-    async fn compute_lost_player(&mut self) {
-        if self.dead {
-            let _ = self.app.emit(OTHER_PLAYER_WON_UNKNOWN, false);
-        } else {
-            let _ = self.tx_commands_second.send(SecondLevelCommands::Won).await;
-            let _ = self.app.emit(
-                OTHER_PLAYER_WON,
-                WonSignal {
-                    player: self.self_player.clone(),
-                    is_hosting: false,
-                },
-            );
-            self.running = false;
-        }
-    }
+    // fn handle_error(&mut self, error: Box<dyn std::error::Error + Send + Sync>) {
+    //     if let Some(e) = error.downcast_ref::<serde_json::Error>() {
+    //         if e.is_data() && self.received_first_game_command {
+    //             self.running = false;
+    //             let _ = self.app.emit(OTHER_PLAYER_WON_UNKNOWN, false);
+    //         }
+    //     }
+    // }
+    // async fn compute_lost_player(&mut self) {
+    //     if self.dead {
+    //         let _ = self.app.emit(OTHER_PLAYER_WON_UNKNOWN, false);
+    //     } else {
+    //         let _ = self.tx_commands_second.send(SecondLevelCommands::Won).await;
+    //         let _ = self.app.emit(
+    //             OTHER_PLAYER_WON,
+    //             WonSignal {
+    //                 player: self.self_player.clone(),
+    //                 is_hosting: false,
+    //             },
+    //         );
+    //         self.running = false;
+    //     }
+    // }
 }
