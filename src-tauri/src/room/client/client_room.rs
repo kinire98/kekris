@@ -125,7 +125,6 @@ impl ClientRoom {
             }
             ServerRoomNetCommands::GameStarts((delay, pieces, options, id)) => {
                 let _ = self.app.emit(GAME_STARTED_EMIT, id);
-                tokio::time::sleep(Duration::from_millis(delay)).await;
                 let mut game = ClientOnlineGame::new(
                     self.stream.clone(),
                     pieces,
@@ -138,6 +137,7 @@ impl ClientRoom {
                 *self.playing.lock().await = true;
                 dbg!("here");
                 tokio::spawn(async move {
+                    tokio::time::sleep(Duration::from_millis(delay)).await;
                     game.start().await;
                 });
             }

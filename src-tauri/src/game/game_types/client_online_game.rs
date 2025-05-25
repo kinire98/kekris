@@ -38,6 +38,7 @@ pub struct ClientOnlineGame {
     app: AppHandle,
     strategy: Strategy,
     playing: Arc<Mutex<bool>>,
+    received_first_game_command: bool,
 }
 
 impl ClientOnlineGame {
@@ -77,6 +78,7 @@ impl ClientOnlineGame {
             app,
             strategy: Strategy::Random,
             playing,
+            received_first_game_command: false,
         }
     }
     async fn set_channels(
@@ -119,6 +121,7 @@ impl ClientOnlineGame {
                 content = read_enum_from_server(&socket) => {
                     if let Ok(content) = content  {
                         self.handle_network_content(content).await;
+                        self.received_first_game_command = true;
                     } else {
                         self.handle_error(content.unwrap_err());
                     };
@@ -210,7 +213,7 @@ impl ClientOnlineGame {
     }
     fn handle_error(&mut self, error: Box<dyn std::error::Error + Send + Sync>) {
         if let Some(e) = error.downcast_ref::<serde_json::Error>() {
-            if e.is_data() {
+            if e.is_data() && self.received_first_game_command {
                 self.running = false;
             }
         }
