@@ -40,7 +40,7 @@ pub struct ClientOnlineGame {
     app: AppHandle,
     strategy: Strategy,
     playing: Arc<Mutex<bool>>,
-    received_first_game_command: bool,
+    // received_first_game_command: bool,
     // options: GameOptions,
     deaths: u8,
     // self_player: DummyPlayer,
@@ -85,7 +85,7 @@ impl ClientOnlineGame {
             app,
             strategy: Strategy::Random,
             playing,
-            received_first_game_command: false,
+            // received_first_game_command: false,
             // options: game_options,
             deaths: 0,
             // self_player: player,
@@ -128,20 +128,26 @@ impl ClientOnlineGame {
         drop(lock);
         while self.running {
             let socket = self.socket.clone();
-            tokio::select! {
-                content = read_enum_from_server(&socket) => {
-                    if let Ok(content) = content  {
-                        self.handle_network_content(content).await;
-                        self.received_first_game_command = true;
-                    }
-                },
-                response = self.game_responses.recv() => {
-                    if let Some(response) = response  {
-                        self.handle_game_responses(response).await;
-                    };
-                },
-
-
+            dbg!("here");
+            if !self.dead {
+                tokio::select! {
+                    content = read_enum_from_server(&socket) => {
+                        dbg!(&content);
+                        if let Ok(content) = content  {
+                            self.handle_network_content(content).await;
+                        }
+                    },
+                    response = self.game_responses.recv() => {
+                        if let Some(response) = response  {
+                            self.handle_game_responses(response).await;
+                        };
+                    },
+                }
+            } else {
+                let content = read_enum_from_server(&socket).await;
+                if let Ok(content) = content {
+                    self.handle_network_content(content).await;
+                }
             }
         }
         let mut lock = self.playing.lock().await;
