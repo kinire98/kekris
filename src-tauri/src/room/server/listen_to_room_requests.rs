@@ -1,13 +1,14 @@
 use std::sync::Arc;
 
 use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
+    io::AsyncReadExt,
     net::TcpListener,
     sync::{Mutex, mpsc::Sender},
 };
 
 use crate::{
     globals::{LISTENING_DIRECTION_TCP, SIZE_FOR_KB},
+    helpers::room_net_helpers::send_enum_from_server,
     models::{
         dummy_room::DummyRoom,
         room_commands::{
@@ -53,32 +54,24 @@ pub fn listen_to_room_requests(
                     return;
                 };
                 let number = *receive_players.lock().await;
+                let socket = Arc::new(Mutex::new(socket.0));
                 if number >= limit_players {
-                    let _ = socket
-                        .0
-                        .write_all(
-                            &serde_json::to_vec(&ServerRoomNetCommands::JoinRoomRequestRejected(
-                                RejectReason::RoomFull,
-                            ))
-                            .expect("Won't panic in a reasonable amount of times"),
-                        )
-                        .await;
+                    let _ = send_enum_from_server(
+                        &socket,
+                        &ServerRoomNetCommands::JoinRoomRequestRejected(RejectReason::RoomFull),
+                    )
+                    .await;
                     return;
                 }
-                if (socket
-                    .0
-                    .write_all(
-                        &serde_json::to_vec(&ServerRoomNetCommands::JoinRoomRequestAccepted(room))
-                            .expect("Reasonable to think it won't panic"),
-                    )
-                    .await)
+                if (send_enum_from_server(
+                    &socket,
+                    &ServerRoomNetCommands::JoinRoomRequestAccepted(room),
+                )
+                .await)
                     .is_ok()
                 {
                     let _ = sender_copy
-                        .send(FirstLevelCommands::PlayerConnected((
-                            dummy_player,
-                            socket.0,
-                        )))
+                        .send(FirstLevelCommands::PlayerConnected((dummy_player, socket)))
                         .await;
                 }
             });

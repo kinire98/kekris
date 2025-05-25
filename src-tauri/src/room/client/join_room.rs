@@ -1,15 +1,14 @@
+use std::sync::Arc;
+
 use tauri::{AppHandle, Emitter};
-use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
-    net::TcpStream,
-};
+use tokio::{io::AsyncWriteExt, net::TcpStream, sync::Mutex};
 
 use crate::{
-    globals::{LISTENING_PORT_TCP_SERVER, SIZE_FOR_KB},
+    globals::LISTENING_PORT_TCP_SERVER,
+    helpers::room_net_helpers::read_enum_from_server,
     models::{
         dummy_room::{DummyPlayer, DummyRoom},
-        room_commands::client::ClientRoomNetCommands,
-        room_commands::server::ServerRoomNetCommands,
+        room_commands::{client::ClientRoomNetCommands, server::ServerRoomNetCommands},
         room_info::RoomInfo,
     },
 };
@@ -21,7 +20,7 @@ pub async fn join_room(
     room: RoomInfo,
     player: DummyPlayer,
     app: &AppHandle,
-) -> Option<(DummyRoom, TcpStream)> {
+) -> Option<(DummyRoom, Arc<Mutex<TcpStream>>)> {
     let Ok(mut tcp_socket) =
         TcpStream::connect(format!("{}:{}", room.ip(), LISTENING_PORT_TCP_SERVER)).await
     else {
@@ -40,16 +39,13 @@ pub async fn join_room(
     };
     let _ = tcp_socket.flush().await;
 
-    let mut buffer = vec![0; SIZE_FOR_KB];
-    let Ok(response) = tcp_socket.read(&mut buffer).await else {
+    let stream = Arc::new(Mutex::new(tcp_socket));
+    let Ok(command) = read_enum_from_server(&stream).await else {
         let _ = app.emit(CONNECTION_ERROR, false);
         return None;
     };
-    let Ok(command) = serde_json::from_slice::<ServerRoomNetCommands>(&buffer[..response]) else {
-        return None;
-    };
     if let ServerRoomNetCommands::JoinRoomRequestAccepted(dummy_room) = command {
-        Some((dummy_room, tcp_socket))
+        Some((dummy_room, stream))
     } else if let ServerRoomNetCommands::JoinRoomRequestRejected(reject_reason) = command {
         let _ = app.emit(CONNECTION_REJECTED, reject_reason);
         None

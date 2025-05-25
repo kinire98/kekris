@@ -43,6 +43,7 @@ pub async fn send_enum_from_server(
 
     let mut guard = stream.lock().await;
     guard.write_all(&(bytes.len() as u32).to_be_bytes()).await?;
+    dbg!(&(bytes.len() as u32).to_be_bytes());
     guard.write_all(&bytes).await?;
     guard.flush().await?;
     Ok(())

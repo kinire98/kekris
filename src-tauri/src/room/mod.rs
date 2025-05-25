@@ -173,7 +173,10 @@ impl Room {
     }
     async fn player_connected(
         &mut self,
-        player_info: (models::dummy_room::DummyPlayer, tokio::net::TcpStream),
+        player_info: (
+            models::dummy_room::DummyPlayer,
+            Arc<Mutex<tokio::net::TcpStream>>,
+        ),
     ) {
         self.players.push(player_info.into());
         self.players_emit();
@@ -256,7 +259,7 @@ pub enum Visibility {
 #[derive(Debug)]
 pub enum FirstLevelCommands {
     FatalFail,
-    PlayerConnected((DummyPlayer, TcpStream)),
+    PlayerConnected((DummyPlayer, Arc<Mutex<TcpStream>>)),
     PlayerDisconnected(DummyPlayer),
     PingReceived((DummyPlayer, u64)),
     GameStarts,

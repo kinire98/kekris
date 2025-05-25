@@ -59,8 +59,8 @@ impl Player {
     }
 }
 
-impl From<(DummyPlayer, TcpStream)> for Player {
-    fn from(value: (DummyPlayer, TcpStream)) -> Self {
+impl From<(DummyPlayer, Arc<Mutex<TcpStream>>)> for Player {
+    fn from(value: (DummyPlayer, Arc<Mutex<TcpStream>>)) -> Self {
         let id = unsafe { ID };
         unsafe {
             ID += 1;
@@ -74,7 +74,7 @@ impl From<(DummyPlayer, TcpStream)> for Player {
             last_time: value.0.last_time(),
             game: None,
             ping: value.0.ping(),
-            stream: Some(Arc::new(Mutex::new(value.1))),
+            stream: Some(value.1),
         }
     }
 }

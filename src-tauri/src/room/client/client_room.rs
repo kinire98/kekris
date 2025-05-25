@@ -40,13 +40,13 @@ pub struct ClientRoom {
 
 impl ClientRoom {
     pub fn new(
-        stream: TcpStream,
+        stream: Arc<Mutex<TcpStream>>,
         app: AppHandle,
         stop_channel: broadcast::Receiver<bool>,
         player: DummyPlayer,
     ) -> Self {
         Self {
-            stream: Arc::new(Mutex::new(stream)),
+            stream,
             app,
             stop_channel,
             player,
