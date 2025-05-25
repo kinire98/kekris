@@ -12,6 +12,12 @@
         "TSpinDouble": "TSpin Double",
         "TSpinTriple": "TSpin Triple",
         "MiniTSpin": "MiniTSpin",
-        "MiniTSpinSingle": "MiniTSpin Single"
+        "MiniTSpinSingle": "MiniTSpin Single",
+        "strategies": {
+            "even": "Even",
+            "random": "Random",
+            "payback": "Payback",
+            "elimination": "Elimination"
+        }
     }
 }

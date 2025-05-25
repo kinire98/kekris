@@ -106,6 +106,4 @@ let timeMarksInfo: TimeMarkInfo[] = info.top_five_results.map((el, index) => {
     its_last_played: index == info.last_in_top_five,
   };
 });
-
-console.log(info);
 </script>

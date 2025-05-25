@@ -6,7 +6,8 @@
             "settings": "Settings",
             "singleplayer-desc": "Break your own records, practice or relax",
             "multiplayer-desc": "Challenge your friends",
-            "settings-desc": "Customize your experience"
+            "settings-desc": "Customize your experience",
+            "not-available-mac": "Not available in MacOS"
         },
         "index": {
             "click": "Click anywhere"
@@ -22,7 +23,32 @@
         },
         "multiplayer": {
             "multiplayer": "Multiplayer",
-            "soon": "Multiplayer soon available"
+            "soon": "Multiplayer soon available",
+            "local-network": "Local network",
+            "local-network-desc": "Play with other people connected to your LAN",
+            "internet": "Internet",
+            "internet-desc": "Play with people from outside your network",
+            "local": {
+                "local": "Local network",
+                "host": "Host game",
+                "host-desc": "Create your own game",
+                "room-list": "Available room listing",
+                "games": "games",
+                "game": "game",
+                "no-rooms": "No rooms available"
+            },
+            "room": {
+                "room-of": "Room of",
+                "change": "Change room's name",
+                "players": "Players",
+                "play": "Play",
+                "ended-header": "Room closed",
+                "ended": "The room was closed by the host",
+                "ended-button": "<- Return to main menu",
+                "ended-connection-header": "Desconnection",
+                "ended-connection": "You lost the connection with the room's host",
+                "wait-for-players": "You must wait to be at least two players"
+            }
         },
         "settings": {
             "settings": "Settings",
@@ -31,7 +57,8 @@
             "appeareance": "Appeareance",
             "appeareance-desc": "Select your preferred board appeareance",
             "language": "Language",
-            "language-desc": "Change your language"
+            "language-desc": "Change your language",
+            "not-available": "Unavailable"
         },
         "username": {
             "select": "Select username",

@@ -6,7 +6,8 @@
             "multiplayer": "Multijugador",
             "multiplayer-desc": "Compite con tus amigos",
             "settings": "Ajustes",
-            "settings-desc": "Personaliza tu experiencia"
+            "settings-desc": "Personaliza tu experiencia",
+            "not-available-mac": "No disponible en MacOS"
         },
         "index": {
             "click": "Haz click en cualquier lugar"
@@ -22,7 +23,33 @@
         },
         "multiplayer": {
             "multiplayer": "Multijugador",
-            "soon": "Multijugador pronto disponible"
+            "soon": "Multijugador pronto disponible",
+            "local-network": "Red local",
+            "local-network-desc": "Juega con jugadores conectados en tu red local",
+            "internet": "Internet",
+            "internet-desc": "Juega con gente fuera de tu red",
+            "not-available": "No disponible",
+            "local": {
+                "local": "Red local",
+                "host": "Alojar partida",
+                "host-desc": "Crea tu propia partida",
+                "room-list": "Listado de partidas disponibles",
+                "games": "partidas",
+                "game": "partida",
+                "no-rooms": "No hay partidas disponibles"
+            },
+            "room": {
+                "room-of": "Partida de",
+                "change": "Cambiar nombre de sala",
+                "players": "Jugadores",
+                "play": "Jugar",
+                "ended-header": "Cierre de sala",
+                "ended": "La sala fue cerrada por el anfitrión",
+                "ended-button": "<- Volver al menú principal",
+                "ended-connection-header": "Desconexión",
+                "ended-connection": "Se perdió la conexión con el anfitrión de la sala",
+                "wait-for-players": "Tienes que esperar a ser por lo menos dos jugadores"
+            }
         },
         "settings": {
             "settings": "Ajustes",
@@ -56,7 +83,7 @@
             "random": "Estrategia de ataque aleatoria",
             "even": "Estrategia de ataque repartida",
             "elimination": "Estrategia de ataque eliminatoria",
-            "payback": "Estrategia de ataque resentida",
+            "payback": "Estrategia de ataque de revancha",
             "random-desc": "Apunta a jugadores al azar, sin ninguna lógica detrás",
             "even-desc": "Tiende a atacar a aquellos que han recibido menos basura esta ronda.",
             "elimination-desc": "Tiende a atacar a aquellos que tienen la pila más alta en el momento",
@@ -64,9 +91,9 @@
             "forfeit": "Abandonar",
             "retry": "Reintentar",
             "start_frecuency": "Retraso de comienzo de repetición",
-            "repeat_frecuency": "Frecuencia de repetición",
+            "repeat_frecuency": "Periodo de repetición",
             "start_frecuency_desc": "Retraso de comienzo de repetición para ciertos movimientos (Caída suave, mover a la izquierda y mover a la derecha). Se mide en milisegundos",
-            "repeat_frecuency_desc": "Frecuencia de repetición para ciertos movimientos (Caída suave, mover a la izquierda y mover a la derecha). Se mide en milisegundos",
+            "repeat_frecuency_desc": "Periodo de repetición para ciertos movimientos (Caída suave, mover a la izquierda y mover a la derecha). Se mide en milisegundos",
             "keys": {
                 "ArrowRight": "Flecha derecha",
                 "ArrowLeft": "Flecha izquierda",

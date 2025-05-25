@@ -2,11 +2,11 @@ use super::super::pieces::Piece;
 use super::Queue;
 use std::collections::HashSet;
 
-#[allow(dead_code)]
 const PIECES_SHOWN: usize = 5; // Used in the module, but marked as not used for an unknown reason
 
-#[allow(dead_code)]
 const PIECES_GENERATED_BY_CYCLE: usize = 7; // Used in the module, but marked as not used for an unknown reason
+
+const CICLES_OF_PIECES_GENERATED_WHEN_ASKED: usize = 10;
 
 #[derive(Default, Debug)]
 pub struct LocalQueue {
@@ -19,7 +19,7 @@ impl LocalQueue {
         let mut generated_pieces = HashSet::new();
         while generated_pieces.len() < PIECES_GENERATED_BY_CYCLE {
             let piece_num = rand::random_range(0..=6);
-            let piece = Self::get_piece_by_number(piece_num);
+            let piece = piece_num.into();
             if generated_pieces.contains(&piece) {
                 continue;
             }
@@ -28,16 +28,8 @@ impl LocalQueue {
         self.pieces.append(&mut Vec::from_iter(generated_pieces));
         self.max_piece += PIECES_GENERATED_BY_CYCLE;
     }
-    fn get_piece_by_number(i: u8) -> Piece {
-        match i {
-            0 => Piece::I,
-            1 => Piece::J,
-            2 => Piece::L,
-            3 => Piece::O,
-            4 => Piece::S,
-            5 => Piece::T,
-            _ => Piece::Z,
-        }
+    pub fn get_pieces(&self) -> Vec<Piece> {
+        self.pieces.clone()
     }
 }
 impl Queue for LocalQueue {
@@ -49,6 +41,17 @@ impl Queue for LocalQueue {
             self.generate_new_pieces();
         }
         self.pieces.get(position).copied()
+    }
+
+    fn insert_pieces(&mut self, _pieces: Vec<Piece>) {
+        panic!("SHOULD NEVER ARRIVE HERE")
+    }
+
+    fn get_pieces(&mut self) -> Vec<Piece> {
+        for _ in 0..CICLES_OF_PIECES_GENERATED_WHEN_ASKED {
+            self.generate_new_pieces();
+        }
+        self.pieces.clone()
     }
 }
 

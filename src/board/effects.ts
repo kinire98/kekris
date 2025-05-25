@@ -41,9 +41,7 @@ export function pieceFixedEffect() {
 
 }
 
-export function gameWonEffect() {
-  const $board = document.getElementById("wrap")! as HTMLElement;
-  $board.classList.add("won");
+// export function gameWonEffect() {
 
-}
+// }
 

@@ -31,12 +31,6 @@
     <div v-if="props.exit" id="exit-icon">
       <Icon icon="radix-icons:exit" @click="exit" />
     </div>
-    <div v-if="props.exit" id="exit-icon">
-      <Icon icon="radix-icons:exit" @click="exit" />
-    </div>
-    <div v-if="props.exit" id="exit-icon">
-      <Icon icon="radix-icons:exit" @click="exit" />
-    </div>
   </div>
 </template>
 <style scoped>

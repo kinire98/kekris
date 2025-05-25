@@ -29,5 +29,11 @@ fn game_over_lock_out() {
 
 #[test]
 fn game_over_top_out() {
-    todo!("Trash lines not implemented yet")
+    let mut board = LocalBoard::new(LocalQueue::default());
+    board.cells[181] = Cell::Full(Piece::I);
+    board.trash_lines_queue = vec![(38, 0)];
+    board.hard_drop();
+    println!("{:?}\n{:?}", board.buffer, board.cells);
+    println!("{}", board.top_out);
+    assert!(board.game_over());
 }
