@@ -132,6 +132,7 @@ impl ClientRoom {
                     self.app.clone(),
                     delay,
                     self.playing.clone(),
+                    self.player.clone(),
                 )
                 .await;
                 *self.playing.lock().await = true;

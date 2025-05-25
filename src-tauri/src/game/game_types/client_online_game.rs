@@ -7,6 +7,7 @@ use tokio::{
     sync::mpsc::{self, Receiver, Sender},
 };
 
+use crate::models::dummy_room::DummyPlayer;
 use crate::{
     commands::game_commands::{FIRST_LEVEL_CHANNEL, GAME_CONTROL_CHANNEL, SECOND_LEVEL_CHANNEL},
     game::{pieces::Piece, queue::remote_queue::RemoteQueue, strategy::Strategy},
@@ -40,6 +41,10 @@ pub struct ClientOnlineGame {
     strategy: Strategy,
     playing: Arc<Mutex<bool>>,
     received_first_game_command: bool,
+    options: GameOptions,
+    deaths: u8,
+    self_player: DummyPlayer,
+    dead: bool,
 }
 
 impl ClientOnlineGame {
@@ -50,6 +55,7 @@ impl ClientOnlineGame {
         app: AppHandle,
         delay: u64,
         playing: Arc<Mutex<bool>>,
+        player: DummyPlayer,
     ) -> Self {
         let (tx_needs_pieces, _) = std::sync::mpsc::channel();
         let queue = RemoteQueue::new(pieces_buffer, tx_needs_pieces);
@@ -80,6 +86,10 @@ impl ClientOnlineGame {
             strategy: Strategy::Random,
             playing,
             received_first_game_command: false,
+            options: game_options,
+            deaths: 0,
+            self_player: player,
+            dead: false,
         }
     }
     async fn set_channels(
@@ -116,12 +126,10 @@ impl ClientOnlineGame {
         let mut lock = self.playing.lock().await;
         *lock = true;
         drop(lock);
-        let mut limit = 50;
         while self.running {
             let socket = self.socket.clone();
             tokio::select! {
                 content = read_enum_from_server(&socket) => {
-                    limit = 50;
                     if let Ok(content) = content  {
                         self.handle_network_content(content).await;
                         self.received_first_game_command = true;
@@ -130,15 +138,14 @@ impl ClientOnlineGame {
                     };
                 },
                 response = self.game_responses.recv() => {
-                    limit = 50;
                     if let Some(response) = response  {
                         self.handle_game_responses(response).await;
                     };
                 },
                 _ = tokio::time::sleep(Duration::from_millis(100)) => {
-                    limit -= 1;
-                    if limit == 0 {
-                        self.return_to_room_error();
+                    dbg!("here");
+                    if self.deaths >= self.options.number_of_players() - 1 {
+                        self.compute_lost_player().await;
                     }
                 }
 
@@ -173,6 +180,7 @@ impl ClientOnlineGame {
                 let _ = self.tx_commands_second.send(SecondLevelCommands::Won).await;
             }
             ServerOnlineGameCommands::PlayerLost(dummy_player) => {
+                self.deaths += 1;
                 let _ = self.app.emit(OTHER_PLAYER_LOST, dummy_player);
             }
             ServerOnlineGameCommands::GameEnded(dummy_player) => {
@@ -210,7 +218,11 @@ impl ClientOnlineGame {
             GameResponses::TrashSent(amount) => {
                 Some(ClientOnlineGameCommands::TrashSent(self.strategy, amount))
             }
-            GameResponses::Lost => Some(ClientOnlineGameCommands::Lost(0)),
+            GameResponses::Lost => {
+                self.dead = true;
+                self.deaths += 1;
+                Some(ClientOnlineGameCommands::Lost(0))
+            }
             GameResponses::Queue(_pieces) => {
                 panic!("SHOULDN'T BE HERE");
             }
@@ -223,12 +235,24 @@ impl ClientOnlineGame {
     fn handle_error(&mut self, error: Box<dyn std::error::Error + Send + Sync>) {
         if let Some(e) = error.downcast_ref::<serde_json::Error>() {
             if e.is_data() && self.received_first_game_command {
-                self.return_to_room_error();
+                self.running = false;
+                let _ = self.app.emit(OTHER_PLAYER_WON_UNKNOWN, false);
             }
         }
     }
-    fn return_to_room_error(&mut self) {
-        self.running = false;
-        let _ = self.app.emit(OTHER_PLAYER_WON_UNKNOWN, false);
+    async fn compute_lost_player(&mut self) {
+        if self.dead {
+            let _ = self.app.emit(OTHER_PLAYER_WON_UNKNOWN, false);
+        } else {
+            let _ = self.tx_commands_second.send(SecondLevelCommands::Won).await;
+            let _ = self.app.emit(
+                OTHER_PLAYER_WON,
+                WonSignal {
+                    player: self.self_player.clone(),
+                    is_hosting: false,
+                },
+            );
+            self.running = false;
+        }
     }
 }
