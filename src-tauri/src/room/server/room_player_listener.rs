@@ -90,7 +90,6 @@ impl RoomPlayerListener {
                     },
                     _ = tokio::time::sleep(Duration::from_secs(PING_LIMIT_IN_SECONDS)) => {}
                 }
-                tokio::time::sleep(Duration::from_millis(300)).await;
             } else {
                 drop(lock);
                 tokio::time::sleep(Duration::from_millis(300)).await;

@@ -228,11 +228,13 @@ impl Room {
         }
         let pieces = queue.get_pieces();
         self.options.multi_player((self.players.len() + 1) as u8);
-        let _ = self.send_updates.send(Updates::GameStarts((
-            highest_ping,
-            self.options.clone(),
-            pieces,
-        )));
+        self.send_updates
+            .send(Updates::GameStarts((
+                highest_ping,
+                self.options.clone(),
+                pieces,
+            )))
+            .unwrap();
         tokio::time::sleep(Duration::from_millis(highest_ping)).await;
         let mut online_game = OnlineGame::new(
             self.players.clone(),
