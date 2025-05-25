@@ -116,10 +116,12 @@ impl ClientOnlineGame {
         let mut lock = self.playing.lock().await;
         *lock = true;
         drop(lock);
+        let mut limit = 50;
         while self.running {
             let socket = self.socket.clone();
             tokio::select! {
                 content = read_enum_from_server(&socket) => {
+                    limit = 50;
                     if let Ok(content) = content  {
                         self.handle_network_content(content).await;
                         self.received_first_game_command = true;
@@ -128,11 +130,17 @@ impl ClientOnlineGame {
                     };
                 },
                 response = self.game_responses.recv() => {
-                    drop(socket);
+                    limit = 50;
                     if let Some(response) = response  {
                         self.handle_game_responses(response).await;
                     };
                 },
+                _ = tokio::time::sleep(Duration::from_millis(100)) => {
+                    limit -= 1;
+                    if limit == 0 {
+                        self.return_to_room_error();
+                    }
+                }
 
             }
         }
@@ -215,9 +223,12 @@ impl ClientOnlineGame {
     fn handle_error(&mut self, error: Box<dyn std::error::Error + Send + Sync>) {
         if let Some(e) = error.downcast_ref::<serde_json::Error>() {
             if e.is_data() && self.received_first_game_command {
-                self.running = false;
-                let _ = self.app.emit(OTHER_PLAYER_WON_UNKNOWN, false);
+                self.return_to_room_error();
             }
         }
+    }
+    fn return_to_room_error(&mut self) {
+        self.running = false;
+        let _ = self.app.emit(OTHER_PLAYER_WON_UNKNOWN, false);
     }
 }
