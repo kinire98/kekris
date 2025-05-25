@@ -7,7 +7,6 @@ use super::strategy::Strategy;
 pub mod cell;
 pub mod danger_level;
 pub mod local_board;
-pub mod remote_board;
 
 pub trait Board: Debug + Send + Sync {
     /// Assume it's only be called when a piece is set

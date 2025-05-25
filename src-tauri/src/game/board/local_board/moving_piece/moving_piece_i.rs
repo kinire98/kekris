@@ -28,7 +28,7 @@ impl MovingPiece for MovingPieceI {
     }
 
     fn move_up(&mut self) {
-        self.y += 1;
+        self.y -= 1;
     }
 
     fn move_left(&mut self) {

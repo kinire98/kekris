@@ -1,51 +1,86 @@
+
 import { invoke } from "@tauri-apps/api/core";
 import { getRepeatInterval, getStartRepeatInterval } from "./interval";
-import { hardDropEffect, leftRightEffect } from "../board/effects";
-import { getClockwiseCode, getCounterClockwiseCode, getForfeitCode, getFullRotationCode, getHardDropCode, getLeftMoveCode, getPauseCode, getRetryCode, getRigthMoveCode, getSavePieceCode, getSoftDropCode, getTargetingEliminationsCode, getTargetingEvenCode, getTargetingPaybackCode, getTargetingRandomCode } from "./keycodes";
+import { hardDropEffect } from "../board/effects";
+import { getClockwiseCode, getCounterClockwiseCode, getForfeitCode, getFullRotationCode, getHardDropCode, getLeftMoveCode, getRetryCode, getRightMoveCode, getSavePieceCode, getSoftDropCode, getTargetingEliminationsCode, getTargetingEvenCode, getTargetingPaybackCode, getTargetingRandomCode } from "./keycodes";
+import { currentGameOptions } from "../board/board";
 
+let customRepeatInterval = getRepeatInterval();
+let customStartRepeatInterval = getStartRepeatInterval();
+let keyIntervals: Record<string, NodeJS.Timeout> = {};
+const keySet = new Set<string>(); // Repeat interval
+const pressedSet = new Set<string>(); // Not repeat
 export default function manageInputListeners() {
-  // ! Take out to another file
-  const customRepeatInterval = getRepeatInterval(); // Customize this value (in milliseconds)
-  const customStartRepeatInteval = getStartRepeatInterval();
-  const keyIntervals: Record<string, NodeJS.Timeout> = {}; // Tracks active intervals for keys
-  const keySet = new Set<string>();
-  const pressedSet = new Set<string>();
-
+  keyIntervals = {};
+  keySet.clear();
+  pressedSet.clear();
+  customRepeatInterval = getRepeatInterval();
+  customStartRepeatInterval = getStartRepeatInterval();
   // Handle keydown event
-  document.addEventListener("keydown", (event: KeyboardEvent) => {
-    if (keyIntervals[event.key]) return;
-    if (pressedSet.has(event.key)) return;
-    // Trigger the action immediately
-    manageInput(event.key);
+  document.addEventListener("keydown", keyDown);
 
-    // Set up a custom interval for repeated actions
-
-    if (event.key != getLeftMoveCode() && event.key != getRigthMoveCode() && event.key != getSoftDropCode()) {
-      pressedSet.add(event.key);
-      return;
-    }
-    keySet.add(event.key);
-    setTimeout(() => {
-      if (keySet.has(event.key)) {
-        keyIntervals[event.key] = setInterval(() => {
-          manageInput(event.key);
-        }, customRepeatInterval);
-      }
-    }, customStartRepeatInteval);
-  });
-
-  // Handle keyup event
-  document.addEventListener("keyup", (event: KeyboardEvent) => {
-    if (pressedSet.has(event.key)) pressedSet.delete(event.key);
-    if (event.key != getLeftMoveCode() && event.key != getRigthMoveCode() && event.key != getSoftDropCode()) return;
-    if (keySet.has(event.key)) keySet.delete(event.key);
-    if (keyIntervals[event.key]) {
-      clearInterval(keyIntervals[event.key]);
-      delete keyIntervals[event.key];
-    }
-  });
+  document.addEventListener("keyup", keyUp);
 }
 
+export function removeInputListeners() {
+  document.removeEventListener("keyup", keyUp);
+  document.removeEventListener("keydown", keyDown);
+  removeIntervals();
+}
+function keyUp(event: KeyboardEvent) {
+  if (pressedSet.has(event.key)) {
+    pressedSet.delete(event.key);
+    return;
+  }
+
+  if (event.key != getLeftMoveCode() && event.key != getRightMoveCode() && event.key != getSoftDropCode()) {
+    return;
+  }
+
+  if (keySet.has(event.key)) {
+    keySet.delete(event.key);
+    removeIntervals();
+  }
+}
+function keyDown(event: KeyboardEvent) {
+  if (keySet.has(event.key)) {
+    return;
+  }
+  if (pressedSet.has(event.key)) {
+    return;
+  }
+
+  manageInput(event.key);
+  if (event.key == getHardDropCode()) {
+    removeIntervals();
+  }
+  if (event.key != getLeftMoveCode() && event.key != getRightMoveCode() && event.key != getSoftDropCode()) {
+    pressedSet.add(event.key);
+    return;
+  }
+
+
+  keySet.add(event.key);
+
+
+  setTimeout(() => {
+    if (keySet.has(event.key) && !keyIntervals.hasOwnProperty(event.key)) {
+      keyIntervals[event.key] = setInterval(() => {
+        manageInput(event.key);
+      }, customRepeatInterval);
+    }
+  }, customStartRepeatInterval);
+}
+
+function removeIntervals() {
+  for (const interval in keyIntervals) {
+    if (Object.prototype.hasOwnProperty.call(keyIntervals, interval)) {
+      const element = keyIntervals[interval];
+      clearInterval(element);
+      delete keyIntervals[interval];
+    }
+  }
+}
 
 function manageInput(keyCode: string) {
   switch (keyCode) {
@@ -55,7 +90,7 @@ function manageInput(keyCode: string) {
     case getLeftMoveCode():
       leftMove();
       break;
-    case getRigthMoveCode():
+    case getRightMoveCode():
       rightMove();
       break;
     case getSavePieceCode():
@@ -91,9 +126,6 @@ function manageInput(keyCode: string) {
     case getRetryCode():
       retryGame();
       break;
-    case getPauseCode():
-      pauseGame();
-      break;
   }
 }
 
@@ -107,6 +139,7 @@ async function counterClockWise() {
 
 async function forfeit() {
   await invoke("forfeit_game")
+  removeInputListeners();
 }
 
 async function fullRotation() {
@@ -119,16 +152,24 @@ async function hardDrop() {
 }
 
 async function leftMove() {
-  leftRightEffect();
   await invoke("left_move");
 }
 
 async function retryGame() {
-  await invoke("retry_game");
+  if (currentGameOptions.number_of_players > 1) {
+    return;
+  }
+  await invoke("retry_game", { options: currentGameOptions });
+  const $canvas = document.getElementById("next")! as HTMLCanvasElement;
+  $canvas.getContext("2d")?.clearRect(0, 0, $canvas.width, $canvas.height);
+  removeInputListeners();
+  setTimeout(() => {
+    manageInputListeners();
+  }, 3000);
+
 }
 
 async function rightMove() {
-  leftRightEffect();
   await invoke("right_move");
 }
 
@@ -142,19 +183,31 @@ async function softDrop() {
 
 async function targetingEliminations() {
   await invoke("targeting_strategy_eliminations");
+  changeStrategy(2);
 }
 
 async function targetingEven() {
   await invoke("targeting_strategy_even");
+  changeStrategy(1);
 }
 
 async function targetingRandom() {
   await invoke("targeting_strategy_random");
+  changeStrategy(0);
 }
 
 async function targetingPayback() {
   await invoke("targeting_strategy_payback");
+  changeStrategy(3);
 }
-async function pauseGame() {
-  await invoke("pause_game");
+
+function changeStrategy(position: number) {
+  let strategies = document.querySelectorAll(".strategies");
+  if (strategies.length == 0) {
+    return;
+  }
+  strategies.forEach(el => el.classList.remove("active"));
+  strategies[position].classList.add("active");
 }
+
+

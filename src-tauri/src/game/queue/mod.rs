@@ -7,4 +7,6 @@ pub mod remote_queue;
 
 pub trait Queue: Send + Sync + Debug {
     fn get_piece(&mut self, position: usize) -> Option<Piece>;
+    fn insert_pieces(&mut self, pieces: Vec<Piece>);
+    fn get_pieces(&mut self) -> Vec<Piece>;
 }

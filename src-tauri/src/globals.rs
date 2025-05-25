@@ -1,0 +1,18 @@
+use const_format::formatcp;
+
+pub const LISTENING_PORT_BROADCAST: u16 = 9999;
+pub const LISTENING_RESPONSE_PORT_BROADCAST: u16 = 9998;
+
+pub const LISTENING_PORT_TCP_SERVER: u16 = 9997;
+pub const LISTENING_PORT_TCP_CLIENT: u16 = 9996;
+pub const LISTENING_DIRECTION_BROADCAST: &str = formatcp!("0.0.0.0:{}", LISTENING_PORT_BROADCAST);
+pub const SENDING_BROADCAST: &str = formatcp!("255.255.255.255:{}", LISTENING_PORT_BROADCAST);
+pub const LISTEN_BROADCAST_RESPONSE: &str =
+    formatcp!("0.0.0.0:{}", LISTENING_RESPONSE_PORT_BROADCAST);
+pub const LISTENING_DIRECTION_TCP: &str = formatcp!("0.0.0.0:{}", LISTENING_PORT_TCP_SERVER);
+pub const DUMMY_SEND_BROADCAST: &str = "0.0.0.0:0";
+pub const SIZE_FOR_KB: usize = 1048576;
+pub const PING_LIMIT_IN_SECONDS: u64 = 5;
+
+pub const UPDATES_IN_MILLIS: u64 = 500;
+pub const PING_IN_MILLIS: u64 = 300;

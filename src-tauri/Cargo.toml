@@ -1,6 +1,6 @@
 [package]
 name = "kekris"
-version = "0.0.0"
+version = "0.3.0-alpha"
 description = "A Tetris clone"
 authors = ["kinire98"]
 edition = "2024"
@@ -12,24 +12,27 @@ name = "tauri_app_lib"
 crate-type = ["lib", "cdylib", "staticlib"]
 
 [build-dependencies]
-tauri-build = { version = "2.0.5", features = [] }
+tauri-build = { version = "2.2.0", features = [] }
 
 [dependencies]
-tauri = { version = "2.0.5", features = [] }
-tauri-plugin-shell = "2.0.5"
+tauri = { version = "2.5.1", features = [] }
+tauri-plugin-shell = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rand = "0.9"
 color-eyre = "0.6.3"
-tokio = { version = "1.44.0", features = ["full"] }
-rodio = "0.20.1"
+tokio = { version = "1.44.2", features = ["full"] }
+sqlx = { version = "0.8.5", features = ["sqlite", "runtime-tokio-native-tls", "macros"] }
+local-ip-address = "0.6.3"
+const_format = "0.2.34"
+tokio-stream = "0.1.17"
+futures-util = "0.3.31"
 
 [dev-dependencies]
 color-eyre = "0.6.3"
 
 
 [profile.release]
-panic = "abort" # Strip expensive panic clean-up logic
 build-override.opt-level = 3
 codegen-units = 1 # Compile crates one after another so the compiler can optimize better
 lto = true # Enables link to optimizations

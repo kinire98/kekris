@@ -37,3 +37,16 @@ impl Piece {
         }
     }
 }
+impl From<u8> for Piece {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => Piece::I,
+            1 => Piece::J,
+            2 => Piece::L,
+            3 => Piece::O,
+            4 => Piece::S,
+            5 => Piece::T,
+            _ => Piece::Z,
+        }
+    }
+}
