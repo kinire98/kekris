@@ -128,11 +128,9 @@ impl ClientOnlineGame {
         drop(lock);
         while self.running {
             let socket = self.socket.clone();
-            dbg!("here");
             if !self.dead {
                 tokio::select! {
                     content = read_enum_from_server(&socket) => {
-                        dbg!(&content);
                         if let Ok(content) = content  {
                             self.handle_network_content(content).await;
                         }
@@ -229,29 +227,9 @@ impl ClientOnlineGame {
         let Some(command) = command else {
             return;
         };
+        if let ClientOnlineGameCommands::Lost(_) = command {
+            dbg!("lost sent");
+        }
         send_enum_from_client(&self.socket, &command).await.unwrap();
     }
-    // fn handle_error(&mut self, error: Box<dyn std::error::Error + Send + Sync>) {
-    //     if let Some(e) = error.downcast_ref::<serde_json::Error>() {
-    //         if e.is_data() && self.received_first_game_command {
-    //             self.running = false;
-    //             let _ = self.app.emit(OTHER_PLAYER_WON_UNKNOWN, false);
-    //         }
-    //     }
-    // }
-    // async fn compute_lost_player(&mut self) {
-    //     if self.dead {
-    //         let _ = self.app.emit(OTHER_PLAYER_WON_UNKNOWN, false);
-    //     } else {
-    //         let _ = self.tx_commands_second.send(SecondLevelCommands::Won).await;
-    //         let _ = self.app.emit(
-    //             OTHER_PLAYER_WON,
-    //             WonSignal {
-    //                 player: self.self_player.clone(),
-    //                 is_hosting: false,
-    //             },
-    //         );
-    //         self.running = false;
-    //     }
-    // }
 }
