@@ -149,13 +149,17 @@ impl RemoteGame {
             }
             ClientOnlineGameCommands::Lost(_) => {
                 dbg!("here");
-                self.lost = true;
-                RemoteToOnlineGameCommunication::Lost(self.player.clone())
+                if self.lost {
+                    None
+                } else {
+                    self.lost = true;
+                    RemoteToOnlineGameCommunication::Lost(self.player.clone())
+                }
             }
             ClientOnlineGameCommands::QueueRequest(_) => {
                 RemoteToOnlineGameCommunication::QueueRequest
             }
         };
-        let _ = self.sender.send(message).await;
+        self.sender.send(message).await.unwrap();
     }
 }

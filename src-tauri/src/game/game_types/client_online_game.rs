@@ -226,7 +226,13 @@ impl ClientOnlineGame {
             GameResponses::Lost => {
                 self.dead = true;
                 self.deaths += 1;
-                Some(ClientOnlineGameCommands::Lost(0))
+                send_enum_from_client(&self.socket, &ClientOnlineGameCommands::Lost(0))
+                    .await
+                    .unwrap();
+                send_enum_from_client(&self.socket, &ClientOnlineGameCommands::Lost(0))
+                    .await
+                    .unwrap();
+                None
             }
             GameResponses::Queue(_pieces) => {
                 panic!("SHOULDN'T BE HERE");
