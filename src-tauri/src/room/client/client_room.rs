@@ -1,4 +1,5 @@
 use std::{
+    error::Error,
     sync::Arc,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -73,20 +74,20 @@ impl ClientRoom {
                             dbg!("here");
                             self.handle_content(content).await;
                         } else {
-                            dbg!(&command);
-                            let command = read_enum_from_server(&lock).await;
-                            if let Ok(command) = command {
-                                dbg!("here");
-                                self.handle_content(command).await;
-                            } else {
-                                dbg!(&command);
-                                let command = read_enum_from_server(&lock).await;
-                                dbg!(&command);
-                                if let Ok(content) = command {
-                                    dbg!("here");
-                                    self.handle_content(content).await;
+                            let mut error = command.unwrap_err();
+                            loop {
+                                if self.handle_error(error) {
+                                    let _ = self.app.emit(LOST_CONNECTION_EMIT, false);
+                                    self.listening = false;
+                                    break;
                                 } else {
-                                    dbg!(&command);
+                                    let command = read_enum_from_server(&lock).await;
+                                    if let Ok(command) = command {
+                                        self.handle_content(command);
+                                        break;
+                                    } else {
+                                        error = command.unwrap_err();
+                                    }
                                 }
                             }
                         }
@@ -216,5 +217,19 @@ impl ClientRoom {
             }
         }
         false
+    }
+    fn handle_error(&mut self, error: Box<dyn Error + Send + Sync + 'static>) -> bool {
+        let error = error.downcast::<std::io::Error>();
+        if error.is_err() {
+            return false;
+        }
+
+        matches!(
+            error.unwrap().kind(),
+            std::io::ErrorKind::BrokenPipe
+                | std::io::ErrorKind::UnexpectedEof
+                | std::io::ErrorKind::HostUnreachable
+                | std::io::ErrorKind::ConnectionReset
+        )
     }
 }

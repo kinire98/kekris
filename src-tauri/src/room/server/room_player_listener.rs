@@ -188,7 +188,8 @@ impl RoomPlayerListener {
                     match error.unwrap_err().kind() {
                         std::io::ErrorKind::BrokenPipe
                         | std::io::ErrorKind::UnexpectedEof
-                        | std::io::ErrorKind::HostUnreachable => {
+                        | std::io::ErrorKind::HostUnreachable
+                        | std::io::ErrorKind::ConnectionReset => {
                             let _ = self
                                 .send_commands
                                 .send(FirstLevelCommands::PlayerDisconnected(self.player.clone()))
@@ -226,7 +227,8 @@ impl RoomPlayerListener {
                     match result.unwrap_err().kind() {
                         std::io::ErrorKind::BrokenPipe
                         | std::io::ErrorKind::UnexpectedEof
-                        | std::io::ErrorKind::HostUnreachable => {
+                        | std::io::ErrorKind::HostUnreachable
+                        | std::io::ErrorKind::ConnectionReset => {
                             let _ = self
                                 .send_commands
                                 .send(FirstLevelCommands::PlayerDisconnected(self.player.clone()))

@@ -29,7 +29,7 @@ use crate::{
 const STATE_EMIT_OTHER_PLAYERS: &str = "stateEmitForOtherPlayers";
 const OTHER_PLAYER_LOST: &str = "otherPlayerLostEmit";
 const OTHER_PLAYER_WON: &str = "otherPlayerWon";
-// const OTHER_PLAYER_WON_UNKNOWN: &str = "otherPlayerWonUnknown";
+const OTHER_PLAYER_WON_UNKNOWN: &str = "otherPlayerWonUnknown";
 
 use super::local_game::{GameControl, LocalGame};
 
@@ -167,6 +167,7 @@ impl ClientOnlineGame {
                 .as_secs();
             if cur_time - time >= 5 {
                 self.running = false;
+                let _ = self.app.emit(OTHER_PLAYER_WON_UNKNOWN, false);
             }
         }
         let mut lock = self.playing.lock().await;
