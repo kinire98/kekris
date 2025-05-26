@@ -210,14 +210,25 @@ impl RoomPlayerListener {
                 }
             }
             Updates::GameStarts((highest_ping, options, pieces)) => {
+                let ping = if self.ping > highest_ping {
+                    self.ping
+                } else {
+                    highest_ping - self.ping
+                };
                 send_enum_from_server(
                     socket,
                     &ServerRoomNetCommands::GameStarts((
-                        highest_ping - self.ping,
-                        pieces,
+                        ping,
+                        pieces.clone(),
                         options,
                         self.player.id(),
                     )),
+                )
+                .await
+                .unwrap();
+                send_enum_from_server(
+                    socket,
+                    &ServerRoomNetCommands::GameStarts((ping, pieces, options, self.player.id())),
                 )
                 .await
                 .unwrap();
