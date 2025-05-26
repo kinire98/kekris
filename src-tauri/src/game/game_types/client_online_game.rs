@@ -183,6 +183,9 @@ impl ClientOnlineGame {
                     },
                 );
                 self.running = false;
+                let mut lock = self.playing.lock().await;
+                *lock = false;
+                drop(lock);
             }
             ServerOnlineGameCommands::PlayerLost(dummy_player) => {
                 self.deaths += 1;
@@ -197,6 +200,9 @@ impl ClientOnlineGame {
                         is_hosting: false,
                     },
                 );
+                let mut lock = self.playing.lock().await;
+                *lock = false;
+                drop(lock);
                 self.running = false;
             }
             ServerOnlineGameCommands::State(dummy_player, state) => {
