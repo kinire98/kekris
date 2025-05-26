@@ -61,29 +61,20 @@ impl ClientRoom {
         let lock = self.stream.clone();
         while self.listening {
             let lock_loop = self.playing.lock().await;
-            dbg!(&lock_loop);
             if !*lock_loop {
                 drop(lock_loop);
-                dbg!("here");
-                let lock2 = self.stream.clone();
-                let loc2 = lock2.lock().await;
-                dbg!(loc2.readable().await);
-                drop(loc2);
                 tokio::select! {
                     command = read_enum_from_server(&lock) => {
-                        dbg!("here");
                         time = SystemTime::now()
                             .duration_since(UNIX_EPOCH)
                             .expect("Time went backwards 🗿🤙")
                             .as_secs();
                         if let Ok(content) = command {
-                            dbg!("here");
                             self.handle_content(content).await;
                         } else {
                             dbg!(&command);
                             let command = read_enum_from_server(&lock).await;
                             if let Ok(command) = command {
-                                dbg!("here");
                                 self.handle_content(command).await;
                             } else {
                                 dbg!(&command);
