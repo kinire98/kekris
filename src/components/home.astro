@@ -1,0 +1,51 @@
+---
+import LinkButton from "../components/LinkButton.astro";
+import { getLangFromUrl, useTranslations } from "../i18n/utils";
+import LayoutWithPicker from "../layouts/LayoutWithPicker.astro";
+
+const langUse = getLangFromUrl(Astro.url);
+const t = useTranslations(langUse);
+const manualLink = "/kekris/" + langUse + "/manual";
+---
+
+<LayoutWithPicker>
+  <img src="/kekris/logo.png" alt="App logo" class="logo" />
+  <div>
+    <LinkButton
+      text={t("index.download")}
+      link="https://github.com/kinire98/kekris/releases"
+      newPage
+    />
+    <LinkButton text={t("index.manual")} link={manualLink} />
+  </div>
+  <a href="https://github.com/kinire98/kekris" target="_blank" class="icon">
+    <img src="/kekris/icons/github.svg" />
+  </a>
+</LayoutWithPicker>
+<style>
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100%;
+    min-width: 100%;
+    flex-direction: column;
+  }
+  div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-direction: row;
+    width: 600px;
+  }
+  img.logo {
+    width: 200px;
+    margin-bottom: 100px;
+  }
+
+  .icon {
+    position: absolute;
+    right: 5vw;
+    bottom: 5vh;
+  }
+</style>

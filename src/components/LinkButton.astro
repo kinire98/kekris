@@ -1,0 +1,41 @@
+---
+interface Props {
+  link: string;
+  text: string;
+  newPage?: boolean;
+}
+const { link, text, newPage = false } = Astro.props;
+let value = "";
+if (newPage) {
+  value = "_blank";
+} else {
+  value = "_self";
+}
+---
+
+<div id="link-button">
+  <a href={link} target={value}>{text}</a>
+</div>
+
+<style>
+  div {
+    background: var(--main-color);
+    color: var(--main-contrast);
+    border-radius: 15px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  a {
+    text-decoration: none;
+    color: var(--main-contrast) !important;
+    height: 100%;
+    width: 100%;
+    padding: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 25px;
+  }
+</style>

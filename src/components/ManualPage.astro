@@ -1,0 +1,17 @@
+---
+import { getLangFromUrl } from "../i18n/utils";
+import LayoutWithPicker from "../layouts/LayoutWithPicker.astro";
+
+const langUse = getLangFromUrl(Astro.url);
+const allPosts = import.meta.glob("/*/manual/*.md", { eager: true });
+
+// Filter the ones that match the current language
+const posts = Object.entries(allPosts)
+  .filter(([path]) => path.includes(`/kekris/${langUse}/manual/`))
+  .map(([_, module]) => module);
+console.log(allPosts);
+---
+
+<LayoutWithPicker>
+  <h1></h1>
+</LayoutWithPicker>

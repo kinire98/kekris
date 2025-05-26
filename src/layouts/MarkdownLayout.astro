@@ -1,0 +1,54 @@
+---
+import LinkButton from "../components/LinkButton.astro";
+import { getLangFromUrl, useTranslations } from "../i18n/utils";
+import Layout from "./Layout.astro";
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+let url = Astro.url.pathname.split("/");
+let returnUrl = url.slice(0, url.length - 1).join("/");
+console.log(url);
+console.log(returnUrl);
+---
+
+<Layout>
+  <LinkButton text={t("page.return")} link={returnUrl} />
+  <slot />
+</Layout>
+<style is:global>
+  p {
+    font-size: 18px;
+  }
+  body {
+    padding: 15px;
+    height: auto;
+  }
+  img {
+    width: 750px;
+    text-align: center;
+    display: flex;
+    margin: 15px;
+    margin-left: calc(50% - 375px);
+  }
+  h1 {
+    font-size: 45px;
+  }
+  h2 {
+    font-size: 30px;
+  }
+  code {
+    background-color: #202020;
+    padding: 5px;
+    font-family: monospace;
+  }
+  ul {
+    font-size: 18px;
+  }
+  li {
+    margin: 15px;
+  }
+  #link-button {
+    position: sticky;
+    width: 25vw;
+    right: 15px;
+  }
+</style>

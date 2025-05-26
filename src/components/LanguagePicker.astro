@@ -1,0 +1,35 @@
+---
+import { languages } from "../i18n/ui";
+const currentPath = Astro.url.pathname; // e.g., "/kekris/en/about"
+const currentLang = currentPath.split("/")[2]; // Extracts "en", "es", etc.
+---
+
+<select id="langSelector">
+  {
+    Object.entries(languages).map(([lang, label]) => (
+      <option value={lang} selected={lang === currentLang}>
+        {label}
+      </option>
+    ))
+  }
+</select>
+<style>
+  select {
+    background: transparent;
+    color: var(--main-color);
+    border: 1px solid var(--main-color);
+    padding: 10px;
+    font-size: 18px;
+    border-radius: 20px;
+  }
+</style>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const selector = document.getElementById("langSelector")!;
+    selector.addEventListener("change", (e: any) => {
+      const newLang = e.target.value;
+      const pathWithoutLang = location.pathname.split("/").slice(3).join("/");
+      window.location.href = `/kekris/${newLang}/${pathWithoutLang}`;
+    });
+  });
+</script>

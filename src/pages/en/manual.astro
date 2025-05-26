@@ -1,0 +1,38 @@
+---
+import LayoutWithPicker from "../../layouts/LayoutWithPicker.astro";
+
+const posts = Object.values(import.meta.glob("./manual/*.md", { eager: true }));
+---
+
+<LayoutWithPicker>
+  <h1>Manual</h1>
+  <div>
+    {
+      posts.map((post: any) => (
+        <li>
+          <h2>
+            <a href={post.url}>{post.frontmatter.title}</a>
+          </h2>
+        </li>
+      ))
+    }
+  </div>
+</LayoutWithPicker>
+<style>
+  * {
+    position: relative;
+  }
+  div {
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    flex-direction: column;
+    width: 100%;
+  }
+  li {
+    list-style-type: none;
+  }
+  a {
+    color: white;
+  }
+</style>

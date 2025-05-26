@@ -1,0 +1,19 @@
+---
+import LanguagePicker from "../components/LanguagePicker.astro";
+import Layout from "./Layout.astro";
+---
+
+<Layout>
+  <slot />
+  <footer>
+    <LanguagePicker class="picker" />
+  </footer>
+</Layout>
+
+<style is:global>
+  #langSelector {
+    position: absolute;
+    bottom: 5vh;
+    left: 5vw;
+  }
+</style>
