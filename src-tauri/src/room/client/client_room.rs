@@ -76,6 +76,11 @@ impl ClientRoom {
                             let command = read_enum_from_server(&lock).await;
                             if let Ok(command) = command {
                                 self.handle_content(command).await;
+                            } else {
+                                let command = read_enum_from_server(&lock).await;
+                                if let Ok(content) = command {
+                                    self.handle_content(content).await;
+                                }
                             }
                         }
                     },
