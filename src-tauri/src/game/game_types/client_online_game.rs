@@ -85,8 +85,6 @@ impl ClientOnlineGame {
             app,
             strategy: Strategy::Random,
             playing,
-            // received_first_game_command: false,
-            // options: game_options,
             deaths: 0,
             self_player: player,
             dead: false,
