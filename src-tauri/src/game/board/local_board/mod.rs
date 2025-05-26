@@ -10,38 +10,67 @@ use super::{Board, cell::Cell, danger_level::DangerLevel};
 
 mod moving_piece;
 
+/// The width of the game board.
 const BOARD_WIDTH: i16 = 10;
+/// The height of the game board.
 const BOARD_HEIGHT: i16 = 20;
 
+/// `LocalBoard` represents the game board for a single-player game.
 #[derive(Debug)]
 pub struct LocalBoard {
+    /// The queue of upcoming pieces.
     queue: Box<dyn Queue>,
+    /// The currently held piece.
     held_piece: Option<Piece>,
+    /// The currently moving piece.
     cur_piece: Box<dyn MovingPiece>,
+    /// The strategy being used by the board.
     strategy: Strategy,
+    /// The number of pieces that have been placed on the board.
     piece_num: usize,
+    /// The queue of trash lines to be added to the board.
     trash_lines_queue: Vec<(u8, u8)>,
+    /// The cells of the main board.
     cells: [Cell; (BOARD_HEIGHT * BOARD_WIDTH) as usize],
+    /// The cells of the buffer board (used for pieces above the visible board).
     buffer: [Cell; (BOARD_HEIGHT * BOARD_WIDTH) as usize],
+    /// A boolean indicating whether the player has locked out (placed a piece too high).
     lock_out: bool,
+    /// A boolean indicating whether the player has topped out (filled the board to the top).
     top_out: bool,
+    /// A boolean indicating whether the current piece is blocked.
     piece_blocked: bool,
+    /// A boolean indicating whether a line has been cleared.
     line_cleared: bool,
+    /// The number of lines that have been cleared.
     lines_cleared: u32,
+    /// The pattern of lines that have been cleared.
     clear_pattern: ClearLinePattern,
+    /// A boolean indicating whether the piece has been rotated.
     rotation: bool,
+    /// The rotation option used.
     rotation_option: RotationOption,
+    /// The variation of the rotation used.
     rotation_variation: i16,
 }
 impl Board for LocalBoard {
+    /// Checks if the game is over based on topping out, locking out, or blocking out.
     fn game_over(&self) -> bool {
         self.top_out || self.lock_out || self.block_out()
     }
 
+    /// Checks if the game has been won based on the given win condition.
+    ///
+    /// The win condition is a closure that takes a boolean indicating whether the game is over
+    /// and the number of lines cleared as input, and returns a boolean indicating whether the game has been won.
     fn game_won(&self, win_condition: impl Fn(bool, u32) -> bool) -> bool {
         win_condition(self.game_over(), self.lines_cleared)
     }
 
+    /// Returns the current state of the board as a string.
+    ///
+    /// The string representation includes the state of the main board, the buffer board,
+    /// and the current piece.
     fn board_state(&self) -> String {
         let mut buf: Vec<u8> = [Cell::Empty.string_representation() as u8;
             (BOARD_HEIGHT * BOARD_WIDTH * 2) as usize]
@@ -83,9 +112,11 @@ impl Board for LocalBoard {
         String::from_utf8(buf).expect("Should be valid UTF as I just wrote it")
     }
 
+    /// Returns the strategy being used by the board.
     fn strategy(&self) -> Strategy {
         self.strategy
     }
+    /// Returns the danger level of the board based on the height of the highest piece.
     fn danger_level(&self) -> DangerLevel {
         let coords = self.get_highest_piece();
         if coords.is_none() {
@@ -118,6 +149,10 @@ impl Board for LocalBoard {
 }
 
 impl LocalBoard {
+    /// Creates a new `LocalBoard` instance.
+    ///
+    /// Initializes the board with an empty queue, no held piece, a new current piece,
+    /// a default strategy, and empty data structures for trash lines, cells, and other state.
     pub fn new(mut queue: impl Queue + 'static) -> Self {
         let cur_piece = queue
             .get_piece(0)
@@ -142,6 +177,9 @@ impl LocalBoard {
             rotation_variation: 0,
         }
     }
+    /// Moves the current piece to the right if possible.
+    ///
+    /// Checks if there are any obstructions to the right of the piece and moves the piece if there are none.
     pub fn move_right(&mut self) -> bool {
         let sides = self.cur_piece.get_right_facing_sides();
         for (x, y) in sides {
@@ -164,6 +202,9 @@ impl LocalBoard {
         true
     }
 
+    /// Moves the current piece to the left if possible.
+    ///
+    /// Checks if there are any obstructions to the left of the piece and moves the piece if there are none.
     pub fn move_left(&mut self) -> bool {
         let sides = self.cur_piece.get_left_facing_sides();
         for (x, y) in sides {
@@ -186,22 +227,29 @@ impl LocalBoard {
         true
     }
 
+    /// Rotates the current piece clockwise if possible.
     pub fn rotation_clockwise(&mut self) {
         let rotation_piece = self.cur_piece.clone();
         self.check_rotation(rotation_piece, 1..6, RotationOption::ClockWise);
         self.rotation = true;
     }
 
+    /// Rotates the current piece counterclockwise if possible.
     pub fn rotation_counterclockwise(&mut self) {
         let rotation_piece = self.cur_piece.clone();
         self.check_rotation(rotation_piece, 1..6, RotationOption::CounterClockWise);
         self.rotation = true;
     }
 
+    /// Rotates the current piece 180 degrees if possible.
     pub fn rotation_full(&mut self) {
         let rotation_piece = self.cur_piece.clone();
         self.check_rotation(rotation_piece, 1..3, RotationOption::Full);
     }
+    /// Checks if a rotation is possible and performs it.
+    ///
+    /// Iterates through a range of possible rotation variations and checks if the rotation is valid.
+    /// If a valid rotation is found, the current piece is updated and the function returns.
     fn check_rotation(
         &mut self,
         piece: Box<dyn MovingPiece>,
@@ -256,13 +304,22 @@ impl LocalBoard {
         }
     }
 
+    /// Checks if the current piece is at the bottom of the board.
+    ///
+    /// Returns true if the piece cannot move down any further, either because it has reached the bottom of the board
+    /// or because it is blocked by another piece.
     pub fn piece_at_bottom(&mut self) -> bool {
         self.push_down(false)
     }
+    /// Moves the current piece down by one row.
     pub fn soft_drop(&mut self) {
         let _ = self.push_down(true);
     }
 
+    /// Advances the game by one tick.
+    ///
+    /// Moves the current piece down by one row and checks if it has reached the bottom of the board.
+    /// If the piece has reached the bottom, it is fixed in place and a new piece is generated.
     pub fn next_tick(&mut self) -> bool {
         let is_in_bottom = self.push_down(true);
         if !is_in_bottom {
@@ -272,11 +329,17 @@ impl LocalBoard {
         true
     }
 
+    /// Hard drops the current piece to the bottom of the board.
+    ///
+    /// Moves the current piece down until it reaches the bottom of the board, then fixes it in place and generates a new piece.
     pub fn hard_drop(&mut self) {
         while !self.push_down(true) {}
         self.next_piece_operations();
     }
 
+    /// Generates a ghost piece for the current piece.
+    ///
+    /// The ghost piece is a visual aid that shows where the current piece will land if it is dropped.
     fn ghost_piece(&self, mut piece: Box<dyn MovingPiece>) -> Box<dyn MovingPiece> {
         let mut bottom_reached = false;
         while !bottom_reached {
@@ -312,6 +375,10 @@ impl LocalBoard {
         piece
     }
 
+    /// Pushes the current piece down by one row.
+    ///
+    /// Returns true if the piece cannot move down any further, either because it has reached the bottom of the board
+    /// or because it is blocked by another piece.
     fn push_down(&mut self, move_piece: bool) -> bool {
         let sides = self.cur_piece.get_bottom_facing_sides();
         for (x, y) in sides {
@@ -338,6 +405,10 @@ impl LocalBoard {
         false
     }
 
+    /// Performs operations that occur after a piece has been placed.
+    ///
+    /// This includes fixing the piece in place, generating a new piece, checking for line clears,
+    /// and setting any trash lines that have been received.
     fn next_piece_operations(&mut self) {
         let coords = self.cur_piece.get_coords();
         let piece = self.cur_piece.clone();
@@ -381,6 +452,7 @@ impl LocalBoard {
         }
         self.set_trash_in_board();
     }
+    /// Checks if any lines have been cleared and returns the y coordinates of the cleared lines.
     fn is_line_cleared(&self) -> Option<[i16; 4]> {
         let mut lines = [-128; 4];
         let mut pieces_cleared = 0;
@@ -415,6 +487,7 @@ impl LocalBoard {
         }
         if lines[0] == -128 { None } else { Some(lines) }
     }
+    /// Clears a line at the given y coordinate.
     fn clear_line(&mut self, y: i16) {
         (-BOARD_HEIGHT..=y).rev().for_each(|y| {
             (0..BOARD_WIDTH).for_each(|x| {
@@ -444,6 +517,7 @@ impl LocalBoard {
             });
         });
     }
+    /// Determines the clear pattern based on the lines cleared and the piece that was settled.
     fn clear_pattern(&mut self, lines_cleared: i16, piece_settled: Box<dyn MovingPiece>) {
         match (piece_settled.piece(), self.rotation) {
             (Piece::T, true) => self.t_spin_calculation(lines_cleared, piece_settled),
@@ -457,6 +531,11 @@ impl LocalBoard {
             },
         }
     }
+    /// Calculates the clear pattern for a T-spin.
+    ///
+    /// A T-spin is a special type of line clear that occurs when a T-shaped piece is used to clear lines
+    /// in a specific configuration. This function checks if the current line clear qualifies as a T-spin
+    /// and sets the clear pattern accordingly.
     fn t_spin_calculation(&mut self, lines_cleared: i16, piece_settled: Box<dyn MovingPiece>) {
         let t_piece: MovingPieceT = *piece_settled
             .as_any()
@@ -564,6 +643,9 @@ impl LocalBoard {
         }
     }
 
+    /// Sets the trash lines in the board.
+    ///
+    /// Trash lines are lines that are added to the bottom of the board to make it more difficult for the player.
     fn set_trash_in_board(&mut self) {
         if self.trash_lines_queue.is_empty() {
             return;
@@ -601,6 +683,7 @@ impl LocalBoard {
         }
         self.trash_lines_queue.clear();
     }
+    /// Adds lines to the board.
     fn add_lines(&mut self, x: i16, y: i16) {
         for i in 0..BOARD_WIDTH {
             match (i == x, y < 0) {
@@ -611,6 +694,7 @@ impl LocalBoard {
             }
         }
     }
+    /// Checks if the board has topped out.
     fn top_out_check(&mut self, lines: u8) -> bool {
         let highest_piece = self.get_highest_piece();
         if let Some((_, y)) = highest_piece {
@@ -627,6 +711,10 @@ impl LocalBoard {
         }
     }
 
+    /// Saves the current piece for later use.
+    ///
+    /// If there is no held piece, the current piece is saved and a new piece is generated.
+    /// If there is a held piece, the current piece is swapped with the held piece.
     pub fn save_piece(&mut self) {
         if self.piece_blocked {
             return;
@@ -651,20 +739,26 @@ impl LocalBoard {
         self.held_piece = Some(cur_piece.piece());
     }
 
+    /// Changes the strategy being used by the board.
     pub fn change_strategy(&mut self, strategy: Strategy) {
         self.strategy = strategy;
     }
 
+    /// Returns the currently held piece.
     pub fn held_piece(&self) -> Option<Piece> {
         self.held_piece
     }
 
+    /// Returns the number of trash lines in the queue.
     pub fn num_of_trash_lines(&self) -> u8 {
         self.trash_lines_queue
             .iter()
             .fold(0, |acc, (lines, _)| acc + lines)
     }
 
+    /// Inserts trash lines into the queue.
+    ///
+    /// Trash lines are added to the queue and will be added to the board at a later time.
     pub fn insert_trash(&mut self, number_of_trash_received: u8) {
         if self.trash_lines_queue.is_empty() {
             self.trash_lines_queue.push((
@@ -699,6 +793,9 @@ impl LocalBoard {
         }
     }
 
+    /// Counters the trash lines with the lines cleared.
+    ///
+    /// If the player clears lines, they can be used to reduce the number of trash lines in the queue.
     pub fn counter_trash(&mut self, lines_cleared: u8) -> u8 {
         if self.trash_lines_queue.is_empty() {
             return lines_cleared;
@@ -723,6 +820,7 @@ impl LocalBoard {
         lines_cleared
     }
 
+    /// Gets the pieces in the queue within the given range.
     pub fn get_pieces(&mut self, r: Range<u128>) -> Vec<Piece> {
         let mut pieces = Vec::new();
         for i in r {
@@ -735,14 +833,19 @@ impl LocalBoard {
         pieces
     }
 
+    /// Returns a boolean indicating whether the current piece is blocked.
     pub fn piece_blocked(&self) -> bool {
         self.piece_blocked
     }
 
+    /// Returns a boolean indicating whether a line has been cleared.
     pub fn line_cleared(&self) -> bool {
         self.line_cleared
     }
 
+    /// Checks if the board has blocked out.
+    ///
+    /// Block out occurs when the current piece is partially above the board and cannot move down any further.
     fn block_out(&self) -> bool {
         for (x, y) in self.cur_piece.get_coords() {
             if y >= 0 {
@@ -755,22 +858,27 @@ impl LocalBoard {
         false
     }
 
+    /// Gets the cell at the given coordinates from the main board.
     fn get_cell_from_main_board(&self, x: i16, y: i16) -> Cell {
         self.cells[(y * BOARD_WIDTH + x) as usize]
     }
 
+    /// Sets the cell at the given coordinates in the main board.
     fn set_cell_in_main_board(&mut self, x: i16, y: i16, cell: Cell) {
         self.cells[(y * BOARD_WIDTH + x) as usize] = cell;
     }
 
+    /// Gets the cell at the given coordinates from the buffer board.
     fn get_cell_from_buffer_board(&self, x: i16, y: i16) -> Cell {
         self.buffer[((BOARD_HEIGHT + y/* y is less than 0 */) * BOARD_WIDTH + x) as usize]
     }
 
+    /// Sets the cell at the given coordinates in the buffer board.
     fn set_cell_in_buffer_board(&mut self, x: i16, y: i16, cell: Cell) {
         self.buffer[((BOARD_HEIGHT + y) * BOARD_WIDTH + x) as usize] = cell;
     }
 
+    /// Gets the highest piece on the board.
     fn get_highest_piece(&self) -> Option<(i16, i16)> {
         for (i, el) in self.buffer.iter().enumerate() {
             if *el != Cell::Empty {
@@ -787,56 +895,81 @@ impl LocalBoard {
         }
         None
     }
+    /// Returns the orientation of the current piece.
     pub fn orientation(&self) -> Orientation {
         self.cur_piece.orientation()
     }
+    /// Returns the clear line pattern.
     pub fn clear_line_pattern(&mut self) -> ClearLinePattern {
         let pattern_tmp = self.clear_pattern;
         self.clear_pattern = ClearLinePattern::None;
         pattern_tmp
     }
+    /// Returns the number of lines completed.
     pub fn lines_completed(&self) -> u32 {
         self.lines_cleared
     }
+    /// Returns the piece number.
     pub fn piece_num(&self) -> usize {
         self.piece_num
     }
+    /// Returns the current piece.
     pub fn cur_piece(&self) -> Piece {
         self.cur_piece.piece()
     }
+    /// Returns the x coordinate of the current piece.
     pub fn piece_x(&self) -> i16 {
         self.cur_piece.x()
     }
+    /// Returns the y coordinate of the current piece.
     pub fn piece_y(&self) -> i16 {
         self.cur_piece.y()
     }
+    /// Inserts pieces into the queue.
     pub fn insert_in_queue(&mut self, pieces: Vec<Piece>) {
         self.queue.insert_pieces(pieces);
     }
+    /// Gets the queue.
     pub fn get_queue(&mut self) -> Vec<Piece> {
         self.queue.get_pieces()
     }
 }
 
+/// `RotationOption` represents the different rotation options for a piece.
 #[derive(Debug, Clone, Copy)]
 enum RotationOption {
+    /// Rotate the piece clockwise.
     ClockWise,
+    /// Rotate the piece counterclockwise.
     CounterClockWise,
+    /// Rotate the piece 180 degrees.
     Full,
 }
 
+/// `ClearLinePattern` represents the different patterns of lines that can be cleared.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ClearLinePattern {
+    /// No lines were cleared.
     None,
+    /// A single line was cleared.
     Single,
+    /// A double line was cleared.
     Double,
+    /// A triple line was cleared.
     Triple,
+    /// A tetris (four lines) was cleared.
     Tetris,
+    /// A T-spin was performed.
     TSpin,
+    /// A T-spin single line clear was performed.
     TSpinSingle,
+    /// A T-spin double line clear was performed.
     TSpinDouble,
+    /// A T-spin triple line clear was performed.
     TSpinTriple,
+    /// A mini T-spin was performed.
     MiniTSpin,
+    /// A mini T-spin single line clear was performed.
     MiniTSpinSingle,
 }
 

@@ -18,17 +18,35 @@ use crate::models::room_commands::server::ServerRoomNetCommands;
 
 use super::super::{FirstLevelCommands, Updates};
 
+/// `RoomPlayerListener` listens for updates and commands from a connected player in a room.
 pub struct RoomPlayerListener {
+    /// Sender for sending commands to the room.
     send_commands: Sender<FirstLevelCommands>,
+    /// The TCP stream for communication with the player.
     stream: Arc<Mutex<TcpStream>>,
+    /// The player's information.
     player: DummyPlayer,
+    /// Receiver for updates from the room.
     updates: broadcast::Receiver<Updates>,
+    /// Flag indicating if a ping request has been sent.
     check_ping: bool,
+    /// The ping time of the player.
     ping: u64,
+    /// The time of the last ping request.
     time_last_ping: u64,
+    /// An atomic boolean indicating whether the player is currently playing a game.
     playing: Arc<Mutex<bool>>,
 }
 impl RoomPlayerListener {
+    /// Creates a new `RoomPlayerListener` instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `send_commands` - Sender for sending commands to the room.
+    /// * `stream` - The TCP stream for communication with the player.
+    /// * `player` - The player's information.
+    /// * `updates` - Receiver for updates from the room.
+    /// * `playing` - An atomic boolean indicating whether the player is currently playing a game.
     pub fn new(
         send_commands: Sender<FirstLevelCommands>,
         stream: Arc<Mutex<TcpStream>>,
@@ -48,6 +66,7 @@ impl RoomPlayerListener {
         }
     }
 
+    /// Listens for updates from the player and the room.
     pub async fn listen_to_player_updates(&mut self) {
         loop {
             let lock = self.playing.lock().await;
@@ -97,6 +116,11 @@ impl RoomPlayerListener {
             }
         }
     }
+    /// Handles commands received from the client.
+    ///
+    /// # Arguments
+    ///
+    /// * `content` - The command received from the client.
     async fn handle_client(&mut self, content: ClientRoomNetCommands) -> bool {
         match content {
             ClientRoomNetCommands::RoomDiscover(_) => (),
@@ -126,6 +150,12 @@ impl RoomPlayerListener {
         }
         false
     }
+    /// Handles errors that occur while receiving updates.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The result of receiving an update.
+    /// * `socket` - The TCP stream for communication with the player.
     async fn handle_receive_update_error(
         &mut self,
         value: Result<Updates, broadcast::error::RecvError>,
@@ -175,6 +205,12 @@ impl RoomPlayerListener {
             },
         }
     }
+    /// Handles updates received from the room.
+    ///
+    /// # Arguments
+    ///
+    /// * `update` - The update received from the room.
+    /// * `socket` - The TCP stream for communication with the player.
     async fn handle_updates(&mut self, update: Updates, socket: &Arc<Mutex<TcpStream>>) -> bool {
         match update {
             Updates::PlayersUpdate(players) => {

@@ -3,8 +3,8 @@ use std::{sync::Arc, time::Duration};
 use tokio::{
     net::TcpStream,
     sync::{
-        mpsc::{Receiver, Sender},
         Mutex,
+        mpsc::{Receiver, Sender},
     },
 };
 
@@ -22,26 +22,35 @@ use crate::{
     room::player::Player,
 };
 
-/// Represents a remote game instance, handling communication with a remote player.
+/// `RemoteGame` represents a remote player's game instance.
+///
+/// It handles communication with the remote player over a TCP stream,
+/// processing commands from the online game and relaying network events.
 #[derive(Debug)]
 pub struct RemoteGame {
-    /// The TCP stream for communicating with the remote player.
+    /// The TCP stream for communication with the remote player.
     stream: Arc<Mutex<TcpStream>>,
     /// Receiver for commands from the online game.
     receiver: Receiver<OnlineToRemoteGameCommunication>,
     /// Sender for commands to the online game.
     sender: Sender<RemoteToOnlineGameCommunication>,
-    /// The player associated with this remote game.
+    /// The remote player's information.
     player: DummyPlayer,
     /// The most recent player who sent trash to this player.
     most_recent_trash_received: Option<DummyPlayer>,
-    /// Flag indicating if the player has lost.
+    /// A boolean indicating whether the remote player has lost.
     lost: bool,
-    /// Flag indicating if the game is running.
+    /// A boolean indicating whether the remote game is running.
     running: bool,
 }
 impl RemoteGame {
     /// Creates a new `RemoteGame` instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `player` - The remote player's information.
+    /// * `receiver` - Receiver for commands from the online game.
+    /// * `sender` - Sender for commands to the online game.
     pub fn new(
         player: &Player,
         receiver: Receiver<OnlineToRemoteGameCommunication>,
@@ -58,7 +67,10 @@ impl RemoteGame {
         }
     }
 
-    /// Starts the remote game, handling incoming commands and network events.
+    /// Starts the remote game loop.
+    ///
+    /// This function handles receiving commands from the online game and
+    /// network events from the remote player, processing them accordingly.
     pub async fn start_game(&mut self) {
         let lock = self.stream.clone();
         while self.running {
@@ -91,7 +103,11 @@ impl RemoteGame {
             }
         }
     }
-    /// Handles commands received from the online game.
+    /// Handles commands from the online game.
+    ///
+    /// # Arguments
+    ///
+    /// * `command` - The command from the online game to handle.
     async fn handle_command(&mut self, command: OnlineToRemoteGameCommunication) {
         let command: Option<ServerOnlineGameCommands> = match command {
             OnlineToRemoteGameCommunication::TrashReceived(dummy_player, amount) => {
@@ -124,9 +140,6 @@ impl RemoteGame {
                 }
             }
             OnlineToRemoteGameCommunication::GameEnded(dummy_player) => {
-                dbg!("here");
-
-                // None
                 for _ in 0..3 {
                     send_enum_from_server(
                         &self.stream,
@@ -152,7 +165,11 @@ impl RemoteGame {
         };
         send_enum_from_server(&self.stream, &command).await.unwrap();
     }
-    /// Handles network commands received from the remote player.
+    /// Handles network events from the remote player.
+    ///
+    /// # Arguments
+    ///
+    /// * `command` - The network command from the remote player to handle.
     async fn handle_network(&mut self, command: ClientOnlineGameCommands) {
         let message = match command {
             ClientOnlineGameCommands::TrashSent(strategy, amount) => Some(

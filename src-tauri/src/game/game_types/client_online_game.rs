@@ -33,27 +33,32 @@ const OTHER_PLAYER_WON_UNKNOWN: &str = "otherPlayerWonUnknown";
 
 use super::local_game::{GameControl, LocalGame};
 
-/// Represents the online game from the client's perspective.
+/// Represents the client's online game instance.
 pub struct ClientOnlineGame {
+    /// The TCP socket for communication with the server.
     socket: Arc<tokio::sync::Mutex<TcpStream>>,
+    /// A flag indicating whether the game is running.
     running: bool,
+    /// Receiver for game responses from the local game.
     game_responses: Receiver<GameResponses>,
+    /// Sender for second-level commands to the local game.
     tx_commands_second: Sender<SecondLevelCommands>,
+    /// Tauri application handle.
     app: AppHandle,
+    /// The strategy used by the client.
     strategy: Strategy,
+    /// A flag indicating whether the game is currently being played.
     playing: Arc<Mutex<bool>>,
-    // received_first_game_command: bool,
-    // options: GameOptions,
+    /// Number of deaths the player has.
     deaths: u8,
+    /// The player's own information.
     self_player: DummyPlayer,
+    /// A flag indicating whether the player is dead.
     dead: bool,
 }
 
 impl ClientOnlineGame {
-    /// Creates a new `ClientOnlineGame` instance.
-    ///
-    /// This function initializes the client-side online game, setting up communication channels,
-    /// a local game instance, and remote queue. It spawns a task to start the local game after a delay.
+    /// Creates a new client online game instance.
     pub async fn new(
         socket: Arc<tokio::sync::Mutex<TcpStream>>,
         pieces_buffer: Vec<Piece>,
@@ -96,10 +101,18 @@ impl ClientOnlineGame {
             dead: false,
         }
     }
-    /// Sets up the communication channels for the local game.
+    /// Sets up the channels for communication between different parts of the game.
     ///
-    /// This function configures the first-level, second-level, and game control channels,
-    /// setting them as global variables for use by other parts of the application.
+    /// This function retrieves or initializes the global channels used for sending commands
+    /// between different parts of the application, specifically for first-level commands,
+    /// second-level commands, and game control commands. It uses `Arc<Mutex<T>>` to allow
+    /// safe concurrent access to these channels.
+    ///
+    /// # Arguments
+    ///
+    /// * `tx_commands` - Sender for first-level commands.
+    /// * `tx_commands_second` - Sender for second-level commands.
+    /// * `tx_control` - Sender for game control commands.
     async fn set_channels(
         tx_commands: Sender<FirstLevelCommands>,
         tx_commands_second: Sender<SecondLevelCommands>,
@@ -130,10 +143,12 @@ impl ClientOnlineGame {
                 .unwrap();
         }
     }
-    /// Starts the client online game, handling network events and game responses.
+    /// Starts the client online game.
     ///
-    /// This is the main loop for the client-side online game. It listens for incoming messages
-    /// from the server and responses from the local game, processing them accordingly.
+    /// This function initiates the game loop, handling both network communication with the server
+    /// and processing game responses from the local game instance. It manages the game state,
+    /// including handling player death, game over conditions, and emitting events to the Tauri
+    /// application for UI updates.
     pub async fn start(&mut self) {
         let mut lock = self.playing.lock().await;
         *lock = true;
@@ -153,8 +168,6 @@ impl ClientOnlineGame {
                             .as_secs();
                         if let Ok(content) = content  {
                             self.handle_network_content(content).await;
-                        } else {
-                            dbg!(content);
                         }
                     },
                     response = self.game_responses.recv() => {
@@ -195,10 +208,16 @@ impl ClientOnlineGame {
         *lock = false;
         drop(lock);
     }
-    /// Handles incoming network messages from the server.
+    /// Handles network content received from the server.
     ///
-    /// This function processes messages received from the server, such as trash sent, queue updates,
-    /// game over signals, and state updates from other players.
+    /// This function processes commands received from the server, such as sending trash,
+    /// synchronizing the piece queue, handling game over events, and updating the state
+    /// of other players. It interacts with the local game instance by sending second-level
+    /// commands and emits events to the Tauri application for UI updates.
+    ///
+    /// # Arguments
+    ///
+    /// * `content` - The server online game command received.
     async fn handle_network_content(&mut self, content: ServerOnlineGameCommands) {
         match content {
             ServerOnlineGameCommands::TrashSent(amount) => {
@@ -220,7 +239,6 @@ impl ClientOnlineGame {
                 }
             }
             ServerOnlineGameCommands::Won(_) => {
-                dbg!("here");
                 let _ = self.tx_commands_second.send(SecondLevelCommands::Won).await;
                 let _ = self.app.emit(
                     OTHER_PLAYER_WON,
@@ -236,7 +254,6 @@ impl ClientOnlineGame {
                 let _ = self.app.emit(OTHER_PLAYER_LOST, dummy_player);
             }
             ServerOnlineGameCommands::GameEnded(dummy_player) => {
-                dbg!("here");
                 if dummy_player == self.self_player {
                     let _ = self.tx_commands_second.send(SecondLevelCommands::Won).await;
                 }
@@ -260,10 +277,16 @@ impl ClientOnlineGame {
             }
         }
     }
-    /// Handles responses received from the local game.
+    /// Handles game responses received from the local game.
     ///
-    /// This function processes responses from the local game, such as board state updates, danger levels,
-    /// strategy updates, and trash sent events, sending corresponding commands to the server.
+    /// This function processes responses from the local game instance, such as board state updates,
+    /// danger level updates, strategy updates, and trash sent events. It translates these responses
+    /// into client online game commands and sends them to the server. It also handles the player's
+    /// death event.
+    ///
+    /// # Arguments
+    ///
+    /// * `response` - The game response received from the local game.
     async fn handle_game_responses(&mut self, response: GameResponses) {
         let command: Option<ClientOnlineGameCommands> = match response {
             GameResponses::BoardState(state) => Some(ClientOnlineGameCommands::BoardState(state)),
@@ -299,33 +322,5 @@ impl ClientOnlineGame {
             dbg!("lost sent");
         }
         send_enum_from_client(&self.socket, &command).await.unwrap();
-    }
-    /// Handles errors that occur during network communication.
-    ///
-    /// This function detects specific network errors, such as a disconnected peer, and takes
-    /// appropriate actions, such as ending the game and displaying a "player won unknown" message.
-    fn handle_error(&mut self, error: Box<dyn std::error::Error + Send + Sync>) {
-        if let Some(e) = error.downcast_ref::<serde_json::Error>() {
-            if e.is_data() && self.received_first_game_command {
-                self.running = false;
-                let _ = self.app.emit(OTHER_PLAYER_WON_UNKNOWN, false);
-            }
-        }
-    }
-    /// Computes if the player has lost, and emits the correct event
-    async fn compute_lost_player(&mut self) {
-        if self.dead {
-            let _ = self.app.emit(OTHER_PLAYER_WON_UNKNOWN, false);
-        } else {
-            let _ = self.tx_commands_second.send(SecondLevelCommands::Won).await;
-            let _ = self.app.emit(
-                OTHER_PLAYER_WON,
-                WonSignal {
-                    player: self.self_player.clone(),
-                    is_hosting: false,
-                },
-            );
-            self.running = false;
-        }
     }
 }

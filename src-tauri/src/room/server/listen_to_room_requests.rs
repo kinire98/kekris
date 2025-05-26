@@ -19,6 +19,18 @@ use crate::{
     room::FirstLevelCommands,
 };
 
+/// Listens for incoming TCP connections to the room.
+///
+/// This function sets up a TCP listener to accept incoming connection requests.
+/// For each incoming connection, it reads the request, validates it, and either
+/// accepts or rejects the connection based on the room's current state.
+///
+/// # Arguments
+///
+/// * `send_commands` - A sender for sending commands to the main room logic.
+/// * `room` - The `DummyRoom` representing the room.
+/// * `receive_players` - An `Arc<Mutex<u8>>` containing the number of players currently in the room.
+/// * `limit_players` - The maximum number of players allowed in the room.
 pub fn listen_to_room_requests(
     send_commands: Sender<FirstLevelCommands>,
     room: DummyRoom,

@@ -5,6 +5,7 @@ use crate::models::{
 use sqlx::Row;
 use sqlx::{Pool, Sqlite, SqlitePool};
 
+/// Retrieves the last game's information and all results for that game type.
 pub async fn retreive_last_games_info() -> EmitGameInfo {
     let Some(url) = super::DB_URL.get() else {
         panic!("DB_URL Not set")
@@ -27,15 +28,19 @@ pub async fn retreive_last_games_info() -> EmitGameInfo {
         get_all_results(generic_info.game_type(), &pool).await,
     )
 }
+/// Retrieves the last classic game's information.
 pub async fn retreive_last_classic_info() -> EmitGameInfo {
     get_all_info(super::CLASSIC_TABLE_NAME).await
 }
+/// Retrieves the last lines game's information.
 pub async fn retreive_last_lines_info() -> EmitGameInfo {
     get_all_info(super::LINES_TABLE_NAME).await
 }
+/// Retrieves the last blitz game's information.
 pub async fn retreive_last_blitz_info() -> EmitGameInfo {
     get_all_info(super::BLITZ_TABLE_NAME).await
 }
+/// Retrieves all information for a specific game type.
 async fn get_all_info(type_of_game: &str) -> EmitGameInfo {
     let Some(url) = super::DB_URL.get() else {
         panic!("DB_URL Not set")
@@ -62,6 +67,7 @@ async fn get_all_info(type_of_game: &str) -> EmitGameInfo {
         get_all_results(type_of_game, &pool).await,
     )
 }
+/// Retrieves all results for a specific game type.
 async fn get_all_results(type_of_game: &str, pool: &Pool<Sqlite>) -> Vec<GameInfo> {
     let all_of_type = sqlx::query(
         r#"
@@ -80,6 +86,7 @@ async fn get_all_results(type_of_game: &str, pool: &Pool<Sqlite>) -> Vec<GameInf
     }
     vec_of_results
 }
+/// Retrieves the last result for a specific game.
 async fn get_last_result(id: u32, type_of_game: &str, pool: &Pool<Sqlite>) -> GameInfo {
     let specific_info = if type_of_game == super::CLASSIC_TABLE_NAME {
         get_classic(id, pool).await
@@ -114,6 +121,7 @@ async fn get_last_result(id: u32, type_of_game: &str, pool: &Pool<Sqlite>) -> Ga
         specific_info.0,
     )
 }
+/// Retrieves the classic game information.
 async fn get_classic(id: u32, pool: &Pool<Sqlite>) -> (GameTypeInfo, i64) {
     let info = sqlx::query(&format!(
         r#"SELECT * FROM {} WHERE id = ?1"#,
@@ -132,6 +140,7 @@ async fn get_classic(id: u32, pool: &Pool<Sqlite>) -> (GameTypeInfo, i64) {
         info.get(super::CLASSIC_GAME_INFO_ID),
     )
 }
+/// Retrieves the lines game information.
 async fn get_lines(id: u32, pool: &Pool<Sqlite>) -> (GameTypeInfo, i64) {
     let info = sqlx::query(&format!(
         r#"SELECT * FROM {} WHERE id = ?1"#,
@@ -146,6 +155,7 @@ async fn get_lines(id: u32, pool: &Pool<Sqlite>) -> (GameTypeInfo, i64) {
         info.get(super::LINES_GAME_INFO_ID),
     )
 }
+/// Retrieves the blitz game information.
 async fn get_blitz(id: u32, pool: &Pool<Sqlite>) -> (GameTypeInfo, i64) {
     let info = sqlx::query(&format!(
         r#"SELECT * FROM {} WHERE id = ?1"#,

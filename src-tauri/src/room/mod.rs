@@ -26,25 +26,51 @@ const PLAYERS_EMIT: &str = "playersEmit";
 const PIECES_TO_GENERATE: usize = 10000;
 
 // Can only be open for 4.85 hours
+/// `Room` represents a game room where players can connect and play together.
 #[derive(Debug)]
 pub struct Room {
+    /// The local player (host) of the room.
     local_player: Player,
+    /// The list of players connected to the room.
     players: Vec<Player>,
+    /// The visibility of the room (LocalNetwork or Internet).
     visibility: Visibility,
+    /// The name of the room.
     name: String,
+    /// The maximum number of players allowed in the room.
     limit_of_players: u8,
+    /// The number of games played in the room.
     games_played: u16,
+    /// Tauri application handle for emitting events.
     app: AppHandle,
+    /// Receiver for closing the room.
     close_room: Receiver<bool>,
+    /// Receiver for commands sent to the room.
     receive_commands: Receiver<FirstLevelCommands>,
+    /// Sender for sending commands to the room.
     send_commands: Sender<FirstLevelCommands>, // Needed to clone for players listening
+    /// Sender for sending updates to all players in the room.
     send_updates: broadcast::Sender<Updates>,
+    /// An atomic counter for the number of players in the room.
     player_info: Arc<Mutex<u8>>,
+    /// An atomic boolean indicating whether a game is currently being played in the room.
     cur_game_playing: Arc<Mutex<bool>>,
+    /// The game options for the room.
     options: GameOptions,
 }
 
 impl Room {
+    /// Creates a new `Room` instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the room.
+    /// * `app` - Tauri application handle for emitting events.
+    /// * `close_room` - Receiver for closing the room.
+    /// * `stop_listening_channel` - Receiver for stopping the broadcast listener.
+    /// * `player_name` - The name of the local player.
+    /// * `sender_commands` - Sender for sending commands to the room.
+    /// * `receiver_commands` - Receiver for receiving commands in the room.
     pub async fn new(
         name: String,
         app: AppHandle,
@@ -83,6 +109,7 @@ impl Room {
         listen_to_room_requests(sender_commands, (&info).into(), players_info, players_limit);
         info
     }
+    /// Starts the room's main loop.
     pub async fn room_start(&mut self) {
         self.players_emit();
         let now = Instant::now();
@@ -134,26 +161,32 @@ impl Room {
         }
     }
 
+    /// Returns a slice of the players in the room.
     pub fn players(&self) -> &[Player] {
         &self.players
     }
 
+    /// Returns the name of the room.
     pub fn name(&self) -> &str {
         &self.name
     }
 
+    /// Returns the limit of players in the room.
     pub fn limit_of_players(&self) -> u8 {
         self.limit_of_players
     }
 
+    /// Returns the number of games played in the room.
     pub fn games_played(&self) -> u16 {
         self.games_played
     }
 
+    /// Returns the visibility of the room.
     pub fn visibility(&self) -> Visibility {
         self.visibility
     }
 
+    /// Emits the players in the room to the UI.
     fn players_emit(&self) {
         let mut players: Vec<DummyPlayer> =
             self.players.iter().map(|player| player.into()).collect();
@@ -161,14 +194,21 @@ impl Room {
         players.push(local_player.into());
         self.app.emit(PLAYERS_EMIT, players).unwrap();
     }
+    /// Sends a player update to all players in the room.
     fn players_update(&self) {
         let mut players = self.players.clone();
         players.push(self.local_player.clone());
         let _ = self.send_updates.send(Updates::PlayersUpdate(players));
     }
+    /// Closes the room.
     fn close_room(&self) {
         let _ = self.send_updates.send(Updates::RoomEnded).unwrap();
     }
+    /// Handles a player connecting to the room.
+    ///
+    /// # Arguments
+    ///
+    /// * `player_info` - The player's information and TCP stream.
     async fn player_connected(
         &mut self,
         player_info: (
@@ -193,6 +233,11 @@ impl Room {
         let mut value = self.player_info.lock().await;
         *value = (self.players.len() + 1) as u8;
     }
+    /// Handles a player disconnecting from the room.
+    ///
+    /// # Arguments
+    ///
+    /// * `dummy_player` - The player that disconnected.
     async fn player_disconnected(&mut self, dummy_player: DummyPlayer) {
         self.players.retain(|player| {
             let player: DummyPlayer = player.into();
@@ -203,6 +248,12 @@ impl Room {
         let mut value = self.player_info.lock().await;
         *value = (self.players.len() + 1) as u8;
     }
+    /// Handles a ping received from a player.
+    ///
+    /// # Arguments
+    ///
+    /// * `dummy_player` - The player that sent the ping.
+    /// * `ping` - The ping time.
     async fn ping_received(&mut self, dummy_player: DummyPlayer, ping: u64) {
         let mut players = self.players.clone();
         for player in &mut players {
@@ -213,6 +264,7 @@ impl Room {
         }
         self.players = players;
     }
+    /// Starts a game in the room.
     async fn start_game(&mut self) {
         let mut highest_ping = 0;
         self.players.iter().for_each(|player| {
@@ -227,11 +279,7 @@ impl Room {
         let pieces = queue.get_pieces();
         self.options.multi_player((self.players.len() + 1) as u8);
         self.send_updates
-            .send(Updates::GameStarts((
-                highest_ping,
-                self.options.clone(),
-                pieces,
-            )))
+            .send(Updates::GameStarts((highest_ping, self.options, pieces)))
             .unwrap();
         tokio::time::sleep(Duration::from_millis(highest_ping)).await;
         let mut online_game = OnlineGame::new(
@@ -249,29 +297,45 @@ impl Room {
     }
 }
 
+/// `Visibility` represents the visibility of a room.
 #[derive(Serialize, Deserialize, Clone, Copy, Default, Debug)]
 pub enum Visibility {
+    /// The room is only visible on the local network.
     #[default]
     LocalNetwork,
+    /// The room is visible on the internet.
     Internet,
 }
 
+/// `FirstLevelCommands` represents the commands that can be sent to the room.
 #[derive(Debug)]
 pub enum FirstLevelCommands {
+    /// A fatal error occurred.
     FatalFail,
+    /// A player connected to the room.
     PlayerConnected((DummyPlayer, Arc<Mutex<TcpStream>>)),
+    /// A player disconnected from the room.
     PlayerDisconnected(DummyPlayer),
+    /// A ping was received from a player.
     PingReceived((DummyPlayer, u64)),
+    /// The game should start.
     GameStarts,
 }
 
+/// `Updates` represents the updates that can be sent to players in the room.
 #[derive(Debug, Clone)]
 pub enum Updates {
+    /// The list of players in the room has been updated.
     PlayersUpdate(Vec<Player>),
+    /// The name of the room has changed.
     NameChanged(String),
+    /// The player limit of the room has changed.
     PlayerLimitChanged(u8),
+    /// The room has ended.
     RoomEnded,
+    /// Send a ping request to all players in the room.
     SendPing(bool),
+    /// The game is starting.
     GameStarts((u64, GameOptions, Vec<Piece>)),
 }
 
