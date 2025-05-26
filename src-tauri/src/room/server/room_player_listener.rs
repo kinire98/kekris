@@ -180,9 +180,25 @@ impl RoomPlayerListener {
             Updates::PlayersUpdate(players) => {
                 let players: Vec<DummyPlayer> =
                     players.iter().map(|player| player.into()).collect();
-                let _ =
+
+                let error =
                     send_enum_from_server(socket, &ServerRoomNetCommands::PlayersUpdate(players))
                         .await;
+                if error.is_err() {
+                    match error.unwrap_err().kind() {
+                        std::io::ErrorKind::BrokenPipe
+                        | std::io::ErrorKind::UnexpectedEof
+                        | std::io::ErrorKind::HostUnreachable
+                        | std::io::ErrorKind::ConnectionReset => {
+                            let _ = self
+                                .send_commands
+                                .send(FirstLevelCommands::PlayerDisconnected(self.player.clone()))
+                                .await;
+                            return true;
+                        }
+                        _ => (),
+                    }
+                }
             }
             Updates::NameChanged(_) => todo!(),
             Updates::PlayerLimitChanged(_) => todo!(),
@@ -207,20 +223,35 @@ impl RoomPlayerListener {
                         .duration_since(UNIX_EPOCH)
                         .expect("Time went backwards 🗿🤙")
                         .as_secs();
+                } else {
+                    match result.unwrap_err().kind() {
+                        std::io::ErrorKind::BrokenPipe
+                        | std::io::ErrorKind::UnexpectedEof
+                        | std::io::ErrorKind::HostUnreachable
+                        | std::io::ErrorKind::ConnectionReset => {
+                            let _ = self
+                                .send_commands
+                                .send(FirstLevelCommands::PlayerDisconnected(self.player.clone()))
+                                .await;
+                            return true;
+                        }
+                        _ => (),
+                    }
                 }
             }
             Updates::GameStarts((highest_ping, options, pieces)) => {
+                let ping = if self.ping > highest_ping {
+                    self.ping
+                } else {
+                    highest_ping - self.ping
+                };
                 send_enum_from_server(
                     socket,
-                    &ServerRoomNetCommands::GameStarts((
-                        highest_ping - self.ping,
-                        pieces,
-                        options,
-                        self.player.id(),
-                    )),
+                    &ServerRoomNetCommands::GameStarts((ping, pieces, options, self.player.id())),
                 )
                 .await
                 .unwrap();
+
                 return true;
             }
         };

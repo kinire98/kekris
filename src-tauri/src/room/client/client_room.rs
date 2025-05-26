@@ -1,4 +1,5 @@
 use std::{
+    error::Error,
     sync::Arc,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -63,7 +64,6 @@ impl ClientRoom {
             let lock_loop = self.playing.lock().await;
             if !*lock_loop {
                 drop(lock_loop);
-
                 tokio::select! {
                     command = read_enum_from_server(&lock) => {
                         time = SystemTime::now()
@@ -71,12 +71,29 @@ impl ClientRoom {
                             .expect("Time went backwards 🗿🤙")
                             .as_secs();
                         if let Ok(content) = command {
+                            dbg!("here");
                             self.handle_content(content).await;
                         } else {
-                            dbg!(&command);
+                            let mut error = command.unwrap_err();
+                            loop {
+                                if self.handle_error(error) {
+                                    let _ = self.app.emit(LOST_CONNECTION_EMIT, false);
+                                    self.listening = false;
+                                    break;
+                                } else {
+                                    let command = read_enum_from_server(&lock).await;
+                                    if let Ok(command) = command {
+                                        self.handle_content(command).await;
+                                        break;
+                                    } else {
+                                        error = command.unwrap_err();
+                                    }
+                                }
+                            }
                         }
                     },
                     value = self.stop_channel.recv() => {
+                        dbg!("here");
                         let break_loop = self.stop_listening(value).await;
                         if break_loop {
                             break;
@@ -93,7 +110,6 @@ impl ClientRoom {
                     let _ = self.app.emit(LOST_CONNECTION_EMIT, false);
                     break;
                 }
-                tokio::time::sleep(Duration::from_millis(300)).await;
             } else {
                 drop(lock_loop);
                 tokio::time::sleep(Duration::from_millis(300)).await;
@@ -136,7 +152,7 @@ impl ClientRoom {
                 )
                 .await;
                 *self.playing.lock().await = true;
-                dbg!("here");
+                dbg!("started game");
                 tokio::spawn(async move {
                     tokio::time::sleep(Duration::from_millis(delay)).await;
                     game.start().await;
@@ -201,5 +217,19 @@ impl ClientRoom {
             }
         }
         false
+    }
+    fn handle_error(&mut self, error: Box<dyn Error + Send + Sync + 'static>) -> bool {
+        let error = error.downcast::<std::io::Error>();
+        if error.is_err() {
+            return false;
+        }
+
+        matches!(
+            error.unwrap().kind(),
+            std::io::ErrorKind::BrokenPipe
+                | std::io::ErrorKind::UnexpectedEof
+                | std::io::ErrorKind::HostUnreachable
+                | std::io::ErrorKind::ConnectionReset
+        )
     }
 }
