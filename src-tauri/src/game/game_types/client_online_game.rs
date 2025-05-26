@@ -214,6 +214,9 @@ impl ClientOnlineGame {
             }
             ServerOnlineGameCommands::GameEnded(dummy_player) => {
                 dbg!("here");
+                if dummy_player == self.self_player {
+                    let _ = self.tx_commands_second.send(SecondLevelCommands::Won).await;
+                }
                 let _ = self.app.emit(
                     OTHER_PLAYER_WON,
                     WonSignal {

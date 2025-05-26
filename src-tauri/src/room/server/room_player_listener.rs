@@ -217,7 +217,6 @@ impl RoomPlayerListener {
                     send_enum_from_server(socket, &ServerRoomNetCommands::PingRequest(playing))
                         .await;
                 if result.is_ok() {
-                    dbg!("here");
                     self.check_ping = true;
                     self.time_last_ping = SystemTime::now()
                         .duration_since(UNIX_EPOCH)

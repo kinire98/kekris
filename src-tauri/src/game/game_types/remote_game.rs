@@ -101,7 +101,10 @@ impl RemoteGame {
                     .await;
                 None
             }
-            OnlineToRemoteGameCommunication::Won => Some(ServerOnlineGameCommands::Won(0)),
+            OnlineToRemoteGameCommunication::Won => {
+                self.running = false;
+                Some(ServerOnlineGameCommands::Won(0))
+            }
             OnlineToRemoteGameCommunication::PlayerLost(dummy_player) => {
                 if self.lost {
                     None
@@ -113,14 +116,14 @@ impl RemoteGame {
                 dbg!("here");
 
                 // None
-                // for _ in 0..3 {
-                send_enum_from_server(
-                    &self.stream,
-                    &ServerOnlineGameCommands::GameEnded(dummy_player),
-                )
-                .await
-                .unwrap();
-                // }
+                for _ in 0..3 {
+                    send_enum_from_server(
+                        &self.stream,
+                        &ServerOnlineGameCommands::GameEnded(dummy_player.clone()),
+                    )
+                    .await
+                    .unwrap();
+                }
                 self.running = false;
                 None
             }
