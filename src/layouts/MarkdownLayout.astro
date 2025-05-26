@@ -4,8 +4,7 @@ import { getLangFromUrl, useTranslations } from "../i18n/utils";
 import Layout from "./Layout.astro";
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
-let url = Astro.url.pathname.split("/");
-let returnUrl = url.slice(0, url.length - 1).join("/");
+let returnUrl = "/kekris/" + lang + "/manual";
 const text = "< " + t("page.return");
 ---
 
