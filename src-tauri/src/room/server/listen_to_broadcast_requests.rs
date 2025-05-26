@@ -15,6 +15,18 @@ use crate::{
 };
 
 const ERROR_OPENING_CONNECTION_EMIT: &str = "error_opening_connection";
+
+/// Listens for broadcast requests for room discovery.
+///
+/// This function binds to a UDP socket and listens for incoming broadcast messages.
+/// When a valid `RoomDiscover` command is received, it responds with the room's information.
+///
+/// # Arguments
+///
+/// * `info` - The `RoomInfo` to respond with.
+/// * `app` - A Tauri `AppHandle` for emitting events.
+/// * `stop_channel` - A channel for receiving a signal to stop listening.
+/// * `players_num` - An `Arc<Mutex<u8>>` containing the number of players in the room.
 pub fn listen_to_request(
     mut info: RoomInfo,
     app: AppHandle,
@@ -66,6 +78,12 @@ pub fn listen_to_request(
         }
     });
 }
+
+/// Emits an event to indicate that there was an error opening the connection.
+///
+/// # Arguments
+///
+/// * `app` - A Tauri `AppHandle` for emitting events.
 fn finish_listening(app: &AppHandle) {
     let _ = app.emit(ERROR_OPENING_CONNECTION_EMIT, false);
 }

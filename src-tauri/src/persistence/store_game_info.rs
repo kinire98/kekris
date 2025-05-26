@@ -4,6 +4,13 @@ use crate::models::game_info::{self, BlitzGameInfo, ClassicGameInfo, GameInfo, L
 
 use super::{BLITZ_TABLE_NAME, CLASSIC_TABLE_NAME, GAME_INFO_TABLE_NAME, LINES_TABLE_NAME};
 
+/// Stores the game information in the database.
+///
+/// This function takes a `GameInfo` struct, extracts the relevant data, and inserts it into the appropriate tables in the SQLite database.
+///
+/// # Arguments
+///
+/// * `info` - A `GameInfo` struct containing the information to be stored.
 pub async fn store_game_info(info: GameInfo) {
     let Some(url) = super::DB_URL.get() else {
         panic!("DB_URL Not set")
@@ -65,6 +72,13 @@ pub async fn store_game_info(info: GameInfo) {
     .unwrap();
 }
 
+/// Stores classic game information in the database.
+///
+/// # Arguments
+///
+/// * `pool` - A reference to the SQLite connection pool.
+/// * `type_info` - A `ClassicGameInfo` struct containing the information to be stored.
+/// * `id` - The ID of the associated `GameInfo` record.
 async fn store_classic(pool: &Pool<Sqlite>, type_info: ClassicGameInfo, id: i64) -> i64 {
     sqlx::query(
         r#"
@@ -81,6 +95,13 @@ async fn store_classic(pool: &Pool<Sqlite>, type_info: ClassicGameInfo, id: i64)
     .unwrap()
     .last_insert_rowid()
 }
+/// Stores lines game information in the database.
+///
+/// # Arguments
+///
+/// * `pool` - A reference to the SQLite connection pool.
+/// * `type_info` - A `LinesGameInfo` struct containing the information to be stored.
+/// * `id` - The ID of the associated `GameInfo` record.
 async fn store_lines(pool: &Pool<Sqlite>, type_info: LinesGameInfo, id: i64) -> i64 {
     sqlx::query(
         r#"
@@ -95,6 +116,13 @@ async fn store_lines(pool: &Pool<Sqlite>, type_info: LinesGameInfo, id: i64) -> 
     .unwrap()
     .last_insert_rowid()
 }
+/// Stores blitz game information in the database.
+///
+/// # Arguments
+///
+/// * `pool` - A reference to the SQLite connection pool.
+/// * `type_info` - A `BlitzGameInfo` struct containing the information to be stored.
+/// * `id` - The ID of the associated `GameInfo` record.
 async fn store_blitz(pool: &Pool<Sqlite>, type_info: BlitzGameInfo, id: i64) -> i64 {
     sqlx::query(
         r#"

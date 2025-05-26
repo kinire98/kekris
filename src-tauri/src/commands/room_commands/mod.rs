@@ -30,3 +30,4 @@ pub const fn can_host_room() -> bool {
 pub const fn can_host_room() -> bool {
     true
 }
+

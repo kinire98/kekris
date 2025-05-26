@@ -7,6 +7,15 @@ use tokio::{
 
 use crate::models::room_commands::{client::ClientRoomNetCommands, server::ServerRoomNetCommands};
 
+/// Sends a `ClientRoomNetCommands` enum over a TCP stream.
+///
+/// Serializes the enum to JSON, prepends the length of the JSON as a u32 in big-endian byte order,
+/// and then writes the length and the JSON to the stream.
+///
+/// # Arguments
+///
+/// * `stream` - An `Arc<Mutex<TcpStream>>` representing the TCP stream.
+/// * `value` - A reference to the `ClientRoomNetCommands` enum to send.
 pub async fn send_enum_from_client(
     stream: &Arc<Mutex<TcpStream>>,
     value: &ClientRoomNetCommands,
@@ -19,6 +28,14 @@ pub async fn send_enum_from_client(
     guard.write_all(&bytes).await?;
     Ok(())
 }
+/// Reads a `ClientRoomNetCommands` enum from a TCP stream.
+///
+/// Reads the length of the JSON as a u32 from the stream in big-endian byte order,
+/// then reads that many bytes from the stream and deserializes them as a `ClientRoomNetCommands` enum.
+///
+/// # Arguments
+///
+/// * `stream` - An `Arc<Mutex<TcpStream>>` representing the TCP stream.
 pub async fn read_enum_from_client(
     stream: &Arc<Mutex<TcpStream>>,
 ) -> Result<ClientRoomNetCommands, Box<dyn std::error::Error + Send + Sync>> {
@@ -33,6 +50,15 @@ pub async fn read_enum_from_client(
     Ok(serde_json::from_slice(&buffer)?)
 }
 
+/// Sends a `ServerRoomNetCommands` enum over a TCP stream.
+///
+/// Serializes the enum to JSON, prepends the length of the JSON as a u32 in big-endian byte order,
+/// and then writes the length and the JSON to the stream.
+///
+/// # Arguments
+///
+/// * `stream` - An `Arc<Mutex<TcpStream>>` representing the TCP stream.
+/// * `value` - A reference to the `ServerRoomNetCommands` enum to send.
 pub async fn send_enum_from_server(
     stream: &Arc<Mutex<TcpStream>>,
     value: &ServerRoomNetCommands,
@@ -45,6 +71,14 @@ pub async fn send_enum_from_server(
     guard.write_all(&bytes).await?;
     Ok(())
 }
+/// Reads a `ServerRoomNetCommands` enum from a TCP stream.
+///
+/// Reads the length of the JSON as a u32 from the stream in big-endian byte order,
+/// then reads that many bytes from the stream and deserializes them as a `ServerRoomNetCommands` enum.
+///
+/// # Arguments
+///
+/// * `stream` - An `Arc<Mutex<TcpStream>>` representing the TCP stream.
 pub async fn read_enum_from_server(
     stream: &Arc<Mutex<TcpStream>>,
 ) -> Result<ServerRoomNetCommands, Box<dyn std::error::Error + Send + Sync>> {

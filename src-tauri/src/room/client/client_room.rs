@@ -29,16 +29,31 @@ const ROOM_CLOSED_EMIT: &str = "roomClosed";
 const LOST_CONNECTION_EMIT: &str = "connectionLost";
 const GAME_STARTED_EMIT: &str = "gameStartedEmit";
 
+/// `ClientRoom` manages the client-side logic for a room connection.
 pub struct ClientRoom {
+    /// The TCP stream for communication with the server.
     stream: Arc<Mutex<TcpStream>>,
+    /// Tauri application handle for emitting events.
     app: AppHandle,
+    /// Receiver for stop signals.
     stop_channel: broadcast::Receiver<bool>,
+    /// The player's information.
     player: DummyPlayer,
+    /// A boolean indicating whether the client is listening for events.
     listening: bool,
+    /// An atomic boolean indicating whether the client is currently playing a game.
     playing: Arc<Mutex<bool>>,
 }
 
 impl ClientRoom {
+    /// Creates a new `ClientRoom` instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `stream` - The TCP stream for communication with the server.
+    /// * `app` - Tauri application handle for emitting events.
+    /// * `stop_channel` - Receiver for stop signals.
+    /// * `player` - The player's information.
     pub fn new(
         stream: Arc<Mutex<TcpStream>>,
         app: AppHandle,
@@ -54,6 +69,7 @@ impl ClientRoom {
             playing: Arc::new(Mutex::new(false)),
         }
     }
+    /// Listens for events from the server.
     pub async fn listen(&mut self) {
         let mut time = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -120,6 +136,11 @@ impl ClientRoom {
             }
         }
     }
+    /// Handles content received from the server.
+    ///
+    /// # Arguments
+    ///
+    /// * `content` - The content received from the server.
     async fn handle_content(&mut self, content: ServerRoomNetCommands) {
         match content {
             ServerRoomNetCommands::RoomDiscoverResponse(_) => (),
@@ -160,6 +181,7 @@ impl ClientRoom {
             }
         }
     }
+    /// Sends a ping request to the server.
     async fn ping(&mut self) -> bool {
         let lock = self.stream.clone();
         let result =
@@ -189,6 +211,11 @@ impl ClientRoom {
         }
         false
     }
+    /// Stops listening for events from the server.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The result of receiving a stop signal.
     async fn stop_listening(&mut self, value: Result<bool, RecvError>) -> bool {
         if let Ok(value_recv) = value {
             if value_recv {
@@ -218,6 +245,11 @@ impl ClientRoom {
         }
         false
     }
+    /// Handles an error that occurred during communication with the server.
+    ///
+    /// # Arguments
+    ///
+    /// * `error` - The error that occurred.
     fn handle_error(&mut self, error: Box<dyn Error + Send + Sync + 'static>) -> bool {
         let error = error.downcast::<std::io::Error>();
         if error.is_err() {

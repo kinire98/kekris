@@ -45,24 +45,52 @@ const OTHER_PLAYER_WON: &str = "otherPlayerWon";
 
 const GAME_STARTED_EMIT: &str = "gameStartedEmit";
 
+/// `OnlineGame` manages a multiplayer online game session.
+///
+/// It handles communication between the local game, remote players, and the UI.
 pub struct OnlineGame {
+    /// The list of players in the game.
     players: Vec<Player>,
+    /// An atomic boolean indicating whether the game is currently being played.
     playing: Arc<Mutex<bool>>,
+    /// A map of remote players to their command senders.
     remote_games: HashMap<DummyPlayer, Sender<OnlineToRemoteGameCommunication>>,
+    /// Sender for second-level commands to the local game.
     tx_commands_second: Sender<SecondLevelCommands>,
+    /// Receiver for commands from remote games.
     rx_remote_commands: Receiver<RemoteToOnlineGameCommunication>,
+    /// Receiver for game responses from the local game.
     game_responses: Receiver<GameResponses>,
+    /// A boolean indicating whether the game is running.
     game_runnning: bool,
+    /// The local player's information.
     self_player: DummyPlayer,
+    /// The local player's strategy.
     self_player_strategy: Strategy,
+    /// A map of players to the number of lines they are waiting to payback.
     waiting_for_payback_lines: HashMap<DummyPlayer, u32>,
+    /// Tracks the danger levels of all players in the game.
     danger_levels: DangerTracker,
+    /// Tauri application handle for emitting events.
     app: AppHandle,
+    /// A set of players who have lost the game.
     players_lost: HashSet<DummyPlayer>,
+    /// A map of players to the number of even lines they have.
     even_lines: HashMap<DummyPlayer, u32>,
+    /// A boolean indicating whether the local player has lost.
     self_lost: bool,
 }
 impl OnlineGame {
+    /// Creates a new `OnlineGame` instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `players` - The list of players in the game.
+    /// * `playing` - An atomic boolean indicating whether the game is currently being played.
+    /// * `app` - Tauri application handle for emitting events.
+    /// * `delay` - A delay in milliseconds before the game starts.
+    /// * `queue` - The queue implementation to use.
+    /// * `local_player` - The local player's information.
     pub async fn new(
         players: Vec<Player>,
         playing: Arc<Mutex<bool>>,
@@ -133,6 +161,13 @@ impl OnlineGame {
             self_lost: false,
         }
     }
+    /// Sets up the channels for communication between different parts of the game.
+    ///
+    /// # Arguments
+    ///
+    /// * `tx_commands` - Sender for first-level commands.
+    /// * `tx_commands_second` - Sender for second-level commands.
+    /// * `tx_control` - Sender for game control commands.
     async fn set_channels(
         tx_commands: Sender<FirstLevelCommands>,
         tx_commands_second: Sender<SecondLevelCommands>,
@@ -163,6 +198,7 @@ impl OnlineGame {
                 .unwrap();
         }
     }
+    /// Starts the online game.
     pub async fn start(&mut self) {
         self.app
             .emit(GAME_STARTED_EMIT, self.self_player.id())
@@ -189,6 +225,11 @@ impl OnlineGame {
         let mut value = self.playing.lock().await;
         *value = false;
     }
+    /// Handles game responses from the local game.
+    ///
+    /// # Arguments
+    ///
+    /// * `response` - The game response to handle.
     async fn handle_game_responses(&mut self, response: GameResponses) {
         match response {
             GameResponses::BoardState(state) => {
@@ -215,6 +256,11 @@ impl OnlineGame {
             }
         }
     }
+    /// Handles commands from remote games.
+    ///
+    /// # Arguments
+    ///
+    /// * `command` - The remote game command to handle.
     async fn handle_commands(&mut self, command: RemoteToOnlineGameCommunication) {
         match command {
             RemoteToOnlineGameCommunication::TrashSent(dummy_player, strategy, received) => {
@@ -244,6 +290,12 @@ impl OnlineGame {
             }
         }
     }
+    /// Sends the board state to all remote games.
+    ///
+    /// # Arguments
+    ///
+    /// * `player` - The player who's board state is being sent.
+    /// * `state` - The board state to send.
     async fn send_state(&mut self, player: DummyPlayer, state: String) {
         stream::iter(self.remote_games.values().cloned())
             .for_each_concurrent(self.players.len(), |tx| {
@@ -257,6 +309,11 @@ impl OnlineGame {
             })
             .await;
     }
+    /// Notifies all remote games that a player has lost.
+    ///
+    /// # Arguments
+    ///
+    /// * `player` - The player who lost.
     async fn lost(&mut self, player: DummyPlayer) {
         stream::iter(self.remote_games.values().cloned())
             .for_each_concurrent(self.players.len(), |tx| {
@@ -269,6 +326,11 @@ impl OnlineGame {
             })
             .await;
     }
+    /// Sends the piece queue to all remote games.
+    ///
+    /// # Arguments
+    ///
+    /// * `pieces` - The piece queue to send.
     async fn queue_emit(&mut self, pieces: Vec<Piece>) {
         stream::iter(self.remote_games.values().cloned())
             .for_each_concurrent(self.players.len(), |tx| {
@@ -279,6 +341,13 @@ impl OnlineGame {
             })
             .await;
     }
+    /// Handles trash received from a player.
+    ///
+    /// # Arguments
+    ///
+    /// * `dummy_player` - The player who sent the trash.
+    /// * `strategy` - The strategy to use for distributing the trash.
+    /// * `received` - The amount of trash received.
     async fn trash_received(
         &mut self,
         dummy_player: DummyPlayer,
@@ -357,6 +426,7 @@ impl OnlineGame {
             Strategy::Random => self.random_lines(dummy_player, received).await,
         }
     }
+    /// Gets the remaining player in the game.
     fn get_remaining_player(&self) -> DummyPlayer {
         self.players
             .iter()
@@ -367,6 +437,7 @@ impl OnlineGame {
             .find(|player| !self.players_lost.contains(player))
             .unwrap()
     }
+    /// Gets the remaining remote players in the game.
     fn get_remaining_remote_players(&self) -> Vec<DummyPlayer> {
         self.players
             .iter()
@@ -377,6 +448,12 @@ impl OnlineGame {
             .filter(|player| !self.players_lost.contains(player))
             .collect()
     }
+    /// Distributes lines using the elimination strategy.
+    ///
+    /// # Arguments
+    ///
+    /// * `dummy_player` - The player who sent the lines.
+    /// * `received` - The number of lines received.
     async fn elimination_lines(&mut self, dummy_player: DummyPlayer, received: u32) {
         let more_endangered_players = self.danger_levels.get_highest();
         let random_endangered_player = more_endangered_players
@@ -399,6 +476,12 @@ impl OnlineGame {
             .await;
         self.store_lines(random_endangered_player, received);
     }
+    /// Distributes lines using the even strategy.
+    ///
+    /// # Arguments
+    ///
+    /// * `dummy_player` - The player who sent the lines.
+    /// * `received` - The number of lines received.
     async fn even_lines(&mut self, dummy_player: DummyPlayer, received: u32) {
         let player = self
             .even_lines
@@ -431,6 +514,12 @@ impl OnlineGame {
         }
         self.store_lines(player, received);
     }
+    /// Distributes lines using the payback strategy.
+    ///
+    /// # Arguments
+    ///
+    /// * `dummy_player` - The player who sent the lines.
+    /// * `received` - The number of lines received.
     async fn payback_lines(&mut self, dummy_player: DummyPlayer, received: u32) {
         let lines = self
             .waiting_for_payback_lines
@@ -445,6 +534,12 @@ impl OnlineGame {
             .send(OnlineToRemoteGameCommunication::MostRecentReceivedPlayerRequest)
             .await;
     }
+    /// Distributes lines using the random strategy.
+    ///
+    /// # Arguments
+    ///
+    /// * `dummy_player` - The player who sent the lines.
+    /// * `received` - The number of lines received.
     async fn random_lines(&mut self, dummy_player: DummyPlayer, received: u32) {
         let player_receiving = {
             let mut range = rand::rng().random_range(0..self.remote_games.len() + 1);
@@ -480,6 +575,12 @@ impl OnlineGame {
 
         self.store_lines(player_receiving, received);
     }
+    /// Handles the most recent player request.
+    ///
+    /// # Arguments
+    ///
+    /// * `dummy_player` - The player who sent the lines.
+    /// * `dummy_player1` - The player who is receiving the lines.
     async fn most_recent_received_from_player(
         &mut self,
         dummy_player: DummyPlayer,
@@ -509,6 +610,12 @@ impl OnlineGame {
             .await;
         self.store_lines(receiving, lines);
     }
+    /// Emits the other player state.
+    ///
+    /// # Arguments
+    ///
+    /// * `dummy_player` - The player who's state is being emitted.
+    /// * `state` - The state to emit.
     fn other_player_state_emit(&self, dummy_player: DummyPlayer, state: String) {
         let _ = self.app.emit(
             STATE_EMIT_OTHER_PLAYERS,
@@ -518,9 +625,19 @@ impl OnlineGame {
             },
         );
     }
+    /// Emits the other player lost event.
+    ///
+    /// # Arguments
+    ///
+    /// * `dummy_player` - The player who lost.
     fn other_player_lost(&self, dummy_player: DummyPlayer) {
         let _ = self.app.emit(OTHER_PLAYER_LOST, dummy_player);
     }
+    /// Checks if the game is over.
+    ///
+    /// # Arguments
+    ///
+    /// * `dummy_player` - The player who lost.
     async fn lost_checks(&mut self, dummy_player: DummyPlayer) {
         self.players_lost.insert(dummy_player);
         if self.players_lost.len() == self.players.len() {
@@ -531,6 +648,11 @@ impl OnlineGame {
             self.send_winner(winner).await;
         }
     }
+    /// Emits the other player won event.
+    ///
+    /// # Arguments
+    ///
+    /// * `dummy_player` - The player who won.
     fn other_player_won(&self, dummy_player: DummyPlayer) {
         let _ = self.app.emit(
             OTHER_PLAYER_WON,
@@ -540,6 +662,7 @@ impl OnlineGame {
             },
         );
     }
+    /// Gets the winner of the game.
     fn get_winner(&self) -> DummyPlayer {
         match self
             .players
@@ -554,6 +677,11 @@ impl OnlineGame {
             None => self.self_player.clone(),
         }
     }
+    /// Sends the winner to all remote games.
+    ///
+    /// # Arguments
+    ///
+    /// * `winner` - The winner of the game.
     async fn send_winner(&self, winner: DummyPlayer) {
         match self.remote_games.get(&winner) {
             Some(channel) => {
@@ -582,6 +710,13 @@ impl OnlineGame {
         );
         *self.playing.lock().await = false;
     }
+    
+    /// Stores the lines for a player.
+    ///
+    /// # Arguments
+    ///
+    /// * `receiver` - The player who is receiving the lines.
+    /// * `lines` - The number of lines received.
     fn store_lines(&mut self, receiver: DummyPlayer, lines: u32) {
         self.even_lines.insert(receiver, lines);
     }
