@@ -76,19 +76,20 @@ impl ClientRoom {
                             dbg!("here");
                             self.handle_content(content).await;
                         } else {
-                            dbg!("here");
+                            dbg!(&command);
                             let command = read_enum_from_server(&lock).await;
                             if let Ok(command) = command {
                                 dbg!("here");
                                 self.handle_content(command).await;
                             } else {
-                                dbg!("here");
+                                dbg!(&command);
                                 let command = read_enum_from_server(&lock).await;
+                                dbg!(&command);
                                 if let Ok(content) = command {
                                     dbg!("here");
                                     self.handle_content(content).await;
                                 } else {
-                                    dbg!("here");
+                                    dbg!(&command);
                                 }
                             }
                         }
