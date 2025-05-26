@@ -6,21 +6,29 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 let url = Astro.url.pathname.split("/");
 let returnUrl = url.slice(0, url.length - 1).join("/");
-console.log(url);
-console.log(returnUrl);
+const text = "< " + t("page.return");
 ---
 
 <Layout>
-  <LinkButton text={t("page.return")} link={returnUrl} />
-  <slot />
+  <LinkButton text={text} link={returnUrl} />
+  <center>
+    <div id="wrap">
+      <slot />
+    </div>
+  </center>
 </Layout>
 <style is:global>
+  #wrap {
+    width: 80vw;
+  }
   p {
     font-size: 18px;
+    text-align: justify;
   }
   body {
     padding: 15px;
     height: auto;
+    width: 80vw;
   }
   img {
     width: 750px;
@@ -28,6 +36,7 @@ console.log(returnUrl);
     display: flex;
     margin: 15px;
     margin-left: calc(50% - 375px);
+    box-shadow: 0 0 5px #000000;
   }
   h1 {
     font-size: 45px;
@@ -36,9 +45,11 @@ console.log(returnUrl);
     font-size: 30px;
   }
   code {
-    background-color: #202020;
     padding: 5px;
     font-family: monospace;
+    font-size: 18px;
+    text-align: left;
+    display: inline;
   }
   ul {
     font-size: 18px;
@@ -47,8 +58,9 @@ console.log(returnUrl);
     margin: 15px;
   }
   #link-button {
-    position: sticky;
-    width: 25vw;
-    right: 15px;
+    position: absolute;
+    width: 10vw;
+    left: 15px;
+    top: 4.5vh;
   }
 </style>
