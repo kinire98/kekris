@@ -1,4 +1,3 @@
-
 import { listen } from "@tauri-apps/api/event";
 import {
   getBorderColor, getIPieceColor, getIPieceDarkColor, getJPieceColor,
@@ -64,6 +63,13 @@ let mainCanvas: HTMLCanvasElement;
 let bufferCanvas: HTMLCanvasElement;
 
 export let currentGameOptions: GameOptions;
+
+/**
+ * Initializes the game board and sets up event listeners.
+ * @param canvas The main canvas element.
+ * @param secondCanvas The buffer canvas element.
+ * @param options The game options.
+ */
 export default function startDraw(canvas: HTMLCanvasElement, secondCanvas: HTMLCanvasElement, options: GameOptions) {
   currentGameOptions = options;
   const ctx: CanvasRenderingContext2D = canvas.getContext("2d")!;
@@ -95,14 +101,31 @@ export default function startDraw(canvas: HTMLCanvasElement, secondCanvas: HTMLC
     timer();
   }
 }
+
+/**
+ * Draws the buffer board.
+ * @param board The board state as a string.
+ */
 function drawBufferBoard(board: string) {
   const ctx: CanvasRenderingContext2D = bufferCanvas.getContext("2d")!;
   drawBoardInternal(board, ctx, false);
 }
+
+/**
+ * Draws the main board.
+ * @param board The board state as a string.
+ */
 function drawMainBoard(board: string) {
   const ctx: CanvasRenderingContext2D = mainCanvas.getContext("2d")!;
   drawBoardInternal(board, ctx, true);
 }
+
+/**
+ * Draws the board on the canvas.
+ * @param board The board state as a string.
+ * @param ctx The canvas rendering context.
+ * @param drawLDivisories Whether to draw the L divisories.
+ */
 function drawBoardInternal(board: string, ctx: CanvasRenderingContext2D, drawLDivisories: boolean) {
   clearCanvas(ctx);
   if (drawLDivisories) {
@@ -141,13 +164,19 @@ function drawBoardInternal(board: string, ctx: CanvasRenderingContext2D, drawLDi
 }
 
 
+/**
+ * Starts the board change event listener.
+ */
 async function startBoardChangeEventListener() {
   await listen<string>(boardStateEmit, e => {
     drawBoard(e.payload);
   })
 }
 
-
+/**
+ * Draws the lines on the canvas.
+ * @param ctx The canvas rendering context.
+ */
 function drawLines(ctx: CanvasRenderingContext2D) {
   ctx.lineWidth = 1;
   ctx.strokeStyle = getBorderColor();
@@ -165,6 +194,11 @@ function drawLines(ctx: CanvasRenderingContext2D) {
   }
 }
 
+/**
+ * Gets the color for a piece.
+ * @param piece The piece type.
+ * @returns The color for the piece.
+ */
 function getColor(piece: string): string {
   if (piece == "E")
     return "transparent";
@@ -184,6 +218,12 @@ function getColor(piece: string): string {
     return getZPieceColor();
   throw new Error("Invalid Value");
 }
+
+/**
+ * Gets the dark color for a piece.
+ * @param piece The piece type.
+ * @returns The dark color for the piece.
+ */
 function getDarkColor(piece: string): string {
   if (piece == "E")
     return "transparent";
@@ -203,6 +243,13 @@ function getDarkColor(piece: string): string {
     return getZPieceDarkColor();
   throw new Error("Invalid Value");
 }
+
+/**
+ * Draws a trash piece on the canvas.
+ * @param ctx The canvas rendering context.
+ * @param x The x coordinate of the piece.
+ * @param y The y coordinate of the piece.
+ */
 function trashPiece(ctx: CanvasRenderingContext2D, x: number, y: number) {
   const trash = trashColor();
   const trashBorder = trashBorderColor();
@@ -217,6 +264,12 @@ function trashPiece(ctx: CanvasRenderingContext2D, x: number, y: number) {
     pieceHeight - (borderWidth * 2));
 }
 
+/**
+ * Draws a ghost piece on the canvas.
+ * @param ctx The canvas rendering context.
+ * @param x The x coordinate of the piece.
+ * @param y The y coordinate of the piece.
+ */
 function ghostPiece(ctx: CanvasRenderingContext2D, x: number, y: number) {
   const color = getGhostColor();
   const outerBorderWidth = 2;
@@ -232,7 +285,10 @@ function ghostPiece(ctx: CanvasRenderingContext2D, x: number, y: number) {
     pieceWidth - (offset * 2));
 }
 
-
+/**
+ * Clears the canvas.
+ * @param ctx The canvas rendering context.
+ */
 function clearCanvas(ctx: CanvasRenderingContext2D) {
   ctx.save();
 
@@ -242,13 +298,18 @@ function clearCanvas(ctx: CanvasRenderingContext2D) {
   ctx.restore();
 }
 
-
+/**
+ * Draws the board on the canvas.
+ * @param board The board state as a string.
+ */
 function drawBoard(board: string) {
   drawBufferBoard(board.substring(0, 200));
   drawMainBoard(board.substring(200, 400));
 }
 
-
+/**
+ * Listens for the game over event.
+ */
 async function gameLost() {
   unlisteners.push(await listen(gameOverEmit, (e) => {
     lostEffect();
@@ -270,18 +331,27 @@ async function gameLost() {
   }));
 }
 
+/**
+ * Listens for the line cleared event.
+ */
 async function lineCleared() {
   unlisteners.push(await listen(lineClearedEmit, (e) => {
     lineClearedEffect(e.payload as ClearLinePattern);
   }));
 }
 
+/**
+ * Listens for the piece fixed event.
+ */
 async function pieceFixedEvent() {
   unlisteners.push(await listen(pieceFixed, () => {
     pieceFixedEffect();
   }));
 }
 
+/**
+ * Listens for the game won event.
+ */
 async function gameWon() {
   unlisteners.push(await listen(gameWonEmit, () => {
     const $board = document.getElementById("wrap")! as HTMLElement;
@@ -301,18 +371,29 @@ async function gameWon() {
   }));
 }
 
+/**
+ * Listens for the line cleared info event.
+ */
 async function lineClearedInfo() {
   unlisteners.push(await listen(lineClearedInfoEmit, (e) => {
     const $lines = document.getElementById("write-lines") as HTMLElement;
     $lines.innerText = e.payload as string;
   }));
 }
+
+/**
+ * Listens for the points info event.
+ */
 async function pointsInfo() {
   unlisteners.push(await listen(pointsEmit, (e) => {
     const $points = document.getElementById("write-lines") as HTMLElement;
     $points.innerText = e.payload as string;
   }));
 }
+
+/**
+ * Listens for the timer event.
+ */
 async function timer() {
   unlisteners.push(await listen(timeEmit, (e) => {
     const $points = document.getElementById("timer")! as HTMLElement;
@@ -320,6 +401,9 @@ async function timer() {
   }));
 }
 
+/**
+ * Listens for the boards event.
+ */
 async function boards() {
   multiplayerUnlisteners.push(await listen(stateEmitForOtherPlayers, (e) => {
     let player = e.payload as OtherPlayerState;
@@ -329,6 +413,9 @@ async function boards() {
   }))
 }
 
+/**
+ * Listens for the other player lost event.
+ */
 async function otherPlayerLost() {
   multiplayerUnlisteners.push(await listen(otherPlayerLostEmit, (e) => {
     let player = e.payload as Player;
@@ -340,6 +427,10 @@ async function otherPlayerLost() {
     }
   }))
 }
+
+/**
+ * Listens for the other player won event.
+ */
 async function otherPlayerWon() {
   console.log("event added");
   multiplayerUnlisteners.push(await listen(otherPlayerWonEmit, (e) => {
@@ -382,7 +473,14 @@ async function otherPlayerWon() {
   }));
 }
 
-
+/**
+ * Draws the multiplayer board.
+ * @param board The board state as a string.
+ * @param ctx The canvas rendering context.
+ * @param drawLDivisories Whether to draw the L divisories.
+ * @param width The width of the canvas.
+ * @param height The height of the canvas.
+ */
 function drawMultiplayer(board: string, ctx: CanvasRenderingContext2D, drawLDivisories: boolean, width: number, height: number) {
   clearCanvas(ctx);
   if (drawLDivisories) {

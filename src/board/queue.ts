@@ -8,16 +8,29 @@ let canvas: HTMLCanvasElement;
 
 const pieceWidth = 34;
 const pieceHeight = 34;
+
+/**
+ * Initializes the queue canvas and starts listening for queue updates.
+ * @param queueCanvas The canvas element for the queue.
+ */
 export default function startQueue(queueCanvas: HTMLCanvasElement) {
     canvas = queueCanvas;
     listenToQueue();
 }
+
+/**
+ * Listens for the queue emit event and draws the queue when it's received.
+ */
 async function listenToQueue() {
     await listen<Piece[]>(queueEmit, (e) => {
         drawQueue(e.payload);
     });
 }
 
+/**
+ * Draws the queue of pieces on the canvas.
+ * @param pieces The array of pieces to draw.
+ */
 function drawQueue(pieces: Piece[]) {
     const ctx: CanvasRenderingContext2D = canvas.getContext("2d")!;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -26,6 +39,12 @@ function drawQueue(pieces: Piece[]) {
     }
 }
 
+/**
+ * Draws a single piece in the queue.
+ * @param piece The piece to draw.
+ * @param position The position of the piece in the queue.
+ * @param ctx The canvas rendering context.
+ */
 function draw(piece: Piece, position: number, ctx: CanvasRenderingContext2D) {
     let start_x;
     let start_y;
@@ -109,6 +128,16 @@ function draw(piece: Piece, position: number, ctx: CanvasRenderingContext2D) {
             throw new Error(`${piece} shouldn't be sent through here`);
     }
 }
+
+/**
+ * Draws a single piece block on the canvas.
+ * @param x The x coordinate of the piece.
+ * @param y The y coordinate of the piece.
+ * @param color The color of the piece.
+ * @param darkColor The dark color of the piece.
+ * @param ctx The canvas rendering context.
+ * @param position The position of the piece in the queue.
+ */
 function drawPiece(x: number, y: number, color: string, darkColor: string, ctx: CanvasRenderingContext2D, position: number) {
     const widthSecondRing = 5;
     y = ((canvas.height / 5) * position) + y;

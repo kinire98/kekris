@@ -14,8 +14,21 @@ use crate::{
 };
 const CONNECTION_ERROR: &str = "connection_error";
 const CONNECTION_REJECTED: &str = "connection_rejected";
-// const PLAYERS_EMIT: &str = "playersEmit";
 
+/// Attempts to join a room at the specified `RoomInfo`.
+///
+/// Establishes a TCP connection, sends a join request, and processes the server's response.
+///
+/// # Arguments
+///
+/// * `room` - The `RoomInfo` of the room to join.
+/// * `player` - The `DummyPlayer` representing the player joining the room.
+/// * `app` - A reference to the Tauri `AppHandle` for emitting events.
+///
+/// # Returns
+///
+/// An `Option` containing a tuple of `DummyRoom` and `Arc<Mutex<TcpStream>>` if the join request is accepted,
+/// or `None` if the connection fails or the join request is rejected.
 pub async fn join_room(
     room: RoomInfo,
     player: DummyPlayer,

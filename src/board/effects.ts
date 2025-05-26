@@ -2,6 +2,9 @@ import { ClearLinePattern } from "../types/ClearLinePattern";
 import i18n from "../i18n";
 
 const pixelsOffset = 5;
+/**
+ * Applies a hard drop effect to the game board.
+ */
 export function hardDropEffect() {
   const $board = document.getElementById("board")! as HTMLElement;
   $board.style.transform = `translateY(${pixelsOffset}px)`;
@@ -10,6 +13,9 @@ export function hardDropEffect() {
   }, 100);
 }
 
+/**
+ * Applies a lost effect to the game board.
+ */
 export async function lostEffect() {
   const $bgc = document.getElementById("bgc")! as HTMLElement;
   const $board = document.getElementById("board")! as HTMLElement;
@@ -20,6 +26,10 @@ export async function lostEffect() {
   }, 1500);
 }
 
+/**
+ * Applies a line cleared effect to the game board.
+ * @param pattern The clear line pattern.
+ */
 export function lineClearedEffect(pattern: ClearLinePattern) {
   const $el = document.getElementById("pattern")! as HTMLElement;
   $el.classList.remove("animation-letters");
@@ -37,11 +47,9 @@ export function lineClearedEffect(pattern: ClearLinePattern) {
   }, 1000);
 }
 
+/**
+ * Applies a piece fixed effect.
+ */
 export function pieceFixedEffect() {
 
 }
-
-// export function gameWonEffect() {
-
-// }
-

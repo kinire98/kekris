@@ -48,34 +48,68 @@ const EXTENDED_TIME_LOCK_MILIS: u64 = 500;
 const MOVEMENTS_LEFT_RESET: u8 = 15;
 
 #[derive(Debug)]
+/// `LocalGame` represents a single-player game instance.
 pub struct LocalGame {
+    /// Tauri application handle for emitting events.
     app: AppHandle,
+    /// The game board.
     local_board: LocalBoard,
-    // remote_boards: Vec<RemoteBoard>,
+    /// Flag indicating if the game is in normal mode.
     normal: bool,
+    /// Flag indicating if the game is in 40 lines mode.
     lines_40: bool,
+    /// Flag indicating if the game is in blitz mode.
     blitz: bool,
+    /// Start time of the game in seconds since the UNIX epoch.
     start_time: u64,
+    /// The player's current score.
     points: u32,
+    /// Flag indicating if the game has started.
     game_started: bool,
+    /// The previously cleared line pattern.
     prev_clear_line_pattern: ClearLinePattern,
+    /// The current game level.
     level: u16,
+    /// The number of lines cleared in the current level.
     line_clears: u16,
+    /// The total number of lines cleared in the game.
     real_line_clears: u16,
+    /// Receiver for game control commands.
     game_control: Receiver<GameControl>,
+    /// Receiver for first-level commands.
     first_level_commands: Receiver<FirstLevelCommands>,
+    /// Optional receiver for second-level commands.
     second_level_commands: Option<Receiver<SecondLevelCommands>>,
+    /// Flag indicating if the game is running.
     run: bool,
+    /// The last piece that was placed on the board.
     last_piece: Piece,
+    /// The lowest y-coordinate the piece has reached.
     piece_lowest_y: i16,
+    /// Flag indicating if movement counting is enabled.
     count_movements_enabled: bool,
+    /// The number of movements left before the piece is fixed.
     movements_left: u8,
+    /// The game information.
     game_info: GameInfo,
+    /// Flag indicating if the game info should be registered.
     register_info: bool,
+    /// Optional sender for game responses.
     responder: Option<Sender<GameResponses>>,
 }
 
 impl LocalGame {
+    /// Creates a new `LocalGame` instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - The game options.
+    /// * `app` - The Tauri application handle.
+    /// * `first_level_commands` - Receiver for first-level commands.
+    /// * `second_level_commands` - Optional receiver for second-level commands.
+    /// * `game_control_receiver` - Receiver for game control commands.
+    /// * `responder` - Optional sender for game responses.
+    /// * `queue` - The queue implementation to use.
     pub fn new(
         options: GameOptions,
         app: AppHandle,
@@ -116,6 +150,9 @@ impl LocalGame {
         }
     }
 
+    /// Starts the game.
+    ///
+    /// This function initializes the game state and starts the game loop.
     pub async fn start_game(&mut self) {
         if self.game_started {
             return;
@@ -146,6 +183,9 @@ impl LocalGame {
         self.game_loop().await;
     }
 
+    /// The main game loop.
+    ///
+    /// This function handles game logic, processes commands, and emits events.
     async fn game_loop(&mut self) {
         let (tx, mut rx) = mpsc::channel(32);
         let (tx_points, rx_points) = mpsc::channel(32);
@@ -237,6 +277,13 @@ impl LocalGame {
     /// In this method there are checks crucial for the gameplay,
     /// related to piece fixation and countdown. Generally, anything
     /// that can make you lose the game
+    ///
+    /// # Arguments
+    ///
+    /// * `tx_points` - The sender for points.
+    /// * `rx_extended_lock` - The receiver for extended lock.
+    /// * `tx_extended_lock` - The sender for extended lock.
+    /// * `rx` - The receiver for the tick.
     async fn critical_checks(
         &mut self,
         tx_points: &Sender<u16>,
@@ -281,6 +328,13 @@ impl LocalGame {
         }
     }
     /// Checks for piece movements
+    ///
+    /// # Arguments
+    ///
+    /// * `tx_points` - The sender for points.
+    /// * `rx_extended_lock` - The receiver for extended lock.
+    /// * `tx_extended_lock` - The sender for extended lock.
+    /// * `rx` - The receiver for the tick.
     async fn first_level_checks(
         &mut self,
         tx_points: &Sender<u16>,
@@ -351,6 +405,14 @@ impl LocalGame {
         }
     }
 
+    /// Checks for second level commands
+    ///
+    /// # Arguments
+    ///
+    /// * `tx_points` - The sender for points.
+    /// * `rx_extended_lock` - The receiver for extended lock.
+    /// * `tx_extended_lock` - The sender for extended lock.
+    /// * `rx` - The receiver for the tick.
     async fn second_level_checks(
         &mut self,
         tx_points: &Sender<u16>,
@@ -402,6 +464,11 @@ impl LocalGame {
         }
     }
     /// This keeps track of the time. Receives the level of the game to execute the loop faster
+    ///
+    /// # Arguments
+    ///
+    /// * `sender` - The sender for the tick.
+    /// * `receiver` - The receiver for the level.
     async fn tick_loop(sender: Sender<bool>, mut receiver: Receiver<u16>) {
         // !  This thread shouldn't abruptly die, it's not fine if it dies
         tokio::spawn(async move {
@@ -422,6 +489,11 @@ impl LocalGame {
         });
     }
     /// This keeps the track for the extended piece lock down
+    ///
+    /// # Arguments
+    ///
+    /// * `sender` - The sender for the extended lock.
+    /// * `lowest_y` - The lowest y coordinate of the piece.
     async fn extended_lock_down(sender: Sender<i16>, lowest_y: i16) {
         tokio::spawn(async move {
             tokio::time::sleep(Duration::from_millis(EXTENDED_TIME_LOCK_MILIS)).await;
@@ -430,6 +502,10 @@ impl LocalGame {
     }
     /// Checks for piece fixed. Emits the state necessary to the frontend, checks if game has been los or won,
     /// and performs operations for, checking lines cleareance
+    ///
+    /// # Arguments
+    ///
+    /// * `sender` - The sender for the level.
     async fn piece_fixed(&mut self, sender: &Sender<u16>) {
         self.piece_lowest_y = -20;
         self.count_movements_enabled = false;
@@ -498,6 +574,7 @@ impl LocalGame {
         sender.send(self.level).await.unwrap();
     }
 
+    /// Gets the win condition for the game.
     fn get_win_condition(&self) -> impl Fn(bool, u32) -> bool {
         let seconds = self.start_time;
         let normal_win_condition = move |_game_over, _lines_cleared| false;
@@ -549,6 +626,7 @@ impl LocalGame {
         self.prev_clear_line_pattern = pattern;
     }
 
+    /// Calculates the points for the cleared lines.
     fn points_calculation(&mut self, pattern: ClearLinePattern) {
         self.points += match pattern {
             ClearLinePattern::None => 0,
@@ -579,6 +657,7 @@ impl LocalGame {
             } * self.level as u32;
         }
     }
+    /// Calculates the lines awarded for the cleared lines.
     async fn lines_awarded_calculation(&mut self, pattern: ClearLinePattern) {
         let mut lines_cleared = match pattern {
             ClearLinePattern::None => 0,
@@ -636,6 +715,7 @@ impl LocalGame {
         };
     }
 
+    /// Emits the held piece.
     fn emit_held_piece(&self) {
         self.app
             .emit(
@@ -647,6 +727,7 @@ impl LocalGame {
             .unwrap();
     }
 
+    /// Emits the queue.
     fn queue_emit(&mut self) {
         let range: Range<u128> = self.local_board.piece_num() as u128 + 1
             ..self.local_board.piece_num() as u128 + NUMBER_OF_PIECES_IN_QUEUE_TO_EMIT + 1;
@@ -654,6 +735,7 @@ impl LocalGame {
             .emit(QUEUE_EMIT, self.local_board.get_pieces(range))
             .unwrap();
     }
+    /// Emits the board state.
     async fn state_emit(&mut self) {
         let state = self.local_board.board_state();
         if self.responder.is_some() {
@@ -666,6 +748,7 @@ impl LocalGame {
         }
         self.app.emit(BOARD_STATE_EMIT, state).unwrap();
     }
+    /// Emits the cleared line.
     fn line_emit(&self, pattern: ClearLinePattern) {
         self.app.emit(LINE_CLEARED_EMIT, pattern).unwrap();
         let payload = if self.lines_40 {
@@ -675,18 +758,23 @@ impl LocalGame {
         };
         self.app.emit(LINE_CLEARED_INFO_EMIT, payload).unwrap();
     }
+    /// Emits the piece fixed event.
     fn piece_fixed_emit(&self) {
         self.app.emit(PIECE_FIXED_EMIT, self.last_piece).unwrap();
     }
+    /// Emits the points.
     fn points_emit(&self) {
         self.app.emit(POINTS_EMIT, self.points).unwrap();
     }
+    /// Emits the game won event.
     fn game_won_emit(&self) {
         self.app.emit(GAME_WON_EMIT, true).unwrap();
     }
+    /// Emits the game over event.
     fn game_over_emit(&self, forfeited: bool) {
         self.app.emit(GAME_OVER_EMIT, forfeited).unwrap();
     }
+    /// Emits the time.
     fn time_emit(&self, now_secs: u64) {
         let total_secs = now_secs - self.start_time;
         let seconds = total_secs % 60;
@@ -699,6 +787,7 @@ impl LocalGame {
             )
             .unwrap();
     }
+    /// Registers the game info.
     async fn register_info(&mut self) {
         let info = self.game_info;
 
@@ -708,20 +797,10 @@ impl LocalGame {
     }
 }
 #[derive(Debug)]
+/// `GameControl` represents the control commands for the game.
 pub enum GameControl {
+    /// Retries the game.
     Retry,
+    /// Forfeits the game.
     Forfeit,
 }
-
-//  pub enum ThirdLevelCommands {}
-// enum FourthLevelCommands {}
-// * Events to emit
-// * - Held piece -> Piece
-// * - Queue -> [Piece]
-// * - Strategy -> Strategy
-// * - Board state
-// * - Lost
-// * - Won
-// * - Piece set
-// * - Piece hard dropped
-// * - Other boards state -> not yet implemented

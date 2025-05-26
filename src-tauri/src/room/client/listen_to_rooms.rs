@@ -14,6 +14,18 @@ use crate::{
 const MILIS_TIMEOUT: u64 = 200;
 
 const ROOM_UPDATES_EVENT: &str = "room-updates";
+
+/// Listens for room updates by sending a broadcast and receiving responses.
+///
+/// This function binds to UDP sockets for sending and receiving broadcast messages,
+/// then enters a loop to periodically send a room discovery command and collect
+/// responses containing room information. The collected room information is then
+/// emitted as a Tauri event.
+///
+/// # Arguments
+///
+/// * `app` - A Tauri `AppHandle` for emitting events.
+/// * `channel` - A channel for receiving a signal to stop listening.
 pub async fn listen_to_rooms(app: AppHandle, mut channel: tokio::sync::mpsc::Receiver<bool>) {
     let send_socket = UdpSocket::bind(DUMMY_SEND_BROADCAST)
         .await

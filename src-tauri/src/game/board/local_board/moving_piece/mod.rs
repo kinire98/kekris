@@ -18,16 +18,27 @@ use moving_piece_z::MovingPieceZ;
 
 use crate::game::pieces::Piece;
 
+/// `MovingPiece` trait defines the behavior of a moving piece on the board.
 pub trait MovingPiece: Send + Sync + std::fmt::Debug + rotations::Rotations + Any {
+    /// Moves the piece down by one row.
     fn move_down(&mut self);
+    /// Moves the piece up by one row.
     fn move_up(&mut self);
+    /// Moves the piece to the left by one column.
     fn move_left(&mut self);
+    /// Moves the piece to the right by one column.
     fn move_right(&mut self);
+    /// Gets the coordinates of the sides of the piece that are facing downwards.
     fn get_bottom_facing_sides(&self) -> Vec<(i16, i16)>;
+    /// Gets the coordinates of the sides of the piece that are facing rightwards.
     fn get_right_facing_sides(&self) -> Vec<(i16, i16)>;
+    /// Gets the coordinates of the sides of the piece that are facing leftwards.
     fn get_left_facing_sides(&self) -> Vec<(i16, i16)>;
+    /// Gets the coordinates of all the cells occupied by the piece.
     fn get_coords(&self) -> Vec<(i16, i16)>;
+    /// Returns the `Piece` type of the moving piece.
     fn piece(&self) -> Piece;
+    /// Rotates the piece clockwise based on the given rotation option.
     fn rotate_clockwise(&mut self, option: RotationOption) {
         match option {
             RotationOption::First => self.first_option_clockwise(),
@@ -38,6 +49,7 @@ pub trait MovingPiece: Send + Sync + std::fmt::Debug + rotations::Rotations + An
         }
     }
 
+    /// Rotates the piece counterclockwise based on the given rotation option.
     fn rotate_counterclockwise(&mut self, option: RotationOption) {
         match option {
             RotationOption::First => self.first_option_counterclockwise(),
@@ -47,51 +59,80 @@ pub trait MovingPiece: Send + Sync + std::fmt::Debug + rotations::Rotations + An
             RotationOption::Fifth => self.fifth_option_counterclockwise(),
         }
     }
+    /// Rotates the piece 180 degrees based on the given rotation option.
     fn rotate_full(&mut self, option: RotationOption);
 
+    /// Creates a clone of the `MovingPiece` as a boxed trait object.
     fn clone_box(&self) -> Box<dyn MovingPiece>;
 
+    /// Returns the x coordinate of the piece.
     fn x(&self) -> i16;
+    /// Returns the y coordinate of the piece.
     fn y(&self) -> i16;
+    /// Returns the orientation of the piece.
     fn orientation(&self) -> Orientation;
 
+    /// Returns a reference to the underlying type as `Any`.
     fn as_any(&self) -> Box<dyn Any>;
 }
 
 mod rotations {
+    /// `Rotations` trait defines the different rotation options for a moving piece.
+    ///
     /// Rules for implementing:
     /// Rule 1: the clockwise rotation must cancel out with its counterclockwise rotation counterpart
     /// Rule 2: all the rotations in one implementation must cancel each other (for example, if the north and east variants add 3 each to x, the south and west ones must substract 3 each).
     /// This rule has only one exception, the T piece doesn't implement some levels with certain rotations
     pub trait Rotations {
+        /// Performs the first option for clockwise rotation.
         fn first_option_clockwise(&mut self);
+        /// Performs the second option for clockwise rotation.
         fn second_option_clockwise(&mut self);
+        /// Performs the third option for clockwise rotation.
         fn third_option_clockwise(&mut self);
+        /// Performs the fourth option for clockwise rotation.
         fn fourth_option_clockwise(&mut self);
+        /// Performs the fifth option for clockwise rotation.
         fn fifth_option_clockwise(&mut self);
 
+        /// Performs the first option for counterclockwise rotation.
         fn first_option_counterclockwise(&mut self);
+        /// Performs the second option for counterclockwise rotation.
         fn second_option_counterclockwise(&mut self);
+        /// Performs the third option for counterclockwise rotation.
         fn third_option_counterclockwise(&mut self);
+        /// Performs the fourth option for counterclockwise rotation.
         fn fourth_option_counterclockwise(&mut self);
+        /// Performs the fifth option for counterclockwise rotation.
         fn fifth_option_counterclockwise(&mut self);
     }
 }
 
+/// `Orientation` represents the orientation of a moving piece.
 #[derive(Debug, Clone, Copy)]
 pub enum Orientation {
+    /// The piece is facing north.
     North,
+    /// The piece is facing south.
     South,
+    /// The piece is facing east.
     East,
+    /// The piece is facing west.
     West,
 }
 
+/// `RotationOption` represents the different options for rotating a piece.
 #[derive(Debug, Clone, Copy)]
 pub enum RotationOption {
+    /// The first rotation option.
     First,
+    /// The second rotation option.
     Second,
+    /// The third rotation option.
     Third,
+    /// The fourth rotation option.
     Fourth,
+    /// The fifth rotation option.
     Fifth,
 }
 

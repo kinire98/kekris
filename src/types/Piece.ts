@@ -1,3 +1,6 @@
+/**
+ * `Piece` represents the different types of pieces in the game, used for communication with the backend.
+ */
 export enum Piece {
     T = "T",
     O = "O",
