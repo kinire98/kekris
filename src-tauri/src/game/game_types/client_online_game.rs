@@ -1,3 +1,4 @@
+use std::time::{SystemTime, UNIX_EPOCH};
 use std::{sync::Arc, time::Duration};
 
 use tauri::{AppHandle, Emitter};
@@ -124,11 +125,19 @@ impl ClientOnlineGame {
         let mut lock = self.playing.lock().await;
         *lock = true;
         drop(lock);
+        let mut time = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards 🗿🤙")
+            .as_secs();
         while self.running {
             let socket = self.socket.clone();
             if !self.dead {
                 tokio::select! {
                     content = read_enum_from_server(&socket) => {
+                        time = SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .expect("Time went backwards 🗿🤙")
+                            .as_secs();
                         if let Ok(content) = content  {
                             self.handle_network_content(content).await;
                         } else {
@@ -140,12 +149,24 @@ impl ClientOnlineGame {
                             self.handle_game_responses(response).await;
                         };
                     },
+                    _ = tokio::time::sleep(Duration::from_secs(1)) => {}
                 }
             } else {
-                let content = read_enum_from_server(&socket).await;
-                if let Ok(content) = content {
-                    self.handle_network_content(content).await;
+                tokio::select! {
+                    content = read_enum_from_server(&socket) => {
+                        if let Ok(content) = content {
+                            self.handle_network_content(content).await;
+                        }
+                    },
+                    _ = tokio::time::sleep(Duration::from_secs(1)) => {}
                 }
+            }
+            let cur_time = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("Time went backwards 🗿🤙")
+                .as_secs();
+            if cur_time - time >= 5 {
+                self.running = false;
             }
         }
         let mut lock = self.playing.lock().await;

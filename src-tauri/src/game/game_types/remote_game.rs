@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use tokio::{
     net::TcpStream,
@@ -65,14 +65,19 @@ impl RemoteGame {
                             continue;
                         };
                         self.handle_network(content).await;
-                    }
+                    },
+                    _ = tokio::time::sleep(Duration::from_secs(1)) => {}
                 }
             } else {
-                let value = self.receiver.recv().await;
-                let Some(command) = value else {
-                    continue;
-                };
-                self.handle_command(command).await;
+                tokio::select! {
+                    value = self.receiver.recv() => {
+                        let Some(command) = value else {
+                            continue;
+                        };
+                        self.handle_command(command).await;
+                    }
+                    _ = tokio::time::sleep(Duration::from_secs(1)) => {}
+                }
             }
         }
     }
@@ -108,15 +113,15 @@ impl RemoteGame {
                 dbg!("here");
 
                 // None
-
-                for _ in 0..3 {
-                    send_enum_from_server(
-                        &self.stream,
-                        &ServerOnlineGameCommands::GameEnded(dummy_player.clone()),
-                    )
-                    .await
-                    .unwrap();
-                }
+                // for _ in 0..3 {
+                send_enum_from_server(
+                    &self.stream,
+                    &ServerOnlineGameCommands::GameEnded(dummy_player),
+                )
+                .await
+                .unwrap();
+                // }
+                self.running = false;
                 None
             }
 
