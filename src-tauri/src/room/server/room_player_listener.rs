@@ -180,9 +180,10 @@ impl RoomPlayerListener {
             Updates::PlayersUpdate(players) => {
                 let players: Vec<DummyPlayer> =
                     players.iter().map(|player| player.into()).collect();
-                let _ =
-                    send_enum_from_server(socket, &ServerRoomNetCommands::PlayersUpdate(players))
-                        .await;
+
+                send_enum_from_server(socket, &ServerRoomNetCommands::PlayersUpdate(players))
+                    .await
+                    .unwrap();
             }
             Updates::NameChanged(_) => todo!(),
             Updates::PlayerLimitChanged(_) => todo!(),
@@ -202,11 +203,14 @@ impl RoomPlayerListener {
                     send_enum_from_server(socket, &ServerRoomNetCommands::PingRequest(playing))
                         .await;
                 if result.is_ok() {
+                    dbg!("here");
                     self.check_ping = true;
                     self.time_last_ping = SystemTime::now()
                         .duration_since(UNIX_EPOCH)
                         .expect("Time went backwards 🗿🤙")
                         .as_secs();
+                } else {
+                    dbg!(result);
                 }
             }
             Updates::GameStarts((highest_ping, options, pieces)) => {
