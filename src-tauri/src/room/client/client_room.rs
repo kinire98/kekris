@@ -70,11 +70,13 @@ impl ClientRoom {
                             .expect("Time went backwards 🗿🤙")
                             .as_secs();
                         if let Ok(content) = command {
+                            dbg!("here");
                             self.handle_content(content).await;
                         } else {
                             dbg!(&command);
                             let command = read_enum_from_server(&lock).await;
                             if let Ok(command) = command {
+                                dbg!("here");
                                 self.handle_content(command).await;
                             } else {
                                 dbg!(&command);
@@ -88,7 +90,6 @@ impl ClientRoom {
                                 }
                             }
                         }
-                        dbg!("here");
                     },
                     value = self.stop_channel.recv() => {
                         dbg!("here");
@@ -150,6 +151,7 @@ impl ClientRoom {
                 )
                 .await;
                 *self.playing.lock().await = true;
+                dbg!("started game");
                 tokio::spawn(async move {
                     tokio::time::sleep(Duration::from_millis(delay)).await;
                     game.start().await;
