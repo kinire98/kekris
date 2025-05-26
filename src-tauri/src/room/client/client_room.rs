@@ -83,7 +83,7 @@ impl ClientRoom {
                                 } else {
                                     let command = read_enum_from_server(&lock).await;
                                     if let Ok(command) = command {
-                                        self.handle_content(command);
+                                        self.handle_content(command).await;
                                         break;
                                     } else {
                                         error = command.unwrap_err();

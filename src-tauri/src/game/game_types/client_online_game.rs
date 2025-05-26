@@ -154,6 +154,10 @@ impl ClientOnlineGame {
             } else {
                 tokio::select! {
                     content = read_enum_from_server(&socket) => {
+                        time = SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .expect("Time went backwards 🗿🤙")
+                            .as_secs();
                         if let Ok(content) = content {
                             self.handle_network_content(content).await;
                         }
@@ -165,7 +169,7 @@ impl ClientOnlineGame {
                 .duration_since(UNIX_EPOCH)
                 .expect("Time went backwards 🗿🤙")
                 .as_secs();
-            if cur_time - time >= 5 {
+            if cur_time - time >= 3 {
                 self.running = false;
                 let _ = self.app.emit(OTHER_PLAYER_WON_UNKNOWN, false);
             }
