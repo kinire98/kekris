@@ -133,6 +133,8 @@ impl ClientOnlineGame {
                     content = read_enum_from_server(&socket) => {
                         if let Ok(content) = content  {
                             self.handle_network_content(content).await;
+                        } else {
+                            dbg!(content);
                         }
                     },
                     response = self.game_responses.recv() => {
