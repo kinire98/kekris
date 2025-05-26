@@ -67,6 +67,7 @@ impl ClientRoom {
                 dbg!("here");
                 tokio::select! {
                     command = read_enum_from_server(&lock) => {
+                        dbg!("here");
                         time = SystemTime::now()
                             .duration_since(UNIX_EPOCH)
                             .expect("Time went backwards 🗿🤙")
@@ -81,16 +82,16 @@ impl ClientRoom {
                             } else {
                                 let command = read_enum_from_server(&lock).await;
                                 if let Ok(content) = command {
-                                dbg!("here");
+                                    dbg!("here");
                                     self.handle_content(content).await;
                                 } else {
-                                dbg!("here");
-
+                                    dbg!("here");
                                 }
                             }
                         }
                     },
                     value = self.stop_channel.recv() => {
+                        dbg!("here");
                         let break_loop = self.stop_listening(value).await;
                         if break_loop {
                             break;
