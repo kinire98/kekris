@@ -145,6 +145,10 @@ impl ClientOnlineGame {
                         }
                     },
                     response = self.game_responses.recv() => {
+                        time = SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .expect("Time went backwards 🗿🤙")
+                            .as_secs();
                         if let Some(response) = response  {
                             self.handle_game_responses(response).await;
                         };
@@ -169,7 +173,7 @@ impl ClientOnlineGame {
                 .duration_since(UNIX_EPOCH)
                 .expect("Time went backwards 🗿🤙")
                 .as_secs();
-            if cur_time - time >= 3 {
+            if cur_time - time >= 7 {
                 self.running = false;
                 let _ = self.app.emit(OTHER_PLAYER_WON_UNKNOWN, false);
             }
