@@ -33,6 +33,7 @@ const OTHER_PLAYER_WON_UNKNOWN: &str = "otherPlayerWonUnknown";
 
 use super::local_game::{GameControl, LocalGame};
 
+/// Represents the online game from the client's perspective.
 pub struct ClientOnlineGame {
     socket: Arc<tokio::sync::Mutex<TcpStream>>,
     running: bool,
@@ -49,6 +50,10 @@ pub struct ClientOnlineGame {
 }
 
 impl ClientOnlineGame {
+    /// Creates a new `ClientOnlineGame` instance.
+    ///
+    /// This function initializes the client-side online game, setting up communication channels,
+    /// a local game instance, and remote queue. It spawns a task to start the local game after a delay.
     pub async fn new(
         socket: Arc<tokio::sync::Mutex<TcpStream>>,
         pieces_buffer: Vec<Piece>,
@@ -91,6 +96,10 @@ impl ClientOnlineGame {
             dead: false,
         }
     }
+    /// Sets up the communication channels for the local game.
+    ///
+    /// This function configures the first-level, second-level, and game control channels,
+    /// setting them as global variables for use by other parts of the application.
     async fn set_channels(
         tx_commands: Sender<FirstLevelCommands>,
         tx_commands_second: Sender<SecondLevelCommands>,
@@ -121,6 +130,10 @@ impl ClientOnlineGame {
                 .unwrap();
         }
     }
+    /// Starts the client online game, handling network events and game responses.
+    ///
+    /// This is the main loop for the client-side online game. It listens for incoming messages
+    /// from the server and responses from the local game, processing them accordingly.
     pub async fn start(&mut self) {
         let mut lock = self.playing.lock().await;
         *lock = true;
@@ -182,6 +195,10 @@ impl ClientOnlineGame {
         *lock = false;
         drop(lock);
     }
+    /// Handles incoming network messages from the server.
+    ///
+    /// This function processes messages received from the server, such as trash sent, queue updates,
+    /// game over signals, and state updates from other players.
     async fn handle_network_content(&mut self, content: ServerOnlineGameCommands) {
         match content {
             ServerOnlineGameCommands::TrashSent(amount) => {
@@ -243,6 +260,10 @@ impl ClientOnlineGame {
             }
         }
     }
+    /// Handles responses received from the local game.
+    ///
+    /// This function processes responses from the local game, such as board state updates, danger levels,
+    /// strategy updates, and trash sent events, sending corresponding commands to the server.
     async fn handle_game_responses(&mut self, response: GameResponses) {
         let command: Option<ClientOnlineGameCommands> = match response {
             GameResponses::BoardState(state) => Some(ClientOnlineGameCommands::BoardState(state)),
@@ -278,5 +299,33 @@ impl ClientOnlineGame {
             dbg!("lost sent");
         }
         send_enum_from_client(&self.socket, &command).await.unwrap();
+    }
+    /// Handles errors that occur during network communication.
+    ///
+    /// This function detects specific network errors, such as a disconnected peer, and takes
+    /// appropriate actions, such as ending the game and displaying a "player won unknown" message.
+    fn handle_error(&mut self, error: Box<dyn std::error::Error + Send + Sync>) {
+        if let Some(e) = error.downcast_ref::<serde_json::Error>() {
+            if e.is_data() && self.received_first_game_command {
+                self.running = false;
+                let _ = self.app.emit(OTHER_PLAYER_WON_UNKNOWN, false);
+            }
+        }
+    }
+    /// Computes if the player has lost, and emits the correct event
+    async fn compute_lost_player(&mut self) {
+        if self.dead {
+            let _ = self.app.emit(OTHER_PLAYER_WON_UNKNOWN, false);
+        } else {
+            let _ = self.tx_commands_second.send(SecondLevelCommands::Won).await;
+            let _ = self.app.emit(
+                OTHER_PLAYER_WON,
+                WonSignal {
+                    player: self.self_player.clone(),
+                    is_hosting: false,
+                },
+            );
+            self.running = false;
+        }
     }
 }

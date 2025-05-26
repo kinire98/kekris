@@ -1,4 +1,3 @@
-
 import { invoke } from "@tauri-apps/api/core";
 import { getRepeatInterval, getStartRepeatInterval } from "./interval";
 import { hardDropEffect } from "../board/effects";

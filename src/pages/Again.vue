@@ -1,6 +1,5 @@
 <template>
   <div>
-    <!-- <h1>{{ $t("ui.again.title") }}</h1> -->
     <div id="buttons">
       <Button id="back" variant="outlined" raised @click="mainMenu">
         <h2>{{ $t("ui.again.main_menu") }}</h2>

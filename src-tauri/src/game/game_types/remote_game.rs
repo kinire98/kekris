@@ -3,8 +3,8 @@ use std::{sync::Arc, time::Duration};
 use tokio::{
     net::TcpStream,
     sync::{
-        Mutex,
         mpsc::{Receiver, Sender},
+        Mutex,
     },
 };
 
@@ -22,17 +22,26 @@ use crate::{
     room::player::Player,
 };
 
+/// Represents a remote game instance, handling communication with a remote player.
 #[derive(Debug)]
 pub struct RemoteGame {
+    /// The TCP stream for communicating with the remote player.
     stream: Arc<Mutex<TcpStream>>,
+    /// Receiver for commands from the online game.
     receiver: Receiver<OnlineToRemoteGameCommunication>,
+    /// Sender for commands to the online game.
     sender: Sender<RemoteToOnlineGameCommunication>,
+    /// The player associated with this remote game.
     player: DummyPlayer,
+    /// The most recent player who sent trash to this player.
     most_recent_trash_received: Option<DummyPlayer>,
+    /// Flag indicating if the player has lost.
     lost: bool,
+    /// Flag indicating if the game is running.
     running: bool,
 }
 impl RemoteGame {
+    /// Creates a new `RemoteGame` instance.
     pub fn new(
         player: &Player,
         receiver: Receiver<OnlineToRemoteGameCommunication>,
@@ -49,6 +58,7 @@ impl RemoteGame {
         }
     }
 
+    /// Starts the remote game, handling incoming commands and network events.
     pub async fn start_game(&mut self) {
         let lock = self.stream.clone();
         while self.running {
@@ -81,6 +91,7 @@ impl RemoteGame {
             }
         }
     }
+    /// Handles commands received from the online game.
     async fn handle_command(&mut self, command: OnlineToRemoteGameCommunication) {
         let command: Option<ServerOnlineGameCommands> = match command {
             OnlineToRemoteGameCommunication::TrashReceived(dummy_player, amount) => {
@@ -141,6 +152,7 @@ impl RemoteGame {
         };
         send_enum_from_server(&self.stream, &command).await.unwrap();
     }
+    /// Handles network commands received from the remote player.
     async fn handle_network(&mut self, command: ClientOnlineGameCommands) {
         let message = match command {
             ClientOnlineGameCommands::TrashSent(strategy, amount) => Some(

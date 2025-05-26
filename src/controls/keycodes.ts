@@ -27,8 +27,6 @@ const paybackCodeDefault = "4";
 const forfeitCodeDefault = "Escape";
 const retryCodeDefault = "p";
 
-
-
 let hardDropCode = "";
 let softDropCode = "";
 let leftMoveCode = "";
@@ -43,8 +41,6 @@ let targetingEliminationsCode = "";
 let targetingPaybackCode = "";
 let forfeitCode = "";
 let retryCode = "";
-
-
 
 export function getHardDropCode(): string {
   return check(hardDropCode, hardDropCodeKey, hardDropCodeDefault);
