@@ -61,6 +61,7 @@ impl ClientRoom {
         let lock = self.stream.clone();
         while self.listening {
             let lock_loop = self.playing.lock().await;
+            dbg!(&lock_loop);
             if !*lock_loop {
                 drop(lock_loop);
                 dbg!("here");
