@@ -14,17 +14,29 @@ const pieceWidth = 34;
 const pieceHeight = 34;
 
 let canvas: HTMLCanvasElement;
+
+/**
+ * Initializes the held piece canvas and sets up the event listener.
+ * @param heldPieceCanvas The canvas element for the held piece.
+ */
 export default function startHeld(heldPieceCanvas: HTMLCanvasElement) {
     canvas = heldPieceCanvas;
     listener();
 }
 
+/**
+ * Sets up the event listener for the held piece emit event.
+ */
 async function listener() {
     await listen<Piece>(heldPieceEmit, (e) => {
         draw(e.payload);
     });
 }
 
+/**
+ * Draws the held piece on the canvas.
+ * @param piece The piece to draw.
+ */
 function draw(piece: Piece) {
     let start_x;
     let start_y;
@@ -110,6 +122,15 @@ function draw(piece: Piece) {
             throw new Error(`${piece} shouldn't be sent through here`);
     }
 }
+
+/**
+ * Draws a single piece block on the canvas.
+ * @param x The x coordinate of the piece.
+ * @param y The y coordinate of the piece.
+ * @param color The color of the piece.
+ * @param darkColor The dark color of the piece.
+ * @param ctx The canvas rendering context.
+ */
 function drawPiece(x: number, y: number, color: string, darkColor: string, ctx: CanvasRenderingContext2D) {
     const widthSecondRing = 5;
 

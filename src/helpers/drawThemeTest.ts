@@ -7,6 +7,12 @@ const width = 700;
 const margin = (width - ((pieceWidth * 3) * 5 + (pieceWidth * 2) + (pieceWidth * 4))) / 7;
 const height = 150;
 const start_y = height / 2 - pieceHeight;
+
+/**
+ * Draws a theme test pattern on the canvas.
+ * @param canvas The canvas element to draw on.
+ * @param theme The theme to use.
+ */
 export default function drawThemeTest(canvas: HTMLCanvasElement, theme: Theme) {
     const ctx = canvas.getContext("2d")!;
     let start_x = margin * 2.95;
@@ -24,6 +30,15 @@ export default function drawThemeTest(canvas: HTMLCanvasElement, theme: Theme) {
     start_x += (pieceWidth * 3) + margin;
     drawPiece(ctx, start_x, start_y, Piece.T, theme.T);
 }
+
+/**
+ * Draws a single piece on the canvas.
+ * @param ctx The canvas rendering context.
+ * @param start_piece_x The x coordinate of the top-left corner of the piece.
+ * @param start_piece_y The y coordinate of the top-left corner of the piece.
+ * @param piece The piece to draw.
+ * @param theme The theme to use.
+ */
 function drawPiece(
     ctx: CanvasRenderingContext2D,
     start_piece_x: number,
@@ -79,6 +94,14 @@ function drawPiece(
             throw new Error("Shouldn't be here");
     }
 }
+
+/**
+ * Draws a single square on the canvas.
+ * @param ctx The canvas rendering context.
+ * @param x The x coordinate of the top-left corner of the square.
+ * @param y The y coordinate of the top-left corner of the square.
+ * @param theme The theme to use.
+ */
 function drawSquare(
     ctx: CanvasRenderingContext2D,
     x: number,

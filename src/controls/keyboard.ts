@@ -1,4 +1,3 @@
-
 import { invoke } from "@tauri-apps/api/core";
 import { getRepeatInterval, getStartRepeatInterval } from "./interval";
 import { hardDropEffect } from "../board/effects";
@@ -10,6 +9,13 @@ let customStartRepeatInterval = getStartRepeatInterval();
 let keyIntervals: Record<string, NodeJS.Timeout> = {};
 const keySet = new Set<string>(); // Repeat interval
 const pressedSet = new Set<string>(); // Not repeat
+
+/**
+ * Manages the keyboard input listeners for the game.
+ *
+ * This function sets up the keydown and keyup event listeners to handle user input.
+ * It also initializes the keyIntervals, keySet, and pressedSet variables.
+ */
 export default function manageInputListeners() {
   keyIntervals = {};
   keySet.clear();
@@ -22,11 +28,23 @@ export default function manageInputListeners() {
   document.addEventListener("keyup", keyUp);
 }
 
+/**
+ * Removes the keyboard input listeners.
+ *
+ * This function removes the keydown and keyup event listeners to stop handling user input.
+ */
 export function removeInputListeners() {
   document.removeEventListener("keyup", keyUp);
   document.removeEventListener("keydown", keyDown);
   removeIntervals();
 }
+/**
+ * Handles the keyup event.
+ *
+ * This function is called when a key is released. It removes the key from the pressedSet and keySet,
+ * and clears any intervals associated with the key.
+ * @param event The keyboard event.
+ */
 function keyUp(event: KeyboardEvent) {
   if (pressedSet.has(event.key)) {
     pressedSet.delete(event.key);
@@ -42,6 +60,13 @@ function keyUp(event: KeyboardEvent) {
     removeIntervals();
   }
 }
+/**
+ * Handles the keydown event.
+ *
+ * This function is called when a key is pressed. It adds the key to the keySet and pressedSet,
+ * and sets up an interval to repeatedly call the manageInput function while the key is held down.
+ * @param event The keyboard event.
+ */
 function keyDown(event: KeyboardEvent) {
   if (keySet.has(event.key)) {
     return;
@@ -72,6 +97,9 @@ function keyDown(event: KeyboardEvent) {
   }, customStartRepeatInterval);
 }
 
+/**
+ * Removes all active intervals.
+ */
 function removeIntervals() {
   for (const interval in keyIntervals) {
     if (Object.prototype.hasOwnProperty.call(keyIntervals, interval)) {
@@ -82,6 +110,10 @@ function removeIntervals() {
   }
 }
 
+/**
+ * Manages the input based on the key code.
+ * @param keyCode The key code of the key that was pressed.
+ */
 function manageInput(keyCode: string) {
   switch (keyCode) {
     case getHardDropCode():
