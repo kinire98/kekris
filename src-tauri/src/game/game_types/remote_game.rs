@@ -138,27 +138,30 @@ impl RemoteGame {
     }
     async fn handle_network(&mut self, command: ClientOnlineGameCommands) {
         let message = match command {
-            ClientOnlineGameCommands::TrashSent(strategy, amount) => {
-                RemoteToOnlineGameCommunication::TrashSent(self.player.clone(), strategy, amount)
-            }
-            ClientOnlineGameCommands::BoardState(state) => {
-                RemoteToOnlineGameCommunication::BoardState(self.player.clone(), state)
-            }
-            ClientOnlineGameCommands::DangerLevel(danger_level) => {
-                RemoteToOnlineGameCommunication::DangerLevel(self.player.clone(), danger_level)
-            }
+            ClientOnlineGameCommands::TrashSent(strategy, amount) => Some(
+                RemoteToOnlineGameCommunication::TrashSent(self.player.clone(), strategy, amount),
+            ),
+            ClientOnlineGameCommands::BoardState(state) => Some(
+                RemoteToOnlineGameCommunication::BoardState(self.player.clone(), state),
+            ),
+            ClientOnlineGameCommands::DangerLevel(danger_level) => Some(
+                RemoteToOnlineGameCommunication::DangerLevel(self.player.clone(), danger_level),
+            ),
             ClientOnlineGameCommands::Lost(_) => {
                 dbg!("here");
                 if self.lost {
                     None
                 } else {
                     self.lost = true;
-                    RemoteToOnlineGameCommunication::Lost(self.player.clone())
+                    Some(RemoteToOnlineGameCommunication::Lost(self.player.clone()))
                 }
             }
             ClientOnlineGameCommands::QueueRequest(_) => {
-                RemoteToOnlineGameCommunication::QueueRequest
+                Some(RemoteToOnlineGameCommunication::QueueRequest)
             }
+        };
+        let Some(message) = message else {
+            return;
         };
         self.sender.send(message).await.unwrap();
     }
