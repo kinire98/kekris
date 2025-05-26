@@ -63,7 +63,7 @@ impl ClientRoom {
             let lock_loop = self.playing.lock().await;
             if !*lock_loop {
                 drop(lock_loop);
-
+                dbg!("here");
                 tokio::select! {
                     command = read_enum_from_server(&lock) => {
                         time = SystemTime::now()
@@ -73,6 +73,7 @@ impl ClientRoom {
                         if let Ok(content) = command {
                             self.handle_content(content).await;
                         } else {
+                            dbg!(command);
                             let command = read_enum_from_server(&lock).await;
                             if let Ok(command) = command {
                                 self.handle_content(command).await;
