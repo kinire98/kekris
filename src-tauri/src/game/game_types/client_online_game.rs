@@ -43,7 +43,7 @@ pub struct ClientOnlineGame {
     // received_first_game_command: bool,
     // options: GameOptions,
     deaths: u8,
-    // self_player: DummyPlayer,
+    self_player: DummyPlayer,
     dead: bool,
 }
 
@@ -88,7 +88,7 @@ impl ClientOnlineGame {
             // received_first_game_command: false,
             // options: game_options,
             deaths: 0,
-            // self_player: player,
+            self_player: player,
             dead: false,
         }
     }
@@ -175,6 +175,14 @@ impl ClientOnlineGame {
             ServerOnlineGameCommands::Won(_) => {
                 dbg!("here");
                 let _ = self.tx_commands_second.send(SecondLevelCommands::Won).await;
+                let _ = self.app.emit(
+                    OTHER_PLAYER_WON,
+                    WonSignal {
+                        player: self.self_player.clone(),
+                        is_hosting: false,
+                    },
+                );
+                self.running = false;
             }
             ServerOnlineGameCommands::PlayerLost(dummy_player) => {
                 self.deaths += 1;
