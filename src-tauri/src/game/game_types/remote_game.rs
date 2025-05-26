@@ -140,7 +140,6 @@ impl RemoteGame {
                 }
             }
             OnlineToRemoteGameCommunication::GameEnded(dummy_player) => {
-                // None
                 for _ in 0..3 {
                     send_enum_from_server(
                         &self.stream,

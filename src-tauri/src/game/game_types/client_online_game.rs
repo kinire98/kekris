@@ -318,6 +318,9 @@ impl ClientOnlineGame {
         let Some(command) = command else {
             return;
         };
+        if let ClientOnlineGameCommands::Lost(_) = command {
+            dbg!("lost sent");
+        }
         send_enum_from_client(&self.socket, &command).await.unwrap();
     }
 }
