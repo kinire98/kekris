@@ -224,7 +224,18 @@ impl RoomPlayerListener {
                         .expect("Time went backwards 🗿🤙")
                         .as_secs();
                 } else {
-                    dbg!(result);
+                    match result.unwrap_err().kind() {
+                        std::io::ErrorKind::BrokenPipe
+                        | std::io::ErrorKind::UnexpectedEof
+                        | std::io::ErrorKind::HostUnreachable => {
+                            let _ = self
+                                .send_commands
+                                .send(FirstLevelCommands::PlayerDisconnected(self.player.clone()))
+                                .await;
+                            return true;
+                        }
+                        _ => (),
+                    }
                 }
             }
             Updates::GameStarts((highest_ping, options, pieces)) => {

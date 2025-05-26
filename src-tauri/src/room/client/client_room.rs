@@ -65,6 +65,10 @@ impl ClientRoom {
             if !*lock_loop {
                 drop(lock_loop);
                 dbg!("here");
+                let lock2 = self.stream.clone();
+                let loc2 = lock2.lock().await;
+                dbg!(loc2.readable().await);
+                drop(loc2);
                 tokio::select! {
                     command = read_enum_from_server(&lock) => {
                         dbg!("here");
