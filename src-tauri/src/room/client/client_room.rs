@@ -73,7 +73,10 @@ impl ClientRoom {
                         if let Ok(content) = command {
                             self.handle_content(content).await;
                         } else {
-                            dbg!(&command);
+                            let command = read_enum_from_server(&lock).await;
+                            if let Ok(command) = command {
+                                self.handle_content(command).await;
+                            }
                         }
                     },
                     value = self.stop_channel.recv() => {
@@ -93,7 +96,6 @@ impl ClientRoom {
                     let _ = self.app.emit(LOST_CONNECTION_EMIT, false);
                     break;
                 }
-                tokio::time::sleep(Duration::from_millis(300)).await;
             } else {
                 drop(lock_loop);
                 tokio::time::sleep(Duration::from_millis(300)).await;

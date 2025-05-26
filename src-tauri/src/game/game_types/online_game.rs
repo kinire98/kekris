@@ -567,9 +567,9 @@ impl OnlineGame {
             .for_each_concurrent(self.players.len(), |tx| {
                 let player = winner.clone();
                 async move {
-                    tx.send(OnlineToRemoteGameCommunication::GameEnded(player))
-                        .await
-                        .unwrap();
+                    let _ = tx
+                        .send(OnlineToRemoteGameCommunication::GameEnded(player))
+                        .await;
                 }
             })
             .await;
