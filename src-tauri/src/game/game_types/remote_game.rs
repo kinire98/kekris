@@ -112,7 +112,7 @@ impl RemoteGame {
                 for _ in 0..3 {
                     send_enum_from_server(
                         &self.stream,
-                        &ServerOnlineGameCommands::GameEnded(dummy_player),
+                        &ServerOnlineGameCommands::GameEnded(dummy_player.clone()),
                     )
                     .await
                     .unwrap();
