@@ -217,21 +217,11 @@ impl RoomPlayerListener {
                 };
                 send_enum_from_server(
                     socket,
-                    &ServerRoomNetCommands::GameStarts((
-                        ping,
-                        pieces.clone(),
-                        options,
-                        self.player.id(),
-                    )),
-                )
-                .await
-                .unwrap();
-                send_enum_from_server(
-                    socket,
                     &ServerRoomNetCommands::GameStarts((ping, pieces, options, self.player.id())),
                 )
                 .await
                 .unwrap();
+
                 return true;
             }
         };
