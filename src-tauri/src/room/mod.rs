@@ -115,16 +115,14 @@ impl Room {
                             }
                         }
                     },
-                    _ = tokio::time::sleep(Duration::from_millis(PING_IN_MILLIS)) => {
-
-                        let playing = self.cur_game_playing.lock().await;
-                        let result = self.send_updates.send(Updates::SendPing(*playing));
-                        if result.is_err() {
-                            let _ = self.send_updates.send(Updates::SendPing(*playing));
-                        }
-                        self.players_emit();
-                    }
+                    _ = tokio::time::sleep(Duration::from_millis(PING_IN_MILLIS)) => {}
                 }
+                let playing = self.cur_game_playing.lock().await;
+                let result = self.send_updates.send(Updates::SendPing(*playing));
+                if result.is_err() {
+                    let _ = self.send_updates.send(Updates::SendPing(*playing));
+                }
+                self.players_emit();
                 tokio::time::sleep(Duration::from_millis(PING_IN_MILLIS)).await;
                 if now.elapsed() > Duration::from_millis(UPDATES_IN_MILLIS) {
                     self.players_update();

@@ -1,3 +1,4 @@
+use std::time::{SystemTime, UNIX_EPOCH};
 use std::{sync::Arc, time::Duration};
 
 use tauri::{AppHandle, Emitter};
@@ -40,8 +41,8 @@ pub struct ClientOnlineGame {
     app: AppHandle,
     strategy: Strategy,
     playing: Arc<Mutex<bool>>,
-    received_first_game_command: bool,
-    options: GameOptions,
+    // received_first_game_command: bool,
+    // options: GameOptions,
     deaths: u8,
     self_player: DummyPlayer,
     dead: bool,
@@ -85,8 +86,6 @@ impl ClientOnlineGame {
             app,
             strategy: Strategy::Random,
             playing,
-            received_first_game_command: false,
-            options: game_options,
             deaths: 0,
             self_player: player,
             dead: false,
@@ -126,29 +125,57 @@ impl ClientOnlineGame {
         let mut lock = self.playing.lock().await;
         *lock = true;
         drop(lock);
+        let mut time = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards 🗿🤙")
+            .as_secs();
         while self.running {
             let socket = self.socket.clone();
-            tokio::select! {
-                content = read_enum_from_server(&socket) => {
-                    if let Ok(content) = content  {
-                        self.handle_network_content(content).await;
-                        self.received_first_game_command = true;
-                    } else {
-                        self.handle_error(content.unwrap_err());
-                    };
-                },
-                response = self.game_responses.recv() => {
-                    if let Some(response) = response  {
-                        self.handle_game_responses(response).await;
-                    };
-                },
-                _ = tokio::time::sleep(Duration::from_millis(100)) => {
-                    dbg!("here");
-                    if self.deaths >= self.options.number_of_players() - 1 {
-                        self.compute_lost_player().await;
-                    }
+            if !self.dead {
+                tokio::select! {
+                    content = read_enum_from_server(&socket) => {
+                        time = SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .expect("Time went backwards 🗿🤙")
+                            .as_secs();
+                        if let Ok(content) = content  {
+                            self.handle_network_content(content).await;
+                        } else {
+                            dbg!(content);
+                        }
+                    },
+                    response = self.game_responses.recv() => {
+                        time = SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .expect("Time went backwards 🗿🤙")
+                            .as_secs();
+                        if let Some(response) = response  {
+                            self.handle_game_responses(response).await;
+                        };
+                    },
+                    _ = tokio::time::sleep(Duration::from_secs(1)) => {}
                 }
-
+            } else {
+                tokio::select! {
+                    content = read_enum_from_server(&socket) => {
+                        time = SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .expect("Time went backwards 🗿🤙")
+                            .as_secs();
+                        if let Ok(content) = content {
+                            self.handle_network_content(content).await;
+                        }
+                    },
+                    _ = tokio::time::sleep(Duration::from_secs(1)) => {}
+                }
+            }
+            let cur_time = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("Time went backwards 🗿🤙")
+                .as_secs();
+            if cur_time - time >= 7 {
+                self.running = false;
+                let _ = self.app.emit(OTHER_PLAYER_WON_UNKNOWN, false);
             }
         }
         let mut lock = self.playing.lock().await;
@@ -178,6 +205,14 @@ impl ClientOnlineGame {
             ServerOnlineGameCommands::Won(_) => {
                 dbg!("here");
                 let _ = self.tx_commands_second.send(SecondLevelCommands::Won).await;
+                let _ = self.app.emit(
+                    OTHER_PLAYER_WON,
+                    WonSignal {
+                        player: self.self_player.clone(),
+                        is_hosting: false,
+                    },
+                );
+                self.running = false;
             }
             ServerOnlineGameCommands::PlayerLost(dummy_player) => {
                 self.deaths += 1;
@@ -185,6 +220,9 @@ impl ClientOnlineGame {
             }
             ServerOnlineGameCommands::GameEnded(dummy_player) => {
                 dbg!("here");
+                if dummy_player == self.self_player {
+                    let _ = self.tx_commands_second.send(SecondLevelCommands::Won).await;
+                }
                 let _ = self.app.emit(
                     OTHER_PLAYER_WON,
                     WonSignal {
@@ -221,7 +259,13 @@ impl ClientOnlineGame {
             GameResponses::Lost => {
                 self.dead = true;
                 self.deaths += 1;
-                Some(ClientOnlineGameCommands::Lost(0))
+                send_enum_from_client(&self.socket, &ClientOnlineGameCommands::Lost(0))
+                    .await
+                    .unwrap();
+                send_enum_from_client(&self.socket, &ClientOnlineGameCommands::Lost(0))
+                    .await
+                    .unwrap();
+                None
             }
             GameResponses::Queue(_pieces) => {
                 panic!("SHOULDN'T BE HERE");
@@ -230,29 +274,9 @@ impl ClientOnlineGame {
         let Some(command) = command else {
             return;
         };
+        if let ClientOnlineGameCommands::Lost(_) = command {
+            dbg!("lost sent");
+        }
         send_enum_from_client(&self.socket, &command).await.unwrap();
-    }
-    fn handle_error(&mut self, error: Box<dyn std::error::Error + Send + Sync>) {
-        if let Some(e) = error.downcast_ref::<serde_json::Error>() {
-            if e.is_data() && self.received_first_game_command {
-                self.running = false;
-                let _ = self.app.emit(OTHER_PLAYER_WON_UNKNOWN, false);
-            }
-        }
-    }
-    async fn compute_lost_player(&mut self) {
-        if self.dead {
-            let _ = self.app.emit(OTHER_PLAYER_WON_UNKNOWN, false);
-        } else {
-            let _ = self.tx_commands_second.send(SecondLevelCommands::Won).await;
-            let _ = self.app.emit(
-                OTHER_PLAYER_WON,
-                WonSignal {
-                    player: self.self_player.clone(),
-                    is_hosting: false,
-                },
-            );
-            self.running = false;
-        }
     }
 }

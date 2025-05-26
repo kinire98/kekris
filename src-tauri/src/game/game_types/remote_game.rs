@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use tokio::{
     net::TcpStream,
@@ -52,18 +52,31 @@ impl RemoteGame {
     pub async fn start_game(&mut self) {
         let lock = self.stream.clone();
         while self.running {
-            tokio::select! {
-                value = self.receiver.recv() => {
-                    let Some(command) = value else {
-                        continue;
-                    };
-                    self.handle_command(command).await;
+            if !self.lost {
+                tokio::select! {
+                    value = self.receiver.recv() => {
+                        let Some(command) = value else {
+                            continue;
+                        };
+                        self.handle_command(command).await;
+                    }
+                    result = read_enum_from_client(&lock) => {
+                        let Ok(content) = result else {
+                            continue;
+                        };
+                        self.handle_network(content).await;
+                    },
+                    _ = tokio::time::sleep(Duration::from_secs(1)) => {}
                 }
-                result = read_enum_from_client(&lock) => {
-                    let Ok(content) = result else {
-                        continue;
-                    };
-                    self.handle_network(content).await;
+            } else {
+                tokio::select! {
+                    value = self.receiver.recv() => {
+                        let Some(command) = value else {
+                            continue;
+                        };
+                        self.handle_command(command).await;
+                    }
+                    _ = tokio::time::sleep(Duration::from_secs(1)) => {}
                 }
             }
         }
@@ -88,7 +101,10 @@ impl RemoteGame {
                     .await;
                 None
             }
-            OnlineToRemoteGameCommunication::Won => Some(ServerOnlineGameCommands::Won(0)),
+            OnlineToRemoteGameCommunication::Won => {
+                self.running = false;
+                Some(ServerOnlineGameCommands::Won(0))
+            }
             OnlineToRemoteGameCommunication::PlayerLost(dummy_player) => {
                 if self.lost {
                     None
@@ -98,9 +114,20 @@ impl RemoteGame {
             }
             OnlineToRemoteGameCommunication::GameEnded(dummy_player) => {
                 dbg!("here");
+
+                // None
+                for _ in 0..3 {
+                    send_enum_from_server(
+                        &self.stream,
+                        &ServerOnlineGameCommands::GameEnded(dummy_player.clone()),
+                    )
+                    .await
+                    .unwrap();
+                }
                 self.running = false;
-                Some(ServerOnlineGameCommands::GameEnded(dummy_player))
+                None
             }
+
             OnlineToRemoteGameCommunication::State(dummy_player, state) => {
                 if dummy_player == self.player {
                     None
@@ -116,23 +143,31 @@ impl RemoteGame {
     }
     async fn handle_network(&mut self, command: ClientOnlineGameCommands) {
         let message = match command {
-            ClientOnlineGameCommands::TrashSent(strategy, amount) => {
-                RemoteToOnlineGameCommunication::TrashSent(self.player.clone(), strategy, amount)
-            }
-            ClientOnlineGameCommands::BoardState(state) => {
-                RemoteToOnlineGameCommunication::BoardState(self.player.clone(), state)
-            }
-            ClientOnlineGameCommands::DangerLevel(danger_level) => {
-                RemoteToOnlineGameCommunication::DangerLevel(self.player.clone(), danger_level)
-            }
+            ClientOnlineGameCommands::TrashSent(strategy, amount) => Some(
+                RemoteToOnlineGameCommunication::TrashSent(self.player.clone(), strategy, amount),
+            ),
+            ClientOnlineGameCommands::BoardState(state) => Some(
+                RemoteToOnlineGameCommunication::BoardState(self.player.clone(), state),
+            ),
+            ClientOnlineGameCommands::DangerLevel(danger_level) => Some(
+                RemoteToOnlineGameCommunication::DangerLevel(self.player.clone(), danger_level),
+            ),
             ClientOnlineGameCommands::Lost(_) => {
-                self.lost = true;
-                RemoteToOnlineGameCommunication::Lost(self.player.clone())
+                dbg!("here");
+                if self.lost {
+                    None
+                } else {
+                    self.lost = true;
+                    Some(RemoteToOnlineGameCommunication::Lost(self.player.clone()))
+                }
             }
             ClientOnlineGameCommands::QueueRequest(_) => {
-                RemoteToOnlineGameCommunication::QueueRequest
+                Some(RemoteToOnlineGameCommunication::QueueRequest)
             }
         };
-        let _ = self.sender.send(message).await;
+        let Some(message) = message else {
+            return;
+        };
+        self.sender.send(message).await.unwrap();
     }
 }
