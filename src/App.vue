@@ -3,6 +3,16 @@
     <RouterView />
   </Suspense>
   <div id="bgc"></div>
+  <div id="license">
+    <a
+      id="license-link"
+      href="https://creativecommons.org/licenses/by-nc-sa/4.0/"
+      target="_blank"
+    >
+      <img src="/LICENSE.svg" alt="License image" />
+    </a>
+    2025{{ year }} Iker Nieto Garrido
+  </div>
 </template>
 
 <style>
@@ -82,11 +92,33 @@ body {
 h1 {
   text-align: center;
 }
+#license {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: row;
+  height: 50px;
+}
+#license-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 5px;
+}
 </style>
-<script>
+<script lang="ts" setup>
 import forbidBack from "./helpers/forbidBack";
 import forbidReload from "./helpers/forbidReload";
 
+let year = "" + new Date().getFullYear();
+if (year == "2025") {
+  year = "";
+} else {
+  year = "-" + year;
+}
 forbidBack();
 forbidReload();
 if (import.meta.env.MODE === "production") {
