@@ -108,7 +108,9 @@
                 "PageDown": "Retroceso página",
                 "Shift": "Mayúsculas",
                 "CapsLock": "Bloqueo mayúsculas"
-            }
+            },
+            "controls-used": "Esta tecla ya se utiliza para otra acción. Prueba a utilizar otra tecla",
+            "controls-used-summary": "Tecla en uso"
         },
         "appeareance": {
             "appeareance": "Apariencia"

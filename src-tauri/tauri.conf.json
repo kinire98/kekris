@@ -85,6 +85,19 @@
           "/usr/share/README.md": "../README.md"
         }
       }
+    },
+    "windows": {
+      "nsis": {
+        "displayLanguageSelector": true,
+        "languages": [
+          "en-US",
+          "es-ES"
+        ]
+      },
+      "webviewInstallMode": {
+        "silent": true,
+        "type": "embedBootstrapper"
+      }
     }
   }
 }

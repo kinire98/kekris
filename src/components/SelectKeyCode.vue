@@ -35,6 +35,7 @@
   >
     {{ $t("ui.controls.change-footer") }}
   </Dialog>
+  <Toast position="bottom-right" />
 </template>
 <style>
 span.p-dialog-title {
@@ -102,36 +103,54 @@ div {
 }
 </style>
 <script setup lang="ts">
-const props = defineProps({
-  info: String,
-  movementKey: String,
-  value: String,
-  desc: String,
-});
-useI18n();
-</script>
-<script lang="ts">
-import { Dialog } from "primevue";
+import { ref, onUnmounted } from "vue";
+import { Dialog, useToast } from "primevue";
 import { Icon } from "@iconify/vue/dist/iconify.js";
 import { useI18n } from "vue-i18n";
-export default {
-  data() {
-    return {
-      visible: false,
-      keyValue: this.value,
-    };
-  },
-  methods: {
-    promptForChange() {
-      this.visible = true;
-      document.addEventListener("keydown", this.controlsChange);
-    },
-    controlsChange(e: KeyboardEvent) {
-      this.visible = false;
-      this.keyValue = e.key;
-      localStorage.setItem(this.movementKey!, e.key);
-      document.removeEventListener("keydown", this.controlsChange);
-    },
-  },
-};
+import { isValid } from "../controls/keycodes";
+
+// Define props
+const props = defineProps<{
+  info: string;
+  movementKey: string;
+  value: string;
+  desc: string;
+}>();
+
+// i18n
+const { t } = useI18n();
+
+// Toast
+const toast = useToast();
+
+// State
+const visible = ref(false);
+const keyValue = ref(props.value);
+
+// Method to prompt for key change
+function promptForChange() {
+  visible.value = true;
+  document.addEventListener("keydown", controlsChange);
+}
+
+// Handle key change
+function controlsChange(e: KeyboardEvent) {
+  if (isValid(props.movementKey, e.key)) {
+    keyValue.value = e.key;
+    localStorage.setItem(props.movementKey, e.key);
+  } else {
+    toast.add({
+      severity: "contrast",
+      life: 5000,
+      summary: t("ui.controls.controls-used-summary"),
+    });
+  }
+  document.removeEventListener("keydown", controlsChange);
+  visible.value = false;
+}
+
+// Cleanup just in case
+onUnmounted(() => {
+  document.removeEventListener("keydown", controlsChange);
+});
 </script>

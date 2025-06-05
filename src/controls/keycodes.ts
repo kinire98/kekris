@@ -141,6 +141,52 @@ export function getRetryCode(): string {
   return check(retryCode, retryCodeKey, retryCodeDefault);
 }
 
+export function isValid(action: string, key: string): boolean {
+  if (getHardDropCode() == key && action != hardDropCodeKey) {
+    return false
+  }
+  if (getSoftDropCode() == key && action != softDropCodeKey) {
+    return false
+  }
+  if (getLeftMoveCode() == key && action != leftMoveCodeKey) {
+    return false
+  }
+  if (getRightMoveCode() == key && action != rightMoveCodeKey) {
+    return false
+  }
+  if (getSavePieceCode() == key && action != savePieceCodeKey) {
+    return false
+  }
+  if (getClockwiseCode() == key && action != clockwiseCodeKey) {
+    return false
+  }
+  if (getCounterClockwiseCode() == key && action != counterClockwiseCodeKey) {
+    return false
+  }
+  if (getFullRotationCode() == key && action != fullRotationCodeKey) {
+    return false
+  }
+  if (getTargetingRandomCode() == key && action != randomCodeKey) {
+    return false
+  }
+  if (getTargetingEvenCode() == key && action != evenCodeKey) {
+    return false
+  }
+  if (getTargetingEliminationsCode() == key && action != eliminationCodeKey) {
+    return false
+  }
+  if (getTargetingPaybackCode() == key && action != paybackCodeKey) {
+    return false
+  }
+  if (getRetryCode() == key && action != retryCodeKey) {
+    return false
+  }
+  if (getForfeitCode() == key && action != forfeitCodeKey) {
+    return false
+  }
+  return true;
+}
+
 /**
  * Checks if the code is valid and returns it.
  * If the code is not valid, it gets the code from local storage.
@@ -179,3 +225,4 @@ function setKeyCode(keycodeKey: string, keycodeValue: string) {
 function getKeyCode(keycode: string): string | null {
   return localStorage.getItem(keycode);
 }
+
