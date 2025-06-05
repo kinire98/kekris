@@ -108,7 +108,9 @@
                 "Backspace": "Backspace",
                 "Shift": "Shift",
                 "CapsLock": "Caps lock"
-            }
+            },
+            "controls-used": "This key is already used for another action. Try selecting one that isn't used",
+            "controls-used-summary": "Key already used"
         },
         "appeareance": {
             "appeareance": "Appeareance"
