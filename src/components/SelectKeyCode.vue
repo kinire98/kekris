@@ -143,7 +143,6 @@ function controlsChange(e: KeyboardEvent) {
       severity: "contrast",
       life: 5000,
       summary: t("ui.controls.controls-used-summary"),
-      detail: t("ui.controls.controls-used"),
     });
   }
   document.removeEventListener("keydown", controlsChange);
