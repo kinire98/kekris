@@ -94,13 +94,13 @@ h1 {
 }
 #license {
   position: absolute;
-  bottom: 0;
-  right: 0;
+  bottom: 1vh;
+  left: 1vw;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: row;
-  height: 50px;
+  font-size: 12px;
 }
 #license-link {
   display: flex;
