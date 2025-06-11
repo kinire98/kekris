@@ -90,8 +90,8 @@
       "nsis": {
         "displayLanguageSelector": true,
         "languages": [
-          "en-US",
-          "es-ES"
+          "English",
+          "Spanish"
         ]
       },
       "webviewInstallMode": {
